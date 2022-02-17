@@ -4,11 +4,12 @@ export const Select = (
         label = '',
         placeholder = '',
         items = [],
+        size = 'w-full',
         hint = null,
-        onChange = null,
-
+        onChange = () => {
+        },
     }) => (
-    <div className={`form-element  w-full ${inline ? 'form-element-inline' : ''}`}>
+    <div className={`form-element  ${inline ? 'form-element-inline' : ''} ${size}`}>
         <div className="form-label">{label}</div>
         <select className="form-select rounded ">
             {placeholder && (

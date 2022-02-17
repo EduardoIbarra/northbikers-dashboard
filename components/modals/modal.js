@@ -11,7 +11,8 @@ const Modal = (
         children,
         size = 'md',
         okButton,
-        cancelButton
+        cancelButton,
+        okClearButton = false,
     }) => {
     const modalSize = `max-w-${size}`
 
@@ -75,7 +76,7 @@ const Modal = (
                                         {okButton?.label && okButton?.onClick && (
                                             <button
                                                 type="button"
-                                                className="btn btn-default btn-rounded btn-icon bg-blue-500 hover:bg-blue-600 text-white"
+                                                className={`btn btn-default btn-rounded btn-icon  text-white ${okClearButton ? 'bg-blue-400 hover:bg-blue-500' :'bg-blue-500 hover:bg-blue-600'}`}
                                                 onClick={okButton.onClick}
                                             >
                                                 {okButton.label}
@@ -86,7 +87,7 @@ const Modal = (
                                             <button
                                                 type="button"
                                                 className="btn btn-default btn-rounded btn-icon bg-red-500 hover:bg-red-600 text-white"
-                                                onClick={okButton.onClick}
+                                                onClick={cancelButton.onClick}
                                             >
                                                 {cancelButton.label}
                                             </button>

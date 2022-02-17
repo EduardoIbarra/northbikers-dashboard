@@ -43,7 +43,7 @@ const ParticipantsPage = () => {
 
     useEffect(() => {
         getData()
-    }, [getData])
+    }, [getData, isOpen])
 
     return (
         <div>

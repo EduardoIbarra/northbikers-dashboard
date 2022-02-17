@@ -5,6 +5,16 @@ export const SideNavCollapsed = atom({
     default: false
 })
 
+export const Routes = atom({
+    key: 'Routes',
+    default: []
+})
+
+export const CurrentRoute = atom({
+    key: 'CurrentRoute',
+    default: {}
+})
+
 export const ParticipantsMarkers = atom({
     key: 'ParticipantsMarkers',
     default: [
