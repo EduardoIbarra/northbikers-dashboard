@@ -43,6 +43,12 @@ const ParticipantsList = ({isLoading, data}) => {
                     </tbody>
                 </table>
             ): null}
+
+            {!data?.length && !isLoading && (
+                <div className="mt-10 p-10 text-center">
+                    <h6>No se encontraron usuarios registrados en esta ruta</h6>
+                </div>
+            )}
         </div>
     )
 }

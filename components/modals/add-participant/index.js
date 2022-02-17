@@ -13,7 +13,10 @@ const AddParticipantModal = ({isOpen, onClose}) => {
     const supabase = getSupabase();
     const [isSearchModalOpen, setIsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
-    const [formData, setFormData] = useState({});
+    const [formData, setFormData] = useState({
+        current_lng: 25.6487281,
+        current_lat: -100.4431815
+    });
     const [selectedUser, setSelectedUser] = useState({});
     const currentRoute = useRecoilValue(CurrentRoute);
 

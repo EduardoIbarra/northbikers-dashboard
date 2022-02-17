@@ -9,8 +9,8 @@ const containerStyle = {
 };
 
 const center = {
-    lat: 25.3007901,
-    lng: -100.1431214
+    lat: 25.6487281,
+    lng: -100.4431815
 };
 
 const ParticipantsMap = () => {
