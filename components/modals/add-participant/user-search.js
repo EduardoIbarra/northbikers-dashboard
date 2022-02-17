@@ -28,9 +28,6 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
         setLoading(false)
     }, [query])
 
-    const handleSearch = () => {
-        return getResults()
-    }
 
     const Item = (user) => {
         const {id, name, email} = user;
@@ -48,21 +45,29 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
         if (!isOpen) setUsers(null)
     }, [isOpen])
 
+    useEffect(() => {
+        if (query) getResults()
+
+        if (!query) {
+            setUsers(null)
+        }
+    }, [query])
+
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            title='Buscar perfil'
+            title={isLoading ? 'Buscando...' : 'Buscar perfil'}
             subtitle='Ingresa el correo electrónico del perfil'
             okClearButton
-            okButton={{
-                onClick: handleSearch,
-                label: isLoading? 'Buscando...': 'Buscar',
+            okButton={isLoading ? null : {
+                onClick: onClose,
+                label: 'Cerrar',
             }}
         >
             <div>
                 <TextInput placeholder='Email' onChange={setQuery} value={query}/>
-                {users?.length && users !== null && (
+                {users?.length && users !== null ? (
                     <>
                         <p>Resultados</p>
                         <div className='overflow-auto max-h-60 h-auto'>
@@ -73,7 +78,7 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
                             })}
                         </div>
                     </>
-                )}
+                ) : null}
 
                 {(users !== null && !users?.length && query) && <h5>Usuario no encontrado</h5>}
             </div>
