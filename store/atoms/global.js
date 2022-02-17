@@ -5,4 +5,15 @@ export const SideNavCollapsed = atom({
     default: false
 })
 
+export const ParticipantsMarkers = atom({
+    key: 'ParticipantsMarkers',
+    default: [
+        // {latitude: 25.3008901, longitude: -100.1431214},
+        // {latitude: 25.3009902, longitude: -100.1431213},
+        // {latitude: 25.3003903, longitude: -100.1431212},
+        // {latitude: 25.3006904, longitude: -100.1431214},
+        // {latitude: 25.3001905, longitude: -100.1431215},
+    ]
+})
+
 

@@ -17,7 +17,7 @@
 
   .left-sidebar-1 {
     .logo {
-      @apply uppercase font-bold text-base tracking-wider flex flex-row items-center justify-start h-16 w-full whitespace-nowrap pl-4;
+      @apply uppercase font-bold text-base tracking-wider flex flex-row items-center justify-start h-24 w-full whitespace-nowrap pl-4;
       max-width: calc(theme('spacing.1') * 64);
       @apply text-blue-500;
       span {

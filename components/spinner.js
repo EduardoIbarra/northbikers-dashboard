@@ -1,10 +1,9 @@
 import React from "react";
+import {AiOutlineLoading3Quarters} from "react-icons/ai";
 
-const Spinner = () => (
+const Spinner = ({size = 32}) => (
     <div className="flex justify-center items-center">
-        <div
-            className="animate-spin rounded-full h-32 w-32 border-b-4 border-gray-900"
-        />
+        <AiOutlineLoading3Quarters size={size}  className="animate-spin"/>
     </div>
 )
 
