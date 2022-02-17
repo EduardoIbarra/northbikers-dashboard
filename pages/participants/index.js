@@ -4,8 +4,8 @@ import ParticipantsMap from "./map";
 import ParticipantsList from "./list";
 import {getSupabase} from "../../utils/supabase";
 import {useCallback, useEffect, useState} from "react";
-import {useSetRecoilState} from "recoil";
-import {ParticipantsMarkers} from "../../store/atoms/global";
+import {useRecoilValue, useSetRecoilState} from "recoil";
+import {CurrentRoute, ParticipantsMarkers} from "../../store/atoms/global";
 import AddParticipantModal from "../../components/modals/add-participant";
 
 const ParticipantsPage = () => {
@@ -14,9 +14,10 @@ const ParticipantsPage = () => {
     const [isLoading, setLoading] = useState(true);
     const [data, setData] = useState([]);
     const setMarkers = useSetRecoilState(ParticipantsMarkers);
-
+    const currentRoute = useRecoilValue(CurrentRoute);
 
     const getData = useCallback(async () => {
+        if (!currentRoute.id) return;
         setLoading(true)
         try {
             const {data} = await supabase.from("event_profile").select(`
@@ -24,6 +25,7 @@ const ParticipantsPage = () => {
                    profile: profile_id (*),
                    route: route_id (*)
                   `)
+                .eq('route_id', currentRoute.id)
             console.log({data});
 
             if (data) {
@@ -35,7 +37,7 @@ const ParticipantsPage = () => {
             setData(null)
         }
         setLoading(false)
-    }, [])
+    }, [currentRoute])
 
     const handleToggleModal = () => {
         setIsOpen(!isOpen)
@@ -43,7 +45,7 @@ const ParticipantsPage = () => {
 
     useEffect(() => {
         getData()
-    }, [getData, isOpen])
+    }, [getData, isOpen, currentRoute])
 
     return (
         <div>

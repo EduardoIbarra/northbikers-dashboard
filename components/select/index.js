@@ -6,12 +6,13 @@ export const Select = (
         items = [],
         size = 'w-full',
         hint = null,
-        onChange = () => {
-        },
+        onChange,
     }) => (
     <div className={`form-element  ${inline ? 'form-element-inline' : ''} ${size}`}>
         <div className="form-label">{label}</div>
-        <select className="form-select rounded ">
+        <select className="form-select rounded " onChange={(event) => {
+            onChange(items.find((i) => i.id == event.target.value))
+        }}>
             {placeholder && (
                 <option disabled>{placeholder}</option>
             )}
@@ -20,9 +21,6 @@ export const Select = (
                     <option
                         key={i.id}
                         value={i.id}
-                        onSelect={() => {
-                            onChange(i)
-                        }}
                     >{i.title}</option>
                 )
             })}

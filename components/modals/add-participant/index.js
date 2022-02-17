@@ -33,17 +33,23 @@ const AddParticipantModal = ({isOpen, onClose}) => {
         handleToggleModal()
     }
 
+
+    const clearData = () => {
+        setFormData({})
+        setSelectedUser({})
+    }
+
     const handleSave = async () => {
         setIsSaving(true)
         try {
             await supabase.from('event_profile').insert([{...formData, route_id: currentRoute.id}])
             onClose()
+            clearData()
         } catch (e) {
             console.log("ERROR SAVING", e);
         }
         setIsSaving(false)
     }
-
 
     return (
         <Modal
@@ -57,7 +63,10 @@ const AddParticipantModal = ({isOpen, onClose}) => {
                 label: isSaving ? 'Registrando..' : 'Registrar',
             }}
             cancelButton={isSaving ? null : {
-                onClick: () => onClose(),
+                onClick: () => {
+                    onClose()
+                    clearData()
+                },
                 label: 'Cancelar',
             }}
         >

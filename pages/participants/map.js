@@ -32,9 +32,13 @@ const ParticipantsMap = () => {
             if (latitude === 0) return;
             bounds.extend(new window.google.maps.LatLng(latitude, longitude));
         });
-        // map?.fitBounds(bounds);
-        // const zoom = map.getZoom();
-        // map.setZoom(zoom > 11 ? 12 : zoom);
+        map?.fitBounds(bounds);
+        const zoom = map.getZoom();
+        map.setZoom(zoom > 11 ? 12 : zoom);
+
+        if(!markers.length){
+            map.setCenter(center)
+        }
     };
 
     useEffect(() => {
