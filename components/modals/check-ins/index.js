@@ -3,7 +3,6 @@ import {useRecoilValue} from "recoil";
 import {useCallback, useEffect, useState} from "react";
 import {CurrentRoute} from "../../../store/atoms/global";
 import {getSupabase} from "../../../utils/supabase";
-import ParticipantsList from "../../../pages/participants/list";
 import Map from "../../map";
 import Spinner from "../../spinner";
 
@@ -13,6 +12,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
     const [checkins, setCheckins] = useState(null);
     const [isLoading, setLoading] = useState(false);
     const [markers, setMarkers] = useState([]);
+    const [selectedCheckIn, setSelectedCheckIn] = useState(null);
 
     const getCheckpoints = useCallback(async () => {
         setLoading(true)
@@ -41,22 +41,24 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
 
         if (!isOpen) {
             setCheckins(null)
+            setMarkers([])
             setCheckins(setLoading(false))
         }
     }, [isOpen, profile])
 
 
     const handleItemClick = (item) => {
+        setSelectedCheckIn(item.id)
         setMarkers([
-            {latitude: item.lat,longitude: item.lng},
-            {latitude: item.checkpoint.lat,longitude: item.checkpoint.lng},
+            {latitude: item.lat, longitude: item.lng, icon: '/check-in.png'},
+            {latitude: item.checkpoint.lat, longitude: item.checkpoint.lng, icon: '/pin.png'},
         ])
     }
 
 
     const renderContent = () => {
 
-        if(isLoading){
+        if (isLoading) {
             return (
                 <div className="mt-4">
                     <Spinner size={50}/>
@@ -64,11 +66,11 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
             )
         }
 
-        if(!isLoading && checkins?.length ){
+        if (!isLoading && checkins?.length) {
             return (
                 checkins?.map((c) => {
                     return (
-                        <div key={c.id} className='p-2 bordered hover:bg-gray-100 cursor-pointer flex items-center' onClick={()=> handleItemClick(c)}>
+                        <div key={c.id} className={`p-2 bordered hover:bg-gray-100 cursor-pointer flex items-center ${selectedCheckIn === c.id ? 'bg-gray-100' : ''}`} onClick={() => handleItemClick(c)}>
                             <img src={c.checkpoint.picture} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>
                             <div>
                                 <b>{c.checkpoint.name}</b>
@@ -81,7 +83,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
             )
         }
 
-        if(!isLoading && !checkins?.length ){
+        if (!isLoading && !checkins?.length) {
             return (
                 <div className="mt-4">
                     <div className="mt-10 p-10 text-center">
@@ -100,7 +102,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
             isOpen={isOpen}
             onClose={onClose}
             size='4xl'
-            title={isLoading ? 'Cargando checkins' : `Check-ins ${profile?.name ?  'de ' + profile.name: 'del participante'}` }
+            title={isLoading ? 'Cargando checkins' : `Check-ins ${profile?.name ? 'de ' + profile.name : 'del participante'}`}
             subtitle={'Selecciona un check-in para verlo en el mapa'}
             okClearButton
             okButton={{

@@ -2,6 +2,8 @@ import React, {useEffect, useState, useCallback} from 'react';
 import {GoogleMap, LoadScript, Marker} from '@react-google-maps/api';
 import {useRecoilValue} from "recoil";
 import {ParticipantsMarkers} from "../../store/atoms/global";
+import {BsFillPinMapFill} from "react-icons/bs";
+import {shape} from "prop-types";
 
 const DEFAULT_CENTER = {
     lat: 25.6487281,
@@ -46,11 +48,12 @@ const Map = ({markers = [], center = DEFAULT_CENTER, width = '40%', height = '10
             onLoad={onLoad}
             zoom={11}
         >
-            {markers.map((m) => {
+            {markers.map((m, idx) => {
                 return m.latitude === 0 ? null : (
                     <Marker
-                        key={m.id}
+                        key={idx}
                         position={{lat: m.latitude, lng: m.longitude}}
+                        {...m}
                     />
                 )
             })}
