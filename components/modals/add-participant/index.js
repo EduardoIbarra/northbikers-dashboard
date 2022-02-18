@@ -78,7 +78,7 @@ const AddParticipantModal = ({isOpen, onClose}) => {
                 <br/>
                 <div className='flex flex-row space-around gap-2 items-center'>
                     <TextInput label={'Buscar Perfil'} disabled value={selectedUser?.name}/>
-                    <Button className='h-[36px] mt-2.5' onClick={handleToggleModal}>
+                    <Button className='h-[36px] mt-2.5' color='black' onClick={handleToggleModal}>
                         <AiOutlineSearch size={15}/>
                     </Button>
                 </div>

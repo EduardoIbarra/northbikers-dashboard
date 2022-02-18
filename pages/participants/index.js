@@ -1,12 +1,12 @@
 import SectionTitle from "../../components/section-title";
 import Widget from "../../components/widget";
-import ParticipantsMap from "./map";
 import ParticipantsList from "./list";
 import {getSupabase} from "../../utils/supabase";
 import {useCallback, useEffect, useState} from "react";
 import {useRecoilValue, useSetRecoilState} from "recoil";
 import {CurrentRoute, ParticipantsMarkers} from "../../store/atoms/global";
 import AddParticipantModal from "../../components/modals/add-participant";
+import Map from "../../components/map";
 
 const ParticipantsPage = () => {
     const supabase = getSupabase();
@@ -15,6 +15,7 @@ const ParticipantsPage = () => {
     const [data, setData] = useState([]);
     const setMarkers = useSetRecoilState(ParticipantsMarkers);
     const currentRoute = useRecoilValue(CurrentRoute);
+    const markers = useRecoilValue(ParticipantsMarkers)
 
     const getData = useCallback(async () => {
         if (!currentRoute.id) return;
@@ -53,7 +54,7 @@ const ParticipantsPage = () => {
             <Widget>
                 <div className='flex h-vp-70'>
                     <ParticipantsList isLoading={isLoading} data={data}/>
-                    <ParticipantsMap/>
+                    <Map markers={markers}/>
                 </div>
             </Widget>
             <AddParticipantModal isOpen={isOpen} onClose={handleToggleModal}/>

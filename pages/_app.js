@@ -24,6 +24,7 @@ import '../css/components/tabs.scss'
 import '../css/components/user-widgets/widget-2.scss'
 import '../css/components/user-widgets/widget-4.scss'
 import {RecoilRoot} from "recoil";
+import {LoadScript} from "@react-google-maps/api";
 
 Router.events.on('routeChangeStart', () => NProgress.start())
 Router.events.on('routeChangeComplete', () => NProgress.done())
@@ -41,7 +42,11 @@ export default function App({Component, pageProps}) {
             </Head>
             <RecoilRoot>
                 <Layout>
-                    <Component {...pageProps} />
+                    <LoadScript
+                        googleMapsApiKey="AIzaSyDinWw03ObW9w4RzpIposc_qTLNI9dCGcQ"
+                    >
+                        <Component {...pageProps} />
+                    </LoadScript>
                 </Layout>
             </RecoilRoot>
         </>
