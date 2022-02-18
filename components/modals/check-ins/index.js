@@ -80,13 +80,13 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                     return (
                         <div key={c.id} className={`relative p-2 bordered hover:bg-gray-100 cursor-pointer flex items-center ${selectedCheckIn?.id === c.id ? 'bg-gray-100' : ''}`} onClick={() => handleItemClick(c)}>
                             <img src={c.checkpoint.picture} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>
-                            <div>
+                            <div className='pr-8'>
                                 <b>{c.checkpoint.name}</b>
                                 <p>{c.checkpoint.description}</p>
                                 <p>{c.points ?? 0} pts.</p>
                             </div>
 
-                            {c.is_valid ? (
+                            {c?.is_valid ? (
                                 <AiFillCheckCircle className={'absolute right-4 text-green-600'} size={20}/>
                             ) : (
                                 <AiFillCloseCircle className={'absolute right-4 text-red-600'} size={20}/>
