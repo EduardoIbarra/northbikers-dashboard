@@ -5,6 +5,8 @@ import {CurrentRoute} from "../../../store/atoms/global";
 import {getSupabase} from "../../../utils/supabase";
 import Map from "../../map";
 import Spinner from "../../spinner";
+import CheckInImage from "./check-in-image";
+import {AiFillCheckCircle, AiFillCloseCircle} from "react-icons/ai";
 
 const CheckInsModal = ({isOpen, onClose, profile}) => {
     const currentRoute = useRecoilValue(CurrentRoute);
@@ -27,6 +29,11 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                 .eq('profile_id', profile?.id)
 
             setCheckins(data)
+            data.forEach((d) => {
+                if (d.id === selectedCheckIn?.id) {
+                    setSelectedCheckIn(d)
+                }
+            })
             console.log(data);
         } catch (e) {
             console.log("Error", e);
@@ -48,7 +55,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
 
 
     const handleItemClick = (item) => {
-        setSelectedCheckIn(item.id)
+        setSelectedCheckIn(item)
         setMarkers([
             {latitude: item.lat, longitude: item.lng, icon: '/check-in.png'},
             {latitude: item.checkpoint.lat, longitude: item.checkpoint.lng, icon: '/pin.png'},
@@ -58,7 +65,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
 
     const renderContent = () => {
 
-        if (isLoading) {
+        if (isLoading && !checkins?.length) {
             return (
                 <div className="mt-4">
                     <Spinner size={50}/>
@@ -66,17 +73,23 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
             )
         }
 
-        if (!isLoading && checkins?.length) {
+        if (checkins?.length) {
             return (
-                checkins?.map((c) => {
+                checkins?.map((c, idx) => {
                     return (
-                        <div key={c.id} className={`p-2 bordered hover:bg-gray-100 cursor-pointer flex items-center ${selectedCheckIn === c.id ? 'bg-gray-100' : ''}`} onClick={() => handleItemClick(c)}>
+                        <div key={c.id} className={`relative p-2 bordered hover:bg-gray-100 cursor-pointer flex items-center ${selectedCheckIn?.id === c.id ? 'bg-gray-100' : ''}`} onClick={() => handleItemClick(c)}>
                             <img src={c.checkpoint.picture} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>
                             <div>
                                 <b>{c.checkpoint.name}</b>
                                 <p>{c.checkpoint.description}</p>
                                 <p>{c.points ?? 0} pts.</p>
                             </div>
+
+                            {c.is_valid ? (
+                                <AiFillCheckCircle className={'absolute right-4 text-green-600'} size={20}/>
+                            ) : (
+                                <AiFillCloseCircle className={'absolute right-4 text-red-600'} size={20}/>
+                            )}
                         </div>
                     )
                 })
@@ -96,12 +109,11 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
         return null
     }
 
-
     return (
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            size='4xl'
+            size='7xl'
             title={isLoading ? 'Cargando checkins' : `Check-ins ${profile?.name ? 'de ' + profile.name : 'del participante'}`}
             subtitle={'Selecciona un check-in para verlo en el mapa'}
             okClearButton
@@ -114,8 +126,9 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                 <div className='w-3/5   overflow-auto'>
                     {renderContent()}
                 </div>
-                <div className='w-full'>
-                    <Map width='100%' markers={markers}/>
+                <div className='w-full overflow-auto'>
+                    <Map width='100%' height='50%' markers={markers}/>
+                    <CheckInImage checkIn={selectedCheckIn} onSuccess={getCheckpoints}/>
                 </div>
             </div>
         </Modal>
