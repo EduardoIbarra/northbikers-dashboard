@@ -27,6 +27,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                 `)
                 .eq('route_id', currentRoute.id)
                 .eq('profile_id', profile?.id)
+                .order('id', { ascending: false })
 
             setCheckins(data)
             data.forEach((d) => {
