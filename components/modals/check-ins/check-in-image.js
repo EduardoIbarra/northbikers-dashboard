@@ -34,13 +34,13 @@ const CheckInImage = ({checkIn, onSuccess}) => {
     }
 
 
+    const imgSource = `https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/${checkIn?.picture}`
     return (
         <div>
             {checkIn?.picture && (
-                <div className='my-2 rounded'>
-                    <img className='w-full' src={`https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/${checkIn?.picture}`}/>
-                    <br/>
-                    <Button onClick={toggleModal} color={checkIn?.is_valid ? 'red' : 'blue'}>{checkIn?.is_valid ? 'invalidar' : 'validar'}</Button>
+                <div className='rounded'>
+                    <Button onClick={toggleModal} className='w-full mx-1 mb-1' color={checkIn?.is_valid ? 'red' : 'blue'}>{checkIn?.is_valid ? 'invalidar' : 'validar'}</Button>
+                    <img className='w-full cursor-pointer' src={imgSource} onClick={()=> window.open(imgSource, '_blank')}/>
                 </div>
             )}
 

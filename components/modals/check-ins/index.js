@@ -7,6 +7,7 @@ import Map from "../../map";
 import Spinner from "../../spinner";
 import CheckInImage from "./check-in-image";
 import {AiFillCheckCircle, AiFillCloseCircle} from "react-icons/ai";
+import Button from "../../button";
 
 const CheckInsModal = ({isOpen, onClose, profile}) => {
     const currentRoute = useRecoilValue(CurrentRoute);
@@ -27,15 +28,11 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                 `)
                 .eq('route_id', currentRoute.id)
                 .eq('profile_id', profile?.id)
-                .order('id', { ascending: false })
+                .order('id', {ascending: false})
 
             setCheckins(data)
-            data.forEach((d) => {
-                if (d.id === selectedCheckIn?.id) {
-                    setSelectedCheckIn(d)
-                }
-            })
-            console.log(data);
+            const defaultCheckin = data.find((d) => d.id === selectedCheckIn?.id)
+            setSelectedCheckIn(defaultCheckin ?? data[0]);
         } catch (e) {
             console.log("Error", e);
             setCheckins([])
@@ -114,7 +111,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
         <Modal
             isOpen={isOpen}
             onClose={onClose}
-            size='7xl'
+            size='w-full'
             title={isLoading ? 'Cargando checkins' : `Check-ins ${profile?.name ? 'de ' + profile.name : 'del participante'}`}
             subtitle={'Selecciona un check-in para verlo en el mapa'}
             okClearButton
@@ -123,12 +120,14 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                 label: 'Cerrar',
             }}
         >
-            <div className='flex h-vp-70'>
-                <div className='w-3/5   overflow-auto'>
+            <div className='flex h-vp-60'>
+                <div className='w-4/12   overflow-auto'>
                     {renderContent()}
                 </div>
-                <div className='w-full overflow-auto'>
-                    <Map width='100%' height='50%' markers={markers}/>
+                <div className='w-4/12  overflow-auto'>
+                    <Map width='100%' markers={markers}/>
+                </div>
+                <div className='w-4/12  overflow-auto'>
                     <CheckInImage checkIn={selectedCheckIn} onSuccess={getCheckpoints}/>
                 </div>
             </div>
