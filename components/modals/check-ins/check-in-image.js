@@ -16,15 +16,14 @@ const CheckInImage = ({checkIn, onSuccess}) => {
             const {data, error} = await supabase
                 .from('check_ins')
                 .update({
-                    is_valid: !checkIn?.is_valid,
-                    points: checkIn?.is_valid ? (checkIn.points - checkIn?.checkpoint.points) : (checkIn.points + checkIn?.checkpoint.points)
+                    is_valid: !checkIn?.is_valid
                 })
                 .match({id: checkIn.id})
+            onSuccess()
             console.log(data);
         } catch (e) {
             console.log("Error", e);
         }
-        onSuccess()
         setOpen(false)
         setIsSaving(false)
     }
@@ -40,7 +39,7 @@ const CheckInImage = ({checkIn, onSuccess}) => {
             {checkIn?.picture && (
                 <div className='rounded'>
                     <Button onClick={toggleModal} className='w-full mx-1 mb-1' color={checkIn?.is_valid ? 'red' : 'blue'}>{checkIn?.is_valid ? 'invalidar' : 'validar'}</Button>
-                    <img className='w-full cursor-pointer' src={imgSource} onClick={()=> window.open(imgSource, '_blank')}/>
+                    <img className='w-full cursor-pointer' src={imgSource} onClick={() => window.open(imgSource, '_blank')}/>
                 </div>
             )}
 

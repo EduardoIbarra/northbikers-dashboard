@@ -53,7 +53,7 @@ const ParticipantsPage = () => {
             <SectionTitle title="Detalles" subtitle="Participantes" buttonTitle={'Nuevo participante'} onClick={handleToggleModal}/>
             <Widget>
                 <div className='flex h-vp-70'>
-                    <ParticipantsList isLoading={isLoading} data={data}/>
+                    <ParticipantsList isLoading={isLoading} data={data} onReload={getData}/>
                     <Map markers={markers}/>
                 </div>
             </Widget>

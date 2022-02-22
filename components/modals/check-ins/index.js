@@ -16,6 +16,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
     const [isLoading, setLoading] = useState(false);
     const [markers, setMarkers] = useState([]);
     const [selectedCheckIn, setSelectedCheckIn] = useState(null);
+    const [dataHasChanged, seChangedData] = useState(false);
 
     const getCheckpoints = useCallback(async () => {
         setLoading(true)
@@ -47,7 +48,8 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
         if (!isOpen) {
             setCheckins(null)
             setMarkers([])
-            setCheckins(setLoading(false))
+            setLoading(false)
+            seChangedData(false)
         }
     }, [isOpen, profile])
 
@@ -58,6 +60,11 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
             {latitude: item.lat, longitude: item.lng, icon: '/check-in.png'},
             {latitude: item.checkpoint.lat, longitude: item.checkpoint.lng, icon: '/pin.png'},
         ])
+    }
+
+    const handleSuccess = () => {
+        seChangedData(true)
+        getCheckpoints()
     }
 
 
@@ -110,13 +117,13 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
     return (
         <Modal
             isOpen={isOpen}
-            onClose={onClose}
+            onClose={() => onClose(dataHasChanged)}
             size='w-full'
             title={isLoading ? 'Cargando checkins' : `Check-ins ${profile?.name ? 'de ' + profile.name : 'del participante'}`}
             subtitle={'Selecciona un check-in para verlo en el mapa'}
             okClearButton
             okButton={{
-                onClick: onClose,
+                onClick: () => onClose(dataHasChanged),
                 label: 'Cerrar',
             }}
         >
@@ -128,7 +135,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                     <Map width='100%' markers={markers}/>
                 </div>
                 <div className='w-4/12  overflow-auto'>
-                    <CheckInImage checkIn={selectedCheckIn} onSuccess={getCheckpoints}/>
+                    <CheckInImage checkIn={selectedCheckIn} onSuccess={handleSuccess}/>
                 </div>
             </div>
         </Modal>

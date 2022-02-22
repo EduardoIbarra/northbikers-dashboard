@@ -2,15 +2,16 @@ import {memo, useState} from "react";
 import Spinner from "../../components/spinner";
 import CheckInsModal from "../../components/modals/check-ins";
 
-const ParticipantsList = ({isLoading, data}) => {
+const ParticipantsList = ({isLoading, data, onReload}) => {
     const [selectedUser, setSelectedUser] = useState(null);
 
-    const TableItem = memo(({profile, participant_number, category, route: {title}}) => {
+    const TableItem = memo(({profile, participant_number, category, points,  route: {title}}) => {
         const  {name, email} = profile;
         return (
             <tr onClick={() => setSelectedUser(profile)} className='cursor-pointer hover:bg-gray-100 rounded'>
                 <td>{name}</td>
                 <td>{email}</td>
+                <td>{points ?? 0}</td>
                 <td>{participant_number}</td>
                 <td>{title}</td>
                 <td>{category}</td>
@@ -21,13 +22,15 @@ const ParticipantsList = ({isLoading, data}) => {
     const fields = [
         {name: 'Participante'},
         {name: 'Email'},
+        {name: 'Puntos'},
         {name: 'Número'},
         {name: 'Ruta'},
         {name: 'Categoria'},
     ]
 
-    const handleToggleModal = () => {
+    const handleToggleModal = (shouldUpdateListOnDismiss) => {
         setSelectedUser(null)
+        if(shouldUpdateListOnDismiss) onReload()
     }
 
     return (
