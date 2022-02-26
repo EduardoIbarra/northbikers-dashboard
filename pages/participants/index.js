@@ -17,9 +17,16 @@ const ParticipantsPage = () => {
     const currentRoute = useRecoilValue(CurrentRoute);
     const markers = useRecoilValue(ParticipantsMarkers)
 
-    const getData = useCallback(async () => {
+    let interval = null
+
+    const handleStopPolling = () => {
+        clearInterval(interval)
+    }
+
+    const getData = useCallback(async (showLoading) => {
         if (!currentRoute.id) return;
-        setLoading(true)
+        setLoading(showLoading)
+
         try {
             const {data} = await supabase.from("event_profile").select(`
                   *,
@@ -40,12 +47,26 @@ const ParticipantsPage = () => {
         setLoading(false)
     }, [currentRoute])
 
+    const handlePolling = () => {
+        interval = setInterval(()=>getData(false), 10000)
+    }
+
+
     const handleToggleModal = () => {
         setIsOpen(!isOpen)
     }
 
     useEffect(() => {
-        getData()
+        handlePolling()
+
+        return ()=>{
+            handleStopPolling();
+        }
+    }, [currentRoute])
+
+
+    useEffect(() => {
+        getData(true)
     }, [getData, isOpen, currentRoute])
 
     return (
