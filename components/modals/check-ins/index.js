@@ -87,7 +87,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                             <div className='pr-8'>
                                 <b>{c.checkpoint.name}</b>
                                 <p>{c.checkpoint.description}</p>
-                                <p>{c.points ?? 0} pts.</p>
+                                <p>{c.points ?? 0} pts. | A {c.distance.toFixed(2)}km de Distancia</p>
                             </div>
 
                             {c?.is_valid ? (
