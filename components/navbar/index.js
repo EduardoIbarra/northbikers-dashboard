@@ -1,16 +1,27 @@
-import {FiSettings, FiMenu} from 'react-icons/fi'
+import {FiLogOut, FiMenu} from 'react-icons/fi'
 import {useRecoilState, useSetRecoilState} from "recoil";
 import {CurrentRoute, Routes, SideNavCollapsed} from "../../store/atoms/global";
 import Select from "../select";
 import {getSupabase} from "../../utils/supabase";
 import {useCallback, useEffect} from "react";
+import {setLoggedUser} from "../../utils";
+import {useRouter} from "next/router";
 
 const Navbar = () => {
     const [isOpen, setOpen] = useRecoilState(SideNavCollapsed);
     const [routes, setRoutes] = useRecoilState(Routes);
     const setCurrentRoute = useSetRecoilState(CurrentRoute);
-
+    const router = useRouter()
     const supabase = getSupabase();
+
+
+    const logout = ()=> {
+        return supabase.auth.signOut().then(() => {
+            setLoggedUser('')
+            router.push('/login')
+        });
+    }
+
 
     const getRoutes = useCallback(async () => {
         try {
@@ -44,8 +55,9 @@ const Navbar = () => {
 
                 <span className="ml-auto"/>
                 <button
+                    onClick={logout}
                     className="btn-transparent flex items-center justify-center h-16 w-8 mx-4">
-                    <FiSettings size={18} />
+                    <FiLogOut size={18} />
                 </button>
             </div>
         </div>

@@ -11,7 +11,7 @@ const Layouts = ({children}) => {
   }
   if (
     [
-      '/login-1',
+      '/login',
       '/contact-us-1',
       '/create-account',
       '/email-confirmation',
