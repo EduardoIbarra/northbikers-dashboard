@@ -2,7 +2,7 @@ import {memo, useState} from "react";
 import Spinner from "../../components/spinner";
 import CheckInsModal from "../../components/modals/check-ins";
 
-const ParticipantsList = ({isLoading, data, onReload}) => {
+const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
     const [selectedUser, setSelectedUser] = useState(null);
 
     const TableItem = memo(({profile, participant_number, category, points,  route: {title}}) => {
@@ -55,7 +55,7 @@ const ParticipantsList = ({isLoading, data, onReload}) => {
 
             {!data?.length && !isLoading && (
                 <div className="mt-10 p-10 text-center">
-                    <h6>No se encontraron usuarios registrados en esta ruta</h6>
+                    <h6>{isFiltered ? 'No se han encontrado resultados con la búsqueda':'No se encontraron usuarios registrados en esta ruta'}</h6>
                 </div>
             )}
 
