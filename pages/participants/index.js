@@ -3,8 +3,8 @@ import Widget from "../../components/widget";
 import ParticipantsList from "./list";
 import {getSupabase} from "../../utils/supabase";
 import {useCallback, useEffect, useState} from "react";
-import {useRecoilValue, useSetRecoilState} from "recoil";
-import {CurrentRoute, ParticipantsMarkers} from "../../store/atoms/global";
+import {useRecoilValue} from "recoil";
+import {CurrentRoute} from "../../store/atoms/global";
 import AddParticipantModal from "../../components/modals/add-participant";
 import Map from "../../components/map";
 import TextInput from "../../components/input";
@@ -15,10 +15,7 @@ const ParticipantsPage = () => {
     const [isLoading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [data, setData] = useState([]);
-    const setMarkers = useSetRecoilState(ParticipantsMarkers);
     const currentRoute = useRecoilValue(CurrentRoute);
-    const markers = useRecoilValue(ParticipantsMarkers)
-
 
     let interval = null
 
@@ -41,8 +38,7 @@ const ParticipantsPage = () => {
             console.log({data});
 
             if (data) {
-                setData(data)
-                setMarkers(data.map((i) => ({latitude: i.current_lat, longitude: i.current_lng, id: i.id})))
+                setData(data.map((d, idx)=>({...d, position: idx+1})))
             }
         } catch (e) {
             console.log("Error", e);
@@ -83,6 +79,13 @@ const ParticipantsPage = () => {
     }
 
 
+    const getMarkers = () => {
+        if (!searchQuery) return data.map((i, idx) => ({latitude: i.current_lat, longitude: i.current_lng, id: i.id, text: idx+1}));
+        const newData = getFilteredData();
+        return newData.map((i) => ({latitude: i.current_lat, longitude: i.current_lng, id: i.id, text: i.position}));
+    }
+
+
     useEffect(() => {
         getData(true)
     }, [getData, isOpen, currentRoute])
@@ -96,7 +99,7 @@ const ParticipantsPage = () => {
             <Widget>
                 <div className='flex h-vp-70'>
                     <ParticipantsList isLoading={isLoading} data={getFilteredData()} onReload={getData} isFiltered={!!searchQuery}/>
-                    <Map markers={markers}/>
+                    <Map markers={getMarkers()}/>
                 </div>
             </Widget>
             <AddParticipantModal isOpen={isOpen} onClose={handleToggleModal}/>

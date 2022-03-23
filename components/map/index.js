@@ -53,6 +53,7 @@ const Map = ({markers = [], center = DEFAULT_CENTER, width = '40%', height = '10
                     <Marker
                         key={idx}
                         position={{lat: m.latitude, lng: m.longitude}}
+                        label={m.text ? {color: '#000000', fontWeight: 'bold', fontSize: '16px', text: `${m.text}`} : null}
                         {...m}
                     />
                 )
