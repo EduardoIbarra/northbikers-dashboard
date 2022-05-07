@@ -2,13 +2,14 @@ import {memo, useState} from "react";
 import Spinner from "../../components/spinner";
 import CheckInsModal from "../../components/modals/check-ins";
 
-const ParticipantsList = ({isLoading, data, onReload}) => {
+const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
     const [selectedUser, setSelectedUser] = useState(null);
 
-    const TableItem = memo(({profile, participant_number, category, points,  route: {title}}) => {
+    const TableItem = memo(({profile, participant_number,position,  category, points,  route: {title}}) => {
         const  {name, email} = profile;
         return (
             <tr onClick={() => setSelectedUser(profile)} className='cursor-pointer hover:bg-gray-100 rounded'>
+                <td>{position}</td>
                 <td>{name}</td>
                 <td>{email}</td>
                 <td>{points ?? 0}</td>
@@ -20,12 +21,13 @@ const ParticipantsList = ({isLoading, data, onReload}) => {
     })
 
     const fields = [
+        {name: 'Posición'},
         {name: 'Participante'},
         {name: 'Email'},
         {name: 'Puntos'},
         {name: 'Número'},
         {name: 'Ruta'},
-        {name: 'Categoria'},
+        {name: 'Categoría'},
     ]
 
     const handleToggleModal = (shouldUpdateListOnDismiss) => {
@@ -55,7 +57,7 @@ const ParticipantsList = ({isLoading, data, onReload}) => {
 
             {!data?.length && !isLoading && (
                 <div className="mt-10 p-10 text-center">
-                    <h6>No se encontraron usuarios registrados en esta ruta</h6>
+                    <h6>{isFiltered ? 'No se han encontrado resultados con la búsqueda':'No se encontraron usuarios registrados en esta ruta'}</h6>
                 </div>
             )}
 

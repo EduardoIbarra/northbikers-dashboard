@@ -1,8 +1,14 @@
-import {getSupabase} from "../utils/supabase";
-
+import {getLoggedUser} from "../utils";
+import {useRouter} from "next/router";
 
 const Home = () => {
-    const supabase = getSupabase();
+    const router = useRouter()
+    const loggedUser = getLoggedUser();
+
+    if(!loggedUser){
+        router.push('/login')
+        return null;
+    }
 
     return (
         <>
