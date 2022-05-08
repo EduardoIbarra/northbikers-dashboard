@@ -5,7 +5,7 @@ import CheckInsModal from "../../components/modals/check-ins";
 const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
     const [selectedUser, setSelectedUser] = useState(null);
 
-    const TableItem = memo(({profile, participant_number,position,  category, points,  route: {title}}) => {
+    const TableItem = memo(({profile, participant_number,position,  category, points,  route: {title}, gender}) => {
         const  {name, email} = profile;
         return (
             <tr onClick={() => setSelectedUser(profile)} className='cursor-pointer hover:bg-gray-100 rounded'>
@@ -16,6 +16,7 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
                 <td>{participant_number}</td>
                 <td>{title}</td>
                 <td>{category}</td>
+                <td>{gender}</td>
             </tr>
         )
     })
@@ -28,6 +29,7 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
         {name: 'Número'},
         {name: 'Ruta'},
         {name: 'Categoría'},
+        {name: 'Género'},
     ]
 
     const handleToggleModal = (shouldUpdateListOnDismiss) => {
