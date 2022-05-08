@@ -1,5 +1,6 @@
 import Modal from "../modal";
 import TextInput from "../../input";
+import Select from "../../select";
 import {useRecoilValue} from "recoil";
 
 import {useState} from "react";
@@ -11,6 +12,15 @@ import {getSupabase} from "../../../utils/supabase";
 
 const AddParticipantModal = ({isOpen, onClose}) => {
     const supabase = getSupabase();
+    const categories = [
+        {id: 'DUAL_SOPORT', title: 'Doble Propósito'}, 
+        {id: 'DIRT', title: 'Terracería'}, 
+        {id: 'STREET', title: 'Calle'},
+    ];
+    const genders = [
+        {id: 'MALE', title: 'Hombre'}, 
+        {id: 'FEMALE', title: 'Mujer'},
+    ];
     const [isSearchModalOpen, setIsOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
@@ -88,7 +98,12 @@ const AddParticipantModal = ({isOpen, onClose}) => {
                 </div>
                 <TextInput label={'Puntos'} type='number' value={formData?.points} onChange={(e) => saveFormData('points', e)}/>
                 <TextInput label={'Número participante'} type='number' value={formData?.participant_number} onChange={(e) => saveFormData('participant_number', e)}/>
-                <TextInput label={'Categoría'} value={formData?.category} onChange={(e) => saveFormData('category', e)}/>
+                {/* <TextInput label={'Categoría'} value={formData?.category} onChange={(e) => saveFormData('category', e)}/> */}
+
+                <div className='flex flex-row space-around gap-2'>
+                    <Select label={'Categoría'} placeholder='Selecciona Categoría' items={categories} inline onChange={(e) => saveFormData('category', e.id)}/>
+                    <Select label={'Género'} placeholder='Selecciona Categoría' items={genders} inline onChange={(e) => saveFormData('gender', e.id)}/>
+                </div>
             </div>
             <SearchUserModal isOpen={isSearchModalOpen} onClose={handleToggleModal} onSelect={handleSelectUser}/>
         </Modal>
