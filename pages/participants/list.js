@@ -10,12 +10,12 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
         return (
             <tr onClick={() => setSelectedUser(profile)} className='cursor-pointer hover:bg-gray-100 rounded'>
                 <td>{position}</td>
-                <td>{name}</td>
-                <td>{email}</td>
                 <td>{points ?? 0}</td>
                 <td>{participant_number}</td>
-                <td>{title}</td>
+                <td>{name}</td>
                 <td>{category}</td>
+                <td>{email}</td>
+                <td>{title}</td>
                 <td>{gender}</td>
             </tr>
         )
@@ -23,12 +23,12 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
 
     const fields = [
         {name: 'Posición'},
-        {name: 'Participante'},
-        {name: 'Email'},
         {name: 'Puntos'},
         {name: 'Número'},
-        {name: 'Ruta'},
+        {name: 'Participante'},
         {name: 'Categoría'},
+        {name: 'Email'},
+        {name: 'Ruta'},
         {name: 'Género'},
     ]
 
