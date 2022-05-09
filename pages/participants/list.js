@@ -1,9 +1,14 @@
-import {memo, useState} from "react";
+import {memo, useCallback, useState} from "react";
 import Spinner from "../../components/spinner";
 import CheckInsModal from "../../components/modals/check-ins";
+import {CATEGORIES, GENDERS} from "../../utils";
 
 const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
     const [selectedUser, setSelectedUser] = useState(null);
+
+    const getSelectValue = useCallback((value, dict) => {
+        return dict.find(({id})=> value?.toLocaleLowerCase() === id?.toLocaleLowerCase())?.title ?? 'Sin definir'
+    }, [])
 
     const TableItem = memo(({profile, participant_number,position,  category, points,  route: {title}, gender}) => {
         const  {name, email} = profile;
@@ -13,10 +18,10 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
                 <td>{points ?? 0}</td>
                 <td>{participant_number}</td>
                 <td>{name}</td>
-                <td>{category}</td>
+                <td>{getSelectValue(category, CATEGORIES)}</td>
                 <td>{email}</td>
                 <td>{title}</td>
-                <td>{gender}</td>
+                <td>{getSelectValue(gender, GENDERS)}</td>
             </tr>
         )
     })
@@ -37,6 +42,7 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
         if(shouldUpdateListOnDismiss) onReload()
     }
 
+    console.log({data})
     return (
         <div className='w-3/5   overflow-auto'>
             {isLoading && <Spinner size={50}/>}

@@ -53,6 +53,7 @@ const ParticipantsPage = () => {
 
 
     const handleToggleModal = () => {
+        if(!isOpen) getData(false); //fetch current data when about to show modal to get latest
         setIsOpen(!isOpen)
     }
 
@@ -65,10 +66,15 @@ const ParticipantsPage = () => {
     }, [currentRoute])
 
 
+    const getCleanList = () => {
+        return data.filter(({profile})=> !!profile?.email )
+    }
+
+
     const getFilteredData = () => {
-        if (!searchQuery) return data;
+        if (!searchQuery) return getCleanList();
         const loweredQuery =searchQuery.toLocaleLowerCase();
-        return data.filter(({participant_number, points, profile: {name, email}}) => {
+        return getCleanList().filter(({participant_number, points, profile: {name, email}}) => {
             return (
                 participant_number?.toString()?.includes(loweredQuery) ||
                 points?.toString()?.includes(loweredQuery) ||
@@ -102,7 +108,7 @@ const ParticipantsPage = () => {
                     <Map markers={getMarkers()}/>
                 </div>
             </Widget>
-            <AddParticipantModal isOpen={isOpen} onClose={handleToggleModal}/>
+            <AddParticipantModal isOpen={isOpen} onClose={handleToggleModal} allList={getCleanList()}/>
         </div>
 
     )

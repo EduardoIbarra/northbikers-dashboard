@@ -7,7 +7,6 @@ import Map from "../../map";
 import Spinner from "../../spinner";
 import CheckInImage from "./check-in-image";
 import {AiFillCheckCircle, AiFillCloseCircle} from "react-icons/ai";
-import Button from "../../button";
 
 const CheckInsModal = ({isOpen, onClose, profile}) => {
     const currentRoute = useRecoilValue(CurrentRoute);
@@ -81,9 +80,11 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
         if (checkins?.length) {
             return (
                 checkins?.map((c, idx) => {
+                    const imgSource = `https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/${c?.checkpoint.picture}`
+
                     return (
                         <div key={c.id} className={`relative p-2 bordered hover:bg-gray-100 cursor-pointer flex items-center ${selectedCheckIn?.id === c.id ? 'bg-gray-100' : ''}`} onClick={() => handleItemClick(c)}>
-                            <img src={c.checkpoint.picture} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>
+                            <img src={c?.checkpoint?.picture?.includes('http') ? c?.checkpoint.picture : imgSource} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>
                             <div className='pr-8'>
                                 <b>{c.checkpoint.name}</b>
                                 <p>{c.checkpoint.description}</p>

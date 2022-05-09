@@ -9,19 +9,14 @@ import {AiOutlineSearch} from "react-icons/ai";
 import SearchUserModal from "./user-search";
 import {CurrentRoute} from "../../../store/atoms/global";
 import {getSupabase} from "../../../utils/supabase";
+import {CATEGORIES, GENDERS} from "../../../utils";
+import Alert from "../../alerts";
+import {FiAlertCircle} from "react-icons/fi";
 
-const AddParticipantModal = ({isOpen, onClose}) => {
+const AddParticipantModal = ({isOpen, onClose, allList = []}) => {
     const supabase = getSupabase();
-    const categories = [
-        {id: 'DUAL_SOPORT', title: 'Doble Propósito'}, 
-        {id: 'DIRT', title: 'Terracería'}, 
-        {id: 'STREET', title: 'Calle'},
-    ];
-    const genders = [
-        {id: 'MALE', title: 'Hombre'}, 
-        {id: 'FEMALE', title: 'Mujer'},
-    ];
     const [isSearchModalOpen, setIsOpen] = useState(false);
+    const [showAlert, setShowAlert] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         current_lng: 25.6487281,
@@ -31,6 +26,7 @@ const AddParticipantModal = ({isOpen, onClose}) => {
     const currentRoute = useRecoilValue(CurrentRoute);
 
     const saveFormData = (key, value) => {
+        setShowAlert(false)
         setFormData({
             ...formData,
             [key]: value
@@ -53,6 +49,10 @@ const AddParticipantModal = ({isOpen, onClose}) => {
     }
 
     const handleSave = async () => {
+        if(allList.some(({profile})=> profile.id === selectedUser.id)){
+            return setShowAlert(true)
+        }
+
         setIsSaving(true)
         try {
             await supabase.from('event_profile').insert([{...formData, route_id: currentRoute.id}])
@@ -86,6 +86,19 @@ const AddParticipantModal = ({isOpen, onClose}) => {
             <div>
                 <h6>Ruta: {currentRoute.title}</h6>
                 <br/>
+                {showAlert? (
+                    <>
+                        <Alert
+                            onClose={()=> setShowAlert(false)}
+                            size="sm"
+                            color="bg-red-500 text-white"
+                            icon={<FiAlertCircle className="mr-2 stroke-current h-4 w-4" />}>
+                            El usuario ya está registrado en el evento
+                        </Alert>
+                        <br/>
+                    </>
+
+                ): null}
                 <div className='flex flex-row space-around gap-2 items-center'>
                     <TextInput label={'Buscar Perfil'} disabled value={selectedUser?.name}/>
                     <Button className='h-[36px] mt-2.5' color='black' onClick={handleToggleModal}>
@@ -101,8 +114,8 @@ const AddParticipantModal = ({isOpen, onClose}) => {
                 {/* <TextInput label={'Categoría'} value={formData?.category} onChange={(e) => saveFormData('category', e)}/> */}
 
                 <div className='flex flex-row space-around gap-2'>
-                    <Select label={'Categoría'} placeholder='Selecciona Categoría' items={categories} inline onChange={(e) => saveFormData('category', e.id)}/>
-                    <Select label={'Género'} placeholder='Selecciona Categoría' items={genders} inline onChange={(e) => saveFormData('gender', e.id)}/>
+                    <Select label={'Categoría'} placeholder='Selecciona Categoría' items={CATEGORIES} inline onChange={(e) => saveFormData('category', e.id)}/>
+                    <Select label={'Género'} placeholder='Selecciona Categoría' items={GENDERS} inline onChange={(e) => saveFormData('gender', e.id)}/>
                 </div>
             </div>
             <SearchUserModal isOpen={isSearchModalOpen} onClose={handleToggleModal} onSelect={handleSelectUser}/>

@@ -1,9 +1,5 @@
-import React, {useEffect, useState, useCallback} from 'react';
-import {GoogleMap, LoadScript, Marker} from '@react-google-maps/api';
-import {useRecoilValue} from "recoil";
-import {ParticipantsMarkers} from "../../store/atoms/global";
-import {BsFillPinMapFill} from "react-icons/bs";
-import {shape} from "prop-types";
+import React, {useCallback, useEffect, useState} from 'react';
+import {GoogleMap, Marker} from '@react-google-maps/api';
 
 const DEFAULT_CENTER = {
     lat: 25.6487281,
@@ -20,11 +16,15 @@ const Map = ({markers = [], center = DEFAULT_CENTER, width = '40%', height = '10
         }
     )
 
+    const isValidMarker = (latitude, longitude) => {
+        return latitude && longitude && latitude !== 0 && longitude !== 0;
+    }
+
     const fitBounds = () => {
         if (!window.google?.maps) return;
         const bounds = new window.google.maps.LatLngBounds();
         markers.map(({latitude, longitude}, idx) => {
-            if (latitude === 0) return;
+            if (!isValidMarker(latitude,longitude)) return;
             bounds.extend(new window.google.maps.LatLng(latitude, longitude));
         });
         map?.fitBounds(bounds);
@@ -34,12 +34,15 @@ const Map = ({markers = [], center = DEFAULT_CENTER, width = '40%', height = '10
         if (!markers.length) {
             map?.setCenter(center)
         }
+
+        if(markers.every(({latitude, longitude}, idx) => !isValidMarker(latitude,longitude))){
+            map?.setCenter(DEFAULT_CENTER)
+        }
     };
 
     useEffect(() => {
         fitBounds()
     }, [markers]);
-
 
     return (
         <GoogleMap
@@ -49,14 +52,14 @@ const Map = ({markers = [], center = DEFAULT_CENTER, width = '40%', height = '10
             zoom={11}
         >
             {markers.map((m, idx) => {
-                return m.latitude === 0 ? null : (
+                return isValidMarker(m?.latitude, m?.longitude) ? (
                     <Marker
                         key={idx}
                         position={{lat: m.latitude, lng: m.longitude}}
                         label={m.text ? {color: '#000000', fontWeight: 'bold', fontSize: '16px', text: `${m.text}`} : null}
                         {...m}
                     />
-                )
+                ): null
             })}
         </GoogleMap>
     )
