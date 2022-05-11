@@ -2,18 +2,31 @@ import {memo, useCallback, useState} from "react";
 import Spinner from "../../components/spinner";
 import CheckInsModal from "../../components/modals/check-ins";
 import {CATEGORIES, GENDERS} from "../../utils";
+import Button from "../../components/button";
+import {AiFillEdit} from "react-icons/ai";
 
-const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
+const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit}) => {
     const [selectedUser, setSelectedUser] = useState(null);
 
     const getSelectValue = useCallback((value, dict) => {
-        return dict.find(({id})=> value?.toLocaleLowerCase() === id?.toLocaleLowerCase())?.title ?? 'Sin definir'
+        return dict.find(({id}) => value?.toLocaleLowerCase() === id?.toLocaleLowerCase())?.title ?? 'Sin definir'
     }, [])
 
-    const TableItem = memo(({profile, participant_number,position,  category, points,  route: {title}, gender}) => {
-        const  {name, email} = profile;
+    const TableItem = memo((row) => {
+        const {profile, participant_number, position, category, points, route: {title}, gender} = row;
+        const {name, email} = profile;
         return (
             <tr onClick={() => setSelectedUser(profile)} className='cursor-pointer hover:bg-gray-100 rounded'>
+                <td>
+                    <Button
+                        className=""
+                        onClick={(e) => {
+                            onEdit(row)
+                            e.stopPropagation();
+                            e.preventDefault();
+                        }}><AiFillEdit/>
+                    </Button>
+                </td>
                 <td>{position}</td>
                 <td>{points ?? 0}</td>
                 <td>{participant_number}</td>
@@ -27,6 +40,7 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
     })
 
     const fields = [
+        {name: 'Editar'},
         {name: 'Posición'},
         {name: 'Puntos'},
         {name: 'Número'},
@@ -39,7 +53,7 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
 
     const handleToggleModal = (shouldUpdateListOnDismiss) => {
         setSelectedUser(null)
-        if(shouldUpdateListOnDismiss) onReload()
+        if (shouldUpdateListOnDismiss) onReload()
     }
 
     console.log({data})
@@ -65,7 +79,7 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered}) => {
 
             {!data?.length && !isLoading && (
                 <div className="mt-10 p-10 text-center">
-                    <h6>{isFiltered ? 'No se han encontrado resultados con la búsqueda':'No se encontraron usuarios registrados en esta ruta'}</h6>
+                    <h6>{isFiltered ? 'No se han encontrado resultados con la búsqueda' : 'No se encontraron usuarios registrados en esta ruta'}</h6>
                 </div>
             )}
 

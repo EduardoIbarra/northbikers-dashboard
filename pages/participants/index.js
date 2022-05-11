@@ -16,6 +16,7 @@ const ParticipantsPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [data, setData] = useState([]);
     const currentRoute = useRecoilValue(CurrentRoute);
+    const [selectedUser, setSelectedUser] = useState(null);
 
     let interval = null
 
@@ -52,9 +53,10 @@ const ParticipantsPage = () => {
     }
 
 
-    const handleToggleModal = () => {
-        if(!isOpen) getData(false); //fetch current data when about to show modal to get latest
-        setIsOpen(!isOpen)
+    const handleClose = () => {
+        setIsOpen(false)
+        if(selectedUser) getData()
+        setSelectedUser(null)
     }
 
     useEffect(() => {
@@ -91,6 +93,9 @@ const ParticipantsPage = () => {
         return newData.map((i) => ({latitude: i.current_lat, longitude: i.current_lng, id: i.id, text: i.position}));
     }
 
+    const handleEdit = (u) => {
+        setSelectedUser(u)
+    }
 
     useEffect(() => {
         getData(true)
@@ -98,17 +103,20 @@ const ParticipantsPage = () => {
 
     return (
         <div>
-            <SectionTitle title="Detalles" subtitle="Participantes" buttonTitle={'Nuevo participante'} onClick={handleToggleModal}/>
+            <SectionTitle title="Detalles" subtitle="Participantes" buttonTitle={'Nuevo participante'} onClick={()=> {
+                getData(false);
+                setIsOpen(true)
+            }}/>
             <div className='w-5/12'>
                 <TextInput label={'Buscar...'} type='text' placeholder='Busca participantes' value={searchQuery} onChange={setSearchQuery}/>
             </div>
             <Widget>
                 <div className='flex h-vp-70'>
-                    <ParticipantsList isLoading={isLoading} data={getFilteredData()} onReload={getData} isFiltered={!!searchQuery}/>
+                    <ParticipantsList isLoading={isLoading} data={getFilteredData()} onReload={getData} isFiltered={!!searchQuery} onEdit={handleEdit}/>
                     <Map markers={getMarkers()}/>
                 </div>
             </Widget>
-            <AddParticipantModal isOpen={isOpen} onClose={handleToggleModal} allList={getCleanList()}/>
+            <AddParticipantModal isOpen={isOpen || !!selectedUser} onClose={handleClose} allList={getCleanList()} user={selectedUser}/>
         </div>
 
     )
