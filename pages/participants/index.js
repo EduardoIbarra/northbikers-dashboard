@@ -9,10 +9,13 @@ import AddParticipantModal from "../../components/modals/add-participant";
 import Map from "../../components/map";
 import TextInput from "../../components/input";
 import Select from "../../components/select";
-import {CATEGORIES, GENDERS} from "../../utils";
+import {CATEGORIES, GENDERS, getLoggedUser} from "../../utils";
 import {sort} from 'fast-sort';
+import {useRouter} from "next/router";
 
-const ParticipantsPage = () => {
+const ParticipantsPage = ({isPrivateView = true}) => {
+    const loggedUser = getLoggedUser();
+    const router = useRouter()
     const supabase = getSupabase();
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setLoading] = useState(true);
@@ -26,6 +29,12 @@ const ParticipantsPage = () => {
     const [order, setOrder] = useState('points');
 
     let interval = null
+
+
+    if(!loggedUser && isPrivateView){
+        router.push('/login')
+        return null;
+    }
 
     const handleStopPolling = () => {
         clearInterval(interval)
@@ -128,10 +137,16 @@ const ParticipantsPage = () => {
 
     return (
         <div>
-            <SectionTitle title="Detalles" subtitle="Participantes" buttonTitle={'Nuevo participante'} onClick={() => {
-                getData(false);
-                setIsOpen(true)
-            }}/>
+
+            {isPrivateView ? (
+                <SectionTitle title="Detalles" subtitle="Participantes" buttonTitle={'Nuevo participante'} onClick={() => {
+                    getData(false);
+                    setIsOpen(true)
+                }}/>
+            ) : (
+                <SectionTitle title="Detalles" subtitle="Participantes"/>
+            )}
+
             <div className='w-full mb-2 flex flex-row space-around gap-2 items-end'>
                 <div className='w-4/12'>
                     <TextInput label={'Buscar...'} type='text' placeholder='Busca participantes' value={searchQuery} onChange={setSearchQuery}/>
@@ -150,7 +165,7 @@ const ParticipantsPage = () => {
             </div>
             <Widget>
                 <div className='flex h-vp-70'>
-                    <ParticipantsList isLoading={isLoading} data={getFilteredData()} onReload={getData} isFiltered={!!searchQuery || !!category || !!gender} onEdit={handleEdit}/>
+                    <ParticipantsList isLoading={isLoading} data={getFilteredData()} onReload={getData} isFiltered={!!searchQuery || !!category || !!gender} onEdit={handleEdit} isPrivateView={isPrivateView}/>
                     <Map markers={getMarkers()}/>
                 </div>
             </Widget>

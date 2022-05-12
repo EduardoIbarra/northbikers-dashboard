@@ -5,7 +5,7 @@ import {CATEGORIES, GENDERS} from "../../utils";
 import Button from "../../components/button";
 import {AiFillEdit} from "react-icons/ai";
 
-const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit}) => {
+const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit, isPrivateView = true}) => {
     const [selectedUser, setSelectedUser] = useState(null);
 
     const getSelectValue = useCallback((value, dict) => {
@@ -16,17 +16,21 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit}) => {
         const {profile, participant_number, position, category, points, route: {title}, gender} = row;
         const {name, email} = profile;
         return (
-            <tr onClick={() => setSelectedUser(profile)} className='cursor-pointer hover:bg-gray-100 rounded'>
-                <td>
-                    <Button
-                        className=""
-                        onClick={(e) => {
-                            onEdit(row)
-                            e.stopPropagation();
-                            e.preventDefault();
-                        }}><AiFillEdit/>
-                    </Button>
-                </td>
+            <tr onClick={() => {
+                if (isPrivateView) setSelectedUser(profile)
+            }} className='cursor-pointer hover:bg-gray-100 rounded'>
+                {isPrivateView ? (
+                    <td>
+                        <Button
+                            className=""
+                            onClick={(e) => {
+                                onEdit(row)
+                                e.stopPropagation();
+                                e.preventDefault();
+                            }}><AiFillEdit/>
+                        </Button>
+                    </td>
+                ) : null}
                 <td>{position}</td>
                 <td>{points ?? 0}</td>
                 <td>{participant_number}</td>
@@ -40,7 +44,7 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit}) => {
     })
 
     const fields = [
-        {name: 'Editar'},
+        ...(isPrivateView ? [{name: 'Editar'}] : []),
         {name: 'Posición'},
         {name: 'Puntos'},
         {name: 'Número'},

@@ -6,7 +6,8 @@ import Layout from './layout'
 const Layouts = ({children}) => {
   const router = useRouter()
   let {pathname} = {...router}
-  if (['/404', '/500'].includes(pathname)) {
+    console.log({pathname});
+    if (['/404', '/500',].includes(pathname)) {
     return <Centered>{children}</Centered>
   }
   if (
@@ -26,7 +27,7 @@ const Layouts = ({children}) => {
   ) {
     return <Centered>{children}</Centered>
   } else if (
-    ['/landing', '/login-1', '/login-2', '/login-3'].includes(pathname)
+    ['/landing', '/login-1', '/login-2', '/login-3', '/view/[routeId]'].includes(pathname)
   ) {
     return <Empty>{children}</Empty>
   } else {
