@@ -9,9 +9,10 @@ export const TextInput = (
         onChange = () => {
         },
         placeholder = '',
-        hint
+        hint,
+        className = ''
     }) => (
-    <div className={`form-element w-full ${inline ? 'form-element-inline' : ''}`}>
+    <div className={`form-element w-full ${inline ? 'form-element-inline' : ''} ${className}`}>
         <div className="form-label">{label}</div>
         <input
             value={value ?? ''}

@@ -56,7 +56,6 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit}) => {
         if (shouldUpdateListOnDismiss) onReload()
     }
 
-    console.log({data})
     return (
         <div className='w-3/5   overflow-auto'>
             {isLoading && <Spinner size={50}/>}
@@ -70,8 +69,8 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit}) => {
                     </tr>
                     </thead>
                     <tbody>
-                    {data.map((u) => {
-                        return <TableItem key={u.id} {...u}/>
+                    {data.map((u, idx) => {
+                        return <TableItem key={u.id} {...u} position={idx + 1}/>
                     })}
                     </tbody>
                 </table>
@@ -80,6 +79,7 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit}) => {
             {!data?.length && !isLoading && (
                 <div className="mt-10 p-10 text-center">
                     <h6>{isFiltered ? 'No se han encontrado resultados con la búsqueda' : 'No se encontraron usuarios registrados en esta ruta'}</h6>
+                    <p>{isFiltered ? 'Ajusta tu búsqueda e intenta de nuevo' : ''}</p>
                 </div>
             )}
 

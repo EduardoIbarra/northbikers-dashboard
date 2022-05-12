@@ -24,7 +24,6 @@ const AddParticipantModal = ({isOpen, onClose, allList = [], user}) => {
     });
     const [selectedUser, setSelectedUser] = useState({});
     const currentRoute = useRecoilValue(CurrentRoute);
-    console.log({user})
     const saveFormData = (key, value) => {
         setShowAlert(false)
         setFormData({
@@ -92,6 +91,7 @@ const AddParticipantModal = ({isOpen, onClose, allList = [], user}) => {
             title={user ? 'Editar participante...' : 'Nuevo participante'}
             subtitle={user ? 'Edita información del participante' : 'Registra nuevo participante a la ruta.'}
             okButton={{
+                disabled: !selectedUser?.id,
                 onClick: handleSave,
                 label: isSaving ? user ? 'Editando...' : 'Registrando..' : user ? 'Editar' : 'Registrar',
             }}

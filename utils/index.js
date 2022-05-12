@@ -12,7 +12,7 @@ export const getLoggedUser = () => {
 }
 
 export const CATEGORIES = [
-    {id: 'DUAL_SOPORT', title: 'Doble Propósito'},
+    {id: 'DUAL_SPORT', title: 'Doble Propósito'},
     {id: 'DIRT', title: 'Terracería'},
     {id: 'STREET', title: 'Calle'},
 ];

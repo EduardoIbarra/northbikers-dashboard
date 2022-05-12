@@ -75,6 +75,7 @@ const Modal = (
                                     <div className="pl-4 py-3 sm:pl-6 sm:flex sm:flex-row-reverse gap-4">
                                         {okButton?.label && okButton?.onClick && (
                                             <button
+                                                disabled={okButton?.disabled}
                                                 type="button"
                                                 className={`btn btn-default btn-rounded btn-icon  text-white ${okClearButton ? 'bg-blue-400 hover:bg-blue-500' :'bg-blue-500 hover:bg-blue-600'}`}
                                                 onClick={okButton.onClick}

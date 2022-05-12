@@ -7,14 +7,15 @@ export const Select = (
         size = 'w-full',
         hint = null,
         onChange,
+        showEmpty = false,
     }) => (
     <div className={`form-element  ${inline ? 'form-element-inline' : ''} ${size}`}>
-        <div className="form-label">{label}</div>
+        {label && <div className="form-label">{label}</div>}
         <select className="form-select rounded " onChange={(event) => {
             onChange(items.find((i) => i.id == event.target.value))
         }}>
             {placeholder && (
-                <option disabled>{placeholder}</option>
+                <option disabled selected={showEmpty}>{placeholder}</option>
             )}
             {items.map((i) => {
                 return (
