@@ -10,6 +10,7 @@ import Map from "../../components/map";
 import TextInput from "../../components/input";
 import Select from "../../components/select";
 import {CATEGORIES, GENDERS} from "../../utils";
+import {sort} from 'fast-sort';
 
 const ParticipantsPage = () => {
     const supabase = getSupabase();
@@ -22,6 +23,7 @@ const ParticipantsPage = () => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [gender, setGender] = useState('');
     const [category, setCategory] = useState('');
+    const [order, setOrder] = useState('points');
 
     let interval = null
 
@@ -30,7 +32,6 @@ const ParticipantsPage = () => {
     }
 
     const handleSetFilteredResults = (res) => {
-        console.log({category, gender})
         const d = res.filter((r) => {
             if (category && gender) return category?.toLocaleLowerCase() === r.category?.toLocaleLowerCase() && gender?.toLocaleLowerCase() === r.gender?.toLocaleLowerCase()
             if (category && !gender) return category?.toLocaleLowerCase() === r.category?.toLocaleLowerCase()
@@ -58,14 +59,14 @@ const ParticipantsPage = () => {
             console.log({results});
 
             if (results) {
-                setFullList(results)
+                setFullList(results.filter(({profile}) => !!profile?.email))
             }
         } catch (e) {
             console.log("Error", e);
-            setFullList(null)
+            setFullList([])
         }
         setLoading(false)
-    }, [currentRoute,category, gender])
+    }, [currentRoute, category, gender])
 
     const handlePolling = () => {
         interval = setInterval(() => getData(false), 10000)
@@ -78,28 +79,11 @@ const ParticipantsPage = () => {
         setSelectedUser(null)
     }
 
-    useEffect(() => {
-        handlePolling()
-
-        return () => {
-            handleStopPolling();
-        }
-    }, [currentRoute])
-
-    useEffect(() => {
-        handleSetFilteredResults(fullList)
-    }, [category, gender, fullList])
-
-
-    const getCleanList = () => {
-        return data.filter(({profile}) => !!profile?.email)
-    }
-
 
     const getFilteredData = () => {
-        if (!searchQuery) return getCleanList();
+        if (!searchQuery) return data;
         const loweredQuery = searchQuery.toLocaleLowerCase();
-        return getCleanList().filter(({participant_number, points, profile: {name, email}}) => {
+        return data.filter(({participant_number, points, profile: {name, email}}) => {
             return (
                 participant_number?.toString()?.includes(loweredQuery) ||
                 points?.toString()?.includes(loweredQuery) ||
@@ -109,9 +93,8 @@ const ParticipantsPage = () => {
         })
     }
 
-
     const getMarkers = () => {
-        if (!searchQuery) return data.map((i, idx) => ({latitude: i.current_lat, longitude: i.current_lng, id: i.id, text: idx + 1}));
+        if (!searchQuery) return data.map((i, idx) => ({latitude: i.current_lat, longitude: i.current_lng, id: i.id, text: i.position}));
         const newData = getFilteredData();
         return newData.map((i) => ({latitude: i.current_lat, longitude: i.current_lng, id: i.id, text: i.position}));
     }
@@ -119,6 +102,25 @@ const ParticipantsPage = () => {
     const handleEdit = (u) => {
         setSelectedUser(u)
     }
+
+
+    useEffect(() => {
+        handlePolling()
+        return () => {
+            handleStopPolling();
+        }
+    }, [currentRoute])
+
+    useEffect(() => {
+        const orderedByPoints = sort(fullList).desc((u) => u.points).map((l, idx) => {
+            return {
+                ...l,
+                position: idx + 1
+            }
+        })
+        const newSorted = sort(orderedByPoints);
+        handleSetFilteredResults(order === 'points' ? newSorted.desc(u => u.points) : newSorted.asc(u => u.profile.name))
+    }, [category, gender, fullList, order])
 
     useEffect(() => {
         getData(true)
@@ -141,13 +143,18 @@ const ParticipantsPage = () => {
                     <Select placeholder='Filtrar por género' showEmpty items={[...[{id: null, title: 'Todos'}], ...GENDERS]} onChange={(e) => setGender(e?.id ?? '')}/>
                 </div>
             </div>
+            <div className='w-full mb-2 flex flex-row space-around gap-2 items-center'>
+                <div className='w-4/12'>
+                    <Select label={'Ordenar por:'} placeholder='Selecciona' items={[{id: 'points', title: 'Puntos'}, {id: 'name', title: 'Nombre'}]} onChange={(e) => setOrder(e?.id)}/>
+                </div>
+            </div>
             <Widget>
                 <div className='flex h-vp-70'>
                     <ParticipantsList isLoading={isLoading} data={getFilteredData()} onReload={getData} isFiltered={!!searchQuery || !!category || !!gender} onEdit={handleEdit}/>
                     <Map markers={getMarkers()}/>
                 </div>
             </Widget>
-            <AddParticipantModal isOpen={isOpen || !!selectedUser} onClose={handleClose} allList={getCleanList()} user={selectedUser}/>
+            <AddParticipantModal isOpen={isOpen || !!selectedUser} onClose={handleClose} allList={fullList} user={selectedUser}/>
         </div>
 
     )

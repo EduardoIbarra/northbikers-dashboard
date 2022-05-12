@@ -69,8 +69,8 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit}) => {
                     </tr>
                     </thead>
                     <tbody>
-                    {data.map((u, idx) => {
-                        return <TableItem key={u.id} {...u} position={idx + 1}/>
+                    {data.map((u) => {
+                        return <TableItem key={u.id} {...u}/>
                     })}
                     </tbody>
                 </table>
