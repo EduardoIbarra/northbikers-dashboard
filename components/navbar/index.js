@@ -1,5 +1,5 @@
 import {FiLogOut, FiMenu} from 'react-icons/fi'
-import {useRecoilState, useSetRecoilState} from "recoil";
+import {useRecoilState, useRecoilValue, useSetRecoilState} from "recoil";
 import {CurrentRoute, Routes, SideNavCollapsed} from "../../store/atoms/global";
 import Select from "../select";
 import {getSupabase} from "../../utils/supabase";
@@ -11,6 +11,7 @@ const Navbar = () => {
     const [isOpen, setOpen] = useRecoilState(SideNavCollapsed);
     const [routes, setRoutes] = useRecoilState(Routes);
     const setCurrentRoute = useSetRecoilState(CurrentRoute);
+    const currentRoute = useRecoilValue(CurrentRoute);
     const router = useRouter()
     const supabase = getSupabase();
 
@@ -51,7 +52,7 @@ const Navbar = () => {
                     <FiMenu size={20}/>
                 </button>
 
-                <Select size='w-80' placeholder='Selecciona ruta' items={routes} inline onChange={setCurrentRoute}/>
+                <Select size='w-80' placeholder='Selecciona ruta' selected={currentRoute?.id} items={routes} inline onChange={setCurrentRoute}/>
 
                 <span className="ml-auto"/>
                 <button

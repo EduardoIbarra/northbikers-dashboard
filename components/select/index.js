@@ -8,6 +8,7 @@ export const Select = (
         hint = null,
         onChange,
         showEmpty = false,
+        selected
     }) => (
     <div className={`form-element  ${inline ? 'form-element-inline' : ''} ${size}`}>
         {label && <div className="form-label">{label}</div>}
@@ -22,6 +23,7 @@ export const Select = (
                     <option
                         key={i.id}
                         value={i.id}
+                        selected={selected === i.id}
                     >{i.title}</option>
                 )
             })}

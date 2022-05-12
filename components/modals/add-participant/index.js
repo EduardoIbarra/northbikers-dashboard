@@ -82,7 +82,7 @@ const AddParticipantModal = ({isOpen, onClose, allList = [], user}) => {
             setShowAlert(false)
         }
     }, [user])
-
+    console.log({formData})
     return (
         <Modal
             isOpen={isOpen}
@@ -98,7 +98,7 @@ const AddParticipantModal = ({isOpen, onClose, allList = [], user}) => {
             cancelButton={isSaving ? null : {
                 onClick: () => {
                     onClose()
-                    clearData()
+                    setTimeout(clearData, 500)
                 },
                 label: 'Cancelar',
             }}
@@ -134,8 +134,8 @@ const AddParticipantModal = ({isOpen, onClose, allList = [], user}) => {
                 {/* <TextInput label={'Categoría'} value={formData?.category} onChange={(e) => saveFormData('category', e)}/> */}
 
                 <div className='flex flex-row space-around gap-2'>
-                    <Select label={'Categoría'} placeholder='Selecciona Categoría' items={CATEGORIES} inline onChange={(e) => saveFormData('category', e.id)}/>
-                    <Select label={'Género'} placeholder='Selecciona Categoría' items={GENDERS} inline onChange={(e) => saveFormData('gender', e.id)}/>
+                    <Select selected={formData?.category} label={'Categoría'} placeholder='Selecciona Categoría' items={CATEGORIES} inline onChange={(e) => saveFormData('category', e.id)}/>
+                    <Select selected={formData?.gender} label={'Género'} placeholder='Selecciona Categoría' items={GENDERS} inline onChange={(e) => saveFormData('gender', e.id)}/>
                 </div>
             </div>
             <SearchUserModal isOpen={isSearchModalOpen} onClose={handleToggleModal} onSelect={handleSelectUser}/>
