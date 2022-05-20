@@ -16,7 +16,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
     const [markers, setMarkers] = useState([]);
     const [selectedCheckIn, setSelectedCheckIn] = useState(null);
     const [dataHasChanged, seChangedData] = useState(false);
-
+    console.log({profile, checkins});
     const getCheckpoints = useCallback(async () => {
         setLoading(true)
         try {
@@ -56,8 +56,9 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
     const handleItemClick = (item) => {
         setSelectedCheckIn(item)
         setMarkers([
-            {latitude: item.lat, longitude: item.lng, icon: '/check-in.png'},
-            {latitude: item.checkpoint.lat, longitude: item.checkpoint.lng, icon: '/pin.png'},
+            {latitude: item.checkpoint.lat, longitude: item.checkpoint.lng, icon: '/check-in.png'},
+            {latitude: item.lat, longitude: item.lng, icon: '/pin.png'},
+            item.original_lat ? {latitude: item.original_lat, longitude: item.original_lng, icon: '/pin-black.png'}: [],
         ])
     }
 
@@ -128,6 +129,18 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                 label: 'Cerrar',
             }}
         >
+            <div className='flex'>
+                <div className='flex m-3 bg-gray-50 p-2 rounded items-center'>
+                    <img src="/check-in.png" alt=""/> Checkpoint
+                </div>
+                <div className='flex m-3 bg-gray-50 p-2 rounded items-center'>
+                    <img src="/pin.png" alt=""/> CheckIn Actualizado
+                </div>
+                <div className='flex m-3 bg-gray-50 p-2 rounded items-center'>
+                    <img src="/pin-black.png" alt=""/> Checkin Original
+                </div>
+            </div>
+
             <div className='flex h-vp-60'>
                 <div className='w-4/12   overflow-auto'>
                     {renderContent()}
