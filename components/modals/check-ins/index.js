@@ -7,7 +7,10 @@ import Map from "../../map";
 import Spinner from "../../spinner";
 import CheckInImage from "./check-in-image";
 import {AiFillCheckCircle, AiFillCloseCircle} from "react-icons/ai";
+import moment from "moment";
+import 'moment/locale/es-mx'
 
+moment.locale('es-mx')
 const CheckInsModal = ({isOpen, onClose, profile}) => {
     const currentRoute = useRecoilValue(CurrentRoute);
     const supabase = getSupabase();
@@ -57,8 +60,8 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
         setSelectedCheckIn(item)
         setMarkers([
             {latitude: item.checkpoint.lat, longitude: item.checkpoint.lng, icon: '/check-in.png'},
-            {latitude: item.lat, longitude: item.lng, icon: '/pin.png'},
-            item.original_lat ? {latitude: item.original_lat, longitude: item.original_lng, icon: '/pin-black.png'}: [],
+            item.original_lat ? {latitude: item.original_lat, longitude: item.original_lng, icon: '/pin.png'} : [],
+            item.original_lat !== item.lat ? {latitude: item.lat, longitude: item.lng, icon: '/pin-black.png'} : [],
         ])
     }
 
@@ -72,7 +75,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
 
         if (isLoading && !checkins?.length) {
             return (
-                <div className="mt-4">
+                <div className="">
                     <Spinner size={50}/>
                 </div>
             )
@@ -85,11 +88,12 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
 
                     return (
                         <div key={c.id} className={`relative p-2 bordered hover:bg-gray-100 cursor-pointer flex items-center ${selectedCheckIn?.id === c.id ? 'bg-gray-100' : ''}`} onClick={() => handleItemClick(c)}>
-                            <img src={c?.checkpoint?.picture?.includes('http') ? c?.checkpoint.picture : imgSource} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>
+                            {c?.checkpoint?.picture && <img src={c?.checkpoint?.picture?.includes('http') ? c?.checkpoint.picture : imgSource} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>}
+                            {!c?.checkpoint?.picture && <img src='/icon.jpg' alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>}
                             <div className='pr-8'>
                                 <b>{c.checkpoint.name}</b>
                                 <p>{c.checkpoint.description}</p>
-                                <p>{c.points ?? 0} pts. | A {c.distance.toFixed(2)}km de Distancia</p>
+                                <p><b>{c.points ?? 0}</b> pts. | A <b>{c.distance.toFixed(2)}km</b> de Distancia</p>
                             </div>
 
                             {c?.is_valid ? (
@@ -105,7 +109,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
 
         if (!isLoading && !checkins?.length) {
             return (
-                <div className="mt-4">
+                <div className="">
                     <div className="mt-10 p-10 text-center">
                         <h6>No se encontraron checkins</h6>
                     </div>
@@ -134,22 +138,41 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                     <img src="/check-in.png" alt=""/> Checkpoint
                 </div>
                 <div className='flex m-3 bg-gray-50 p-2 rounded items-center'>
-                    <img src="/pin.png" alt=""/> CheckIn Actualizado
+                    <img src="/pin.png" alt=""/> CheckIn Original
                 </div>
                 <div className='flex m-3 bg-gray-50 p-2 rounded items-center'>
-                    <img src="/pin-black.png" alt=""/> Checkin Original
+                    <img src="/pin-black.png" alt=""/> Checkin Actualizado
                 </div>
             </div>
 
             <div className='flex h-vp-60'>
-                <div className='w-4/12   overflow-auto'>
+                <div className='w-4/12   overflow-auto '>
                     {renderContent()}
                 </div>
-                <div className='w-4/12  overflow-auto'>
-                    <Map width='100%' markers={markers}/>
-                </div>
-                <div className='w-4/12  overflow-auto'>
-                    <CheckInImage checkIn={selectedCheckIn} onSuccess={handleSuccess}/>
+                <div className='w-full flex flex-col overflow-auto'>
+                    {selectedCheckIn && <label className='pl-2 text-lg'>Fechas</label>}
+                    {selectedCheckIn && <div className='p-2 mb-2 flex'>
+                        <p className='mr-2'>
+                            <b>Original</b>: <span className={'capitalize'}>{moment(selectedCheckIn.id).format('dddd DD MMMM,  h:mm:ss A')}</span>
+                        </p>
+                        |&nbsp;&nbsp;
+                        <p className='mr-2'>
+                            <b>Creación</b>: <span className={'capitalize'}>{moment(selectedCheckIn.created_at).format('dddd DD MMMM,  h:mm:ss A')}</span>
+                        </p>
+                        |&nbsp;&nbsp;
+                        <p className='mr-2'>
+                            <b>Actualización</b>: <span className={'capitalize'}>{moment(selectedCheckIn.updated_at).format('dddd DD MMMM,  h:mm:ss A')}</span>
+                        </p>
+                    </div>
+                    }
+                    <div className='flex h-vp-60'>
+                        <div className='w-6/12  overflow-auto'>
+                            <Map width='100%' markers={markers}/>
+                        </div>
+                        <div className='w-6/12  overflow-auto'>
+                            <CheckInImage checkIn={selectedCheckIn} onSuccess={handleSuccess}/>
+                        </div>
+                    </div>
                 </div>
             </div>
         </Modal>
