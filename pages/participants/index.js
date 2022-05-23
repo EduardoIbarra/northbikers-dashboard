@@ -12,6 +12,10 @@ import Select from "../../components/select";
 import {CATEGORIES, GENDERS, getLoggedUser} from "../../utils";
 import {sort} from 'fast-sort';
 import {useRouter} from "next/router";
+import Button from "../../components/button";
+import JSZip from "jszip";
+import {saveAs} from 'file-saver';
+import Spinner from "../../components/spinner";
 
 const ParticipantsPage = ({isPrivateView = true}) => {
     const loggedUser = getLoggedUser();
@@ -28,10 +32,16 @@ const ParticipantsPage = ({isPrivateView = true}) => {
     const [category, setCategory] = useState('');
     const [order, setOrder] = useState('points');
 
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    const [totalCount, setTotalCount] = useState(0);
+    const [currentCount, setCurrentCount] = useState(0);
+
+
     let interval = null
 
 
-    if(!loggedUser && isPrivateView){
+    if (!loggedUser && isPrivateView) {
         router.push('/login')
         return null;
     }
@@ -135,8 +145,46 @@ const ParticipantsPage = ({isPrivateView = true}) => {
         getData(true)
     }, [getData, isOpen, currentRoute])
 
+    const handleDownload = async () => {
+        setIsDownloading(true)
+        try {
+            const {data: feed} = await supabase.from('feeds').select().eq('route_id', 22);
+            const zip = new JSZip();
+            console.log(`Total images ${feed.length}`,)
+            setTotalCount(feed.length)
+            setCurrentCount(1)
+            let interval = null;
+
+            for (let i = 0; i < feed.length; i++) {
+                const item = feed[i];
+                const {data} = await supabase
+                    .storage
+                    .from('pictures')
+                    .download(item.photo_url)
+                console.log(`item ${i + 1} of ${feed.length}`, data);
+                zip.file(item.photo_url, data, {base64: false});
+
+                interval = setInterval(() => {
+                    setCurrentCount(i+1)
+                }, 5000)
+            }
+
+            clearInterval(interval)
+            const content = await zip.generateAsync({type: "blob"})
+            saveAs(content, "rally_images.zip");
+
+        } catch (e) {
+            console.log("Error", e);
+            setIsDownloading(false)
+        }
+
+        setIsDownloading(false)
+    }
+
     return (
         <div>
+            <Button onClick={handleDownload} disabled={isDownloading}>
+                {isDownloading ? <div className='flex gap-2'><Spinner size={13}/> Generando {currentCount} de {totalCount}...</div> : 'Descargar imagenes rally'}</Button>
 
             {isPrivateView ? (
                 <SectionTitle title="Detalles" subtitle="Participantes" buttonTitle={'Nuevo participante'} onClick={() => {
