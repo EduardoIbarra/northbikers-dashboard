@@ -108,7 +108,8 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit, isPriv
     }
 
     return (
-        <div className='w-3/5   overflow-auto'>
+        // <div className='w-3/5   overflow-auto'>
+        <div className='overflow-auto'>
             {isLoading && <Spinner size={50}/>}
             {!isLoading && data?.length ? (
                 <table className="table no-border">

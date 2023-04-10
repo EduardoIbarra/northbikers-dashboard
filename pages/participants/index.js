@@ -214,7 +214,7 @@ const ParticipantsPage = ({isPrivateView = true}) => {
             <Widget>
                 <div className='flex h-vp-70'>
                     <ParticipantsList isLoading={isLoading} data={getFilteredData()} onReload={getData} isFiltered={!!searchQuery || !!category || !!gender} onEdit={handleEdit} isPrivateView={isPrivateView}/>
-                    <Map markers={getMarkers()}/>
+                    {/* <Map markers={getMarkers()}/> */}
                 </div>
             </Widget>
             <AddParticipantModal isOpen={isOpen || !!selectedUser} onClose={handleClose} allList={fullList} user={selectedUser}/>
