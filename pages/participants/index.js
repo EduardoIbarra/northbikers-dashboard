@@ -148,7 +148,7 @@ const ParticipantsPage = ({isPrivateView = true}) => {
     const handleDownload = async () => {
         setIsDownloading(true)
         try {
-            const {data: feed} = await supabase.from('feeds').select().eq('route_id', 22);
+            const {data: feed} = await supabase.from('feeds').select().eq('route_id', 106);
             const zip = new JSZip();
             console.log(`Total images ${feed.length}`,)
             setTotalCount(feed.length)
@@ -183,8 +183,11 @@ const ParticipantsPage = ({isPrivateView = true}) => {
 
     return (
         <div>
-            {/*<Button onClick={handleDownload} disabled={isDownloading}>*/}
-            {/*    {isDownloading ? <div className='flex gap-2'><Spinner size={13}/> Generando {currentCount} de {totalCount}...</div> : 'Descargar imagenes rally'}</Button>*/}
+            {
+                // <Button onClick={handleDownload} disabled={isDownloading}>
+                //     {isDownloading ? <div className='flex gap-2'><Spinner size={13}/> Generando {currentCount} de {totalCount}...</div> : 'Descargar imagenes rally'}
+                // </Button>
+            }
 
             {isPrivateView ? (
                 <SectionTitle title="Detalles" subtitle="Participantes" buttonTitle={'Nuevo participante'} onClick={() => {
