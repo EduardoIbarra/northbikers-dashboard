@@ -91,6 +91,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                             {c?.checkpoint?.picture && <img src={c?.checkpoint?.picture?.includes('http') ? c?.checkpoint.picture : imgSource} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>}
                             {!c?.checkpoint?.picture && <img src='/icon.jpg' alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>}
                             <div className='pr-8'>
+                                <b>{c.checkpoint.icon.includes('challenge') && <span className="challenge-indicator">[RETO]</span>}</b>
                                 <b>{c.checkpoint.name}</b>
                                 <p>{c.checkpoint.description}</p>
                                 <p><b>{c.points ?? 0}</b> pts. | A <b>{c.distance.toFixed(2)}km</b> de Distancia</p>
