@@ -100,6 +100,7 @@ const ParticipantsPage = ({isPrivateView = true}) => {
 
 
     const getFilteredData = () => {
+        data = data.filter(p => p.participant_number);
         if (!searchQuery) return data;
         const loweredQuery = searchQuery.toLocaleLowerCase();
         return data.filter(({participant_number, points, profile: {name, email}}) => {
