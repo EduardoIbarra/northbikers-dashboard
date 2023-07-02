@@ -100,7 +100,7 @@ const ParticipantsPage = ({isPrivateView = true}) => {
 
 
     const getFilteredData = () => {
-        data = data.filter(p => p.participant_number);
+        // data = data.filter(p => p.participant_number);
         if (!searchQuery) return data;
         const loweredQuery = searchQuery.toLocaleLowerCase();
         return data.filter(({participant_number, points, profile: {name, email}}) => {
@@ -132,6 +132,8 @@ const ParticipantsPage = ({isPrivateView = true}) => {
     }, [currentRoute])
 
     useEffect(() => {
+        // TODO: Remove this restriction
+        fullList = fullList.filter(p => p.participant_number);
         const orderedByPoints = sort(fullList).desc((u) => u.points).map((l, idx) => {
             return {
                 ...l,
