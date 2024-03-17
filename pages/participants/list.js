@@ -16,7 +16,7 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit, isPriv
     }, [])
 
     const TableItem = memo((row) => {
-        const {profile, participant_number, position, category, points, route: {title}, gender} = row;
+        const {profile, participant_number, position, category, points, route: {title}, gender, payment_status} = row;
         const [checkins, setCheckins] = useState(null);
         const [challenges, setChallenges] = useState(null);
         const {name, email} = profile;
@@ -80,26 +80,46 @@ const ParticipantsList = ({isLoading, data, onReload, isFiltered, onEdit, isPriv
                 <td>{name}</td>
                 <td>{getSelectValue(category, CATEGORIES)}</td>
                 <td>{email}</td>
-                <td>{title}</td>
                 <td>{getSelectValue(gender, GENDERS)}</td>
                 <td>{checkins}</td>
                 <td>{challenges}</td>
+                <td>{title}</td>
+                <td>
+                    {payment_status === 'paid' ? (
+                        <div style={{
+                        width: '15px',
+                        height: '15px',
+                        borderRadius: '50%',
+                        backgroundColor: 'green',
+                        display: 'inline-block'
+                        }}></div>
+                    ) : (
+                        <div style={{
+                        width: '15px',
+                        height: '15px',
+                        borderRadius: '50%',
+                        backgroundColor: 'red',
+                        display: 'inline-block'
+                        }}></div>
+                    )}
+                </td>
             </tr>
         )
     })
 
     const fields = [
-        ...(isPrivateView ? [{name: 'Editar'}] : []),
+        ...(isPrivateView ? [{name: 'Editarx'}] : []),
         {name: 'Posición'},
         {name: 'Puntos'},
         {name: 'Número'},
         {name: 'Participante'},
         {name: 'Categoría'},
         {name: 'Email'},
-        {name: 'Ruta'},
         {name: 'Género'},
         {name: '# Checkins'},
-        {name: '# Retos'}
+        {name: '# Retos'},
+        {name: 'Ruta'},
+        {name: 'Pago'},
     ]
 
     const handleToggleModal = (shouldUpdateListOnDismiss) => {

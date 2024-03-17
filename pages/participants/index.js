@@ -2,7 +2,7 @@ import SectionTitle from "../../components/section-title";
 import Widget from "../../components/widget";
 import ParticipantsList from "./list";
 import {getSupabase} from "../../utils/supabase";
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useState, useRef} from "react";
 import {useRecoilValue} from "recoil";
 import {CurrentRoute} from "../../store/atoms/global";
 import AddParticipantModal from "../../components/modals/add-participant";
@@ -87,11 +87,6 @@ const ParticipantsPage = ({isPrivateView = true}) => {
         setLoading(false)
     }, [currentRoute, category, gender])
 
-    const handlePolling = () => {
-        interval = setInterval(() => getData(false), 10000)
-    }
-
-
     const handleClose = () => {
         setIsOpen(false)
         if (selectedUser) getData()
@@ -124,12 +119,43 @@ const ParticipantsPage = ({isPrivateView = true}) => {
     }
 
 
-    useEffect(() => {
-        handlePolling()
-        return () => {
-            handleStopPolling();
+    const [isPollingEnabled, setIsPollingEnabled] = useState(false); // State to track if polling is enabled
+    const intervalRef = useRef(null); // Using useRef for interval
+
+    const handlePolling = useCallback(() => {
+        if (isPollingEnabled) {
+            if (intervalRef.current) clearInterval(intervalRef.current); // Clear existing interval if any
+            intervalRef.current = setInterval(() => getData(false), 10000); // Set new interval
+        } else {
+            if (intervalRef.current) clearInterval(intervalRef.current); // Clear interval if polling is disabled
         }
-    }, [currentRoute])
+    }, [getData, isPollingEnabled]); // Depend on getData and isPollingEnabled
+
+    useEffect(() => {
+        handlePolling(); // Initialize or clear polling based on isPollingEnabled
+
+        return () => clearInterval(intervalRef.current); // Cleanup on component unmount or re-render
+    }, [handlePolling]); // Depend on handlePolling
+
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                clearInterval(intervalRef.current);
+            } else {
+                handlePolling(); // Resume or clear polling based on isPollingEnabled
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            clearInterval(intervalRef.current); // Ensure cleanup
+        };
+    }, [handlePolling]);
+
+    // Toggle function for the checkbox
+    const togglePolling = () => setIsPollingEnabled(!isPollingEnabled);
 
     useEffect(() => {
         // TODO: Remove this restriction
@@ -153,7 +179,6 @@ const ParticipantsPage = ({isPrivateView = true}) => {
         try {
             const {data: feed} = await supabase.from('feeds').select().eq('route_id', 106);
             const zip = new JSZip();
-            console.log(`Total images ${feed.length}`,)
             setTotalCount(feed.length)
             setCurrentCount(1)
             let interval = null;
@@ -164,7 +189,6 @@ const ParticipantsPage = ({isPrivateView = true}) => {
                     .storage
                     .from('pictures')
                     .download(item.photo_url)
-                console.log(`item ${i + 1} of ${feed.length}`, data);
                 zip.file(item.photo_url, data, {base64: false});
 
                 interval = setInterval(() => {
@@ -177,7 +201,6 @@ const ParticipantsPage = ({isPrivateView = true}) => {
             saveAs(content, "rally_images.zip");
 
         } catch (e) {
-            console.log("Error", e);
             setIsDownloading(false)
         }
 
@@ -216,6 +239,15 @@ const ParticipantsPage = ({isPrivateView = true}) => {
                 <div className='w-4/12'>
                     <Select label={'Ordenar por:'} placeholder='Selecciona' items={[{id: 'points', title: 'Puntos'}, {id: 'name', title: 'Nombre'}]} onChange={(e) => setOrder(e?.id)}/>
                 </div>
+
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={isPollingEnabled}
+                        onChange={togglePolling}
+                    />
+                     Ver en Tiempo Real
+                </label>
             </div>
             <Widget>
                 <div className='flex h-vp-70'>

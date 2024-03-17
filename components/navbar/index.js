@@ -28,6 +28,7 @@ const Navbar = () => {
         try {
             const {data} = await supabase.from("routes").select()
             if (data) {
+                data.reverse();
                 setRoutes(data)
                 setCurrentRoute(data[0])
             }
