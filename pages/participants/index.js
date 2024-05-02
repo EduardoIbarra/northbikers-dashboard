@@ -158,17 +158,25 @@ const ParticipantsPage = ({isPrivateView = true}) => {
     const togglePolling = () => setIsPollingEnabled(!isPollingEnabled);
 
     useEffect(() => {
-        // TODO: Remove this restriction
-        fullList = fullList.filter(p => p.participant_number);
-        const orderedByPoints = sort(fullList).desc((u) => u.points).map((l, idx) => {
-            return {
-                ...l,
-                position: idx + 1
-            }
-        })
-        const newSorted = sort(orderedByPoints);
-        handleSetFilteredResults(order === 'points' ? newSorted.desc(u => u.points) : newSorted.asc(u => u.profile.name))
-    }, [category, gender, fullList, order])
+        fullList = fullList.filter(p => p.participant_number); // Ensure only entries with participant_number are considered
+        let orderedData = sort(fullList);
+    
+        switch(order) {
+            case 'points':
+                orderedData = orderedData.desc(u => u.points);
+                break;
+            case 'name':
+                orderedData = orderedData.asc(u => u.profile.name);
+                break;
+            case 'participant_number':
+                orderedData = orderedData.asc(u => parseInt(u.participant_number)); // Ensure to parse numbers if they're stored as strings
+                break;
+            default:
+                break;
+        }
+        
+        setData(orderedData.map((l, idx) => ({ ...l, position: idx + 1 })));
+    }, [category, gender, fullList, order]);    
 
     useEffect(() => {
         getData(true)
@@ -237,7 +245,17 @@ const ParticipantsPage = ({isPrivateView = true}) => {
             </div>
             <div className='w-full mb-2 flex flex-row space-around gap-2 items-center'>
                 <div className='w-4/12'>
-                    <Select label={'Ordenar por:'} placeholder='Selecciona' items={[{id: 'points', title: 'Puntos'}, {id: 'name', title: 'Nombre'}]} onChange={(e) => setOrder(e?.id)}/>
+                <Select
+                    label={'Ordenar por:'}
+                    placeholder='Selecciona'
+                    items={[
+                        { id: 'points', title: 'Puntos' },
+                        { id: 'name', title: 'Nombre' },
+                        { id: 'participant_number', title: 'Número de participante' } // Adding new option here
+                    ]}
+                    onChange={(e) => setOrder(e?.id)}
+                />
+
                 </div>
 
                 <label>
