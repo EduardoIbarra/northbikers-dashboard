@@ -95,18 +95,13 @@ const ParticipantsPage = ({isPrivateView = true}) => {
 
 
     const getFilteredData = () => {
-        // data = data.filter(p => p.participant_number);
-        if (!searchQuery) return data;
-        const loweredQuery = searchQuery.toLocaleLowerCase();
-        return data.filter(({participant_number, points, profile: {name, email}}) => {
-            return (
-                participant_number?.toString()?.includes(loweredQuery) ||
-                points?.toString()?.includes(loweredQuery) ||
-                name?.toLocaleLowerCase()?.includes(loweredQuery) ||
-                email?.toLocaleLowerCase()?.includes(loweredQuery)
-            )
-        })
-    }
+        return data.filter((item) => {
+            const categoryMatch = category ? item.category === category : true;
+            const genderMatch = gender ? item.gender === gender : true;
+            return categoryMatch && genderMatch;
+        });
+    };
+    
 
     const getMarkers = () => {
         if (!searchQuery) return data.map((i, idx) => ({latitude: i.current_lat, longitude: i.current_lng, id: i.id, text: i.position}));
@@ -236,12 +231,20 @@ const ParticipantsPage = ({isPrivateView = true}) => {
                 <div className='w-4/12'>
                     <TextInput label={'Buscar...'} type='text' placeholder='Busca participantes' value={searchQuery} onChange={setSearchQuery}/>
                 </div>
-                <div className='w-4/12'>
-                    <Select placeholder='Filtrar por categoria' showEmpty items={[...[{id: null, title: 'Todos'}], ...CATEGORIES]} onChange={(e) => setCategory(e?.id ?? '')}/>
-                </div>
-                <div className='w-4/12'>
-                    <Select placeholder='Filtrar por género' showEmpty items={[...[{id: null, title: 'Todos'}], ...GENDERS]} onChange={(e) => setGender(e?.id ?? '')}/>
-                </div>
+                <Select
+    placeholder='Filtrar por categoria'
+    showEmpty
+    items={[{id: null, title: 'Todos'}, ...CATEGORIES]}
+    onChange={(e) => setCategory(e?.id ?? '')}
+/>
+
+<Select
+    placeholder='Filtrar por género'
+    showEmpty
+    items={[{id: null, title: 'Todos'}, ...GENDERS]}
+    onChange={(e) => setGender(e?.id ?? '')}
+/>
+
             </div>
             <div className='w-full mb-2 flex flex-row space-around gap-2 items-center'>
                 <div className='w-4/12'>
