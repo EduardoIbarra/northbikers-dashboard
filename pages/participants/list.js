@@ -5,7 +5,6 @@ import { CATEGORIES, GENDERS } from "../../utils";
 import Button from "../../components/button";
 import { AiFillEdit } from "react-icons/ai";
 import { getSupabase } from "../../utils/supabase";
-import { Result } from "postcss";
 
 const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPrivateView = true }) => {
     const [selectedUser, setSelectedUser] = useState(null);
@@ -66,7 +65,6 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
                     .eq('profile_id', row.profile_id)
                     .not('checkpoints.icon', 'like', '%challenges.png')
                 setCheckins(res.data.length);
-                //return res.count();
             } catch (e) {
                 console.log("Error", e);
             }
@@ -81,7 +79,6 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
                     .eq('profile_id', row.profile_id)
                     .like('checkpoints.icon', '%challenges.png')
                 setChallenges(res.data.length);
-                //return res.count();
             } catch (e) {
                 console.log("Error", e);
             }
@@ -90,8 +87,7 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
         useEffect(() => {
             getCheckins(row)
             getChallenges(row)
-                // make sure to catch any error
-                .catch(console.error);;
+                .catch(console.error);
         }, [getCheckins])
 
         return (
@@ -144,7 +140,7 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
     })
 
     const fields = [
-        ...(isPrivateView ? [{ name: 'Editarx' }] : []),
+        ...(isPrivateView ? [{ name: 'Editar' }] : []),
         { name: 'Posición' },
         { name: 'Puntos' },
         { name: 'Número' },
@@ -164,7 +160,6 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
     }
 
     return (
-        // <div className='w-3/5   overflow-auto'>
         <div className='overflow-auto'>
             {isLoading && <Spinner size={50} />}
             {!isLoading && data?.length ? (
