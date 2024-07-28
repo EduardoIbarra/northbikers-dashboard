@@ -24,6 +24,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
     const [isLoading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [fullList, setFullList] = useState([]);
+    const [filteredData, setFilteredData] = useState([]);
     const [data, setData] = useState([]);
     const currentRoute = useRecoilValue(CurrentRoute);
     const [selectedUser, setSelectedUser] = useState(null);
@@ -53,7 +54,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
             const coupleMatch = isCouple ? r.is_couple === true : true;
             return categoryMatch && genderMatch && coupleMatch;
         });
-        setData(d);
+        setFilteredData(d);
     };
 
     const getData = useCallback(async (showLoading) => {
@@ -72,6 +73,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
 
             if (results) {
                 setFullList(results.filter(({ profile }) => !!profile?.email));
+                handleSetFilteredResults(results);
             }
         } catch (e) {
             console.log("Error", e);
@@ -87,7 +89,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
     };
 
     const getFilteredData = () => {
-        return fullList.filter((item) => {
+        return filteredData.filter((item) => {
             const categoryMatch = category ? item.category?.toLocaleLowerCase() === category?.toLocaleLowerCase() : true;
             const genderMatch = gender ? item.gender?.toLocaleLowerCase() === gender?.toLocaleLowerCase() : true;
             const coupleMatch = isCouple ? item.is_couple === true : true;
@@ -143,29 +145,28 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
     const togglePolling = () => setIsPollingEnabled(!isPollingEnabled);
 
     useEffect(() => {
-        fullList = fullList.filter(p => p.participant_number);
-        let orderedData = sort(fullList);
+        getData(true);
+    }, [getData, isOpen, currentRoute]);
+
+    useEffect(() => {
+        let orderedData = [...filteredData]; // Create a copy of the data array to avoid mutating state directly
 
         switch (order) {
             case 'points':
-                orderedData = orderedData.desc(u => u.points);
+                orderedData = sort(orderedData).desc(u => u.points);
                 break;
             case 'name':
-                orderedData = orderedData.asc(u => u.profile.name);
+                orderedData = sort(orderedData).asc(u => u.profile.name);
                 break;
             case 'participant_number':
-                orderedData = orderedData.asc(u => parseInt(u.participant_number));
+                orderedData = sort(orderedData).asc(u => parseInt(u.participant_number));
                 break;
             default:
                 break;
         }
 
         setData(orderedData.map((l, idx) => ({ ...l, position: idx + 1 })));
-    }, [category, gender, fullList, order, isCouple]);
-
-    useEffect(() => {
-        getData(true);
-    }, [getData, isOpen, currentRoute]);
+    }, [order, filteredData]);
 
     const handleDownload = async () => {
         setIsDownloading(true);
@@ -262,7 +263,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
             </div>
             <Widget>
                 <div className='flex h-vp-70'>
-                    <ParticipantsList isLoading={isLoading} data={getFilteredData()} onReload={getData} isFiltered={!!searchQuery || !!category || !!gender || isCouple} onEdit={handleEdit} isPrivateView={isPrivateView} />
+                    <ParticipantsList isLoading={isLoading} data={data} onReload={getData} isFiltered={!!searchQuery || !!category || !!gender || isCouple} onEdit={handleEdit} isPrivateView={isPrivateView} />
                 </div>
             </Widget>
             <AddParticipantModal isOpen={isOpen || !!selectedUser} onClose={handleClose} allList={fullList} user={selectedUser} />
