@@ -8,7 +8,7 @@ import { CurrentRoute } from "../../store/atoms/global";
 import AddParticipantModal from "../../components/modals/add-participant";
 import TextInput from "../../components/input";
 import Select from "../../components/select";
-import { CATEGORIES, GENDERS, getLoggedUser } from "../../utils";
+import { CATEGORIES, getLoggedUser } from "../../utils";
 import { sort } from 'fast-sort';
 import { useRouter } from "next/router";
 import Button from "../../components/button";
@@ -28,59 +28,109 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
     const [data, setData] = useState([]);
     const currentRoute = useRecoilValue(CurrentRoute);
     const [selectedUser, setSelectedUser] = useState(null);
-    const [gender, setGender] = useState('');
     const [category, setCategory] = useState('');
     const [order, setOrder] = useState('points');
-    const [isCouple, setIsCouple] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [totalCount, setTotalCount] = useState(0);
     const [currentCount, setCurrentCount] = useState(0);
-
-    let interval = null;
+    const [isPollingEnabled, setIsPollingEnabled] = useState(false);
+    const intervalRef = useRef(null);
 
     if (!loggedUser && isPrivateView) {
         router.push('/login');
         return null;
     }
 
-    const handleStopPolling = () => {
-        clearInterval(interval);
-    };
-
-    const handleSetFilteredResults = (res) => {
-        const d = res.filter((r) => {
-            const categoryMatch = category ? r.category?.toLocaleLowerCase() === category?.toLocaleLowerCase() : true;
-            const genderMatch = gender ? r.gender?.toLocaleLowerCase() === gender?.toLocaleLowerCase() : true;
-            const coupleMatch = isCouple ? r.is_couple === true : true;
-            return categoryMatch && genderMatch && coupleMatch;
-        });
-        setFilteredData(d);
-    };
-
     const getData = useCallback(async (showLoading) => {
         if (!currentRoute.id) return;
         setLoading(showLoading);
 
         try {
-            const { data: results } = await supabase.from("event_profile").select(`
-                  *,
-                   profile: profile_id (*),
-                   route: route_id (*)
-                  `)
+            // Fetch event profiles
+            const { data: eventProfiles, error: eventProfileError } = await supabase
+                .from("event_profile")
+                .select(`
+                    *,
+                    profile: profile_id (*),
+                    route: route_id (*)
+                `)
                 .eq('route_id', currentRoute.id)
                 .gt('participant_number', 0);
-            console.log({ results });
 
-            if (results) {
-                setFullList(results.filter(({ profile }) => !!profile?.email));
-                handleSetFilteredResults(results);
-            }
+            if (eventProfileError) throw eventProfileError;
+
+            // Fetch check-ins and join with checkpoints to get the icon field
+            const { data: checkIns, error: checkInsError } = await supabase
+                .from("check_ins")
+                .select(`
+                    *,
+                    checkpoints:checkpoint_id (icon)
+                `)
+                .eq('route_id', currentRoute.id)
+                .in('profile_id', eventProfiles.map(profile => profile.profile_id));
+
+            if (checkInsError) throw checkInsError;
+
+            // URL of the challenge icon
+            const challengeIconUrl = 'https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/challenges.png';
+
+            // Merge the check-ins data with event profiles and count regular and challenge check-ins
+            const mergedResults = eventProfiles.map(profile => {
+                const relatedCheckIns = checkIns.filter(
+                    checkIn => checkIn.profile_id === profile.profile_id && checkIn.route_id === profile.route_id
+                );
+
+                // Count challenge and regular check-ins
+                const challengeCheckinsCount = relatedCheckIns.filter(
+                    checkIn => checkIn.checkpoints.icon === challengeIconUrl
+                ).length;
+
+                const regularCheckinsCount = relatedCheckIns.length - challengeCheckinsCount;
+
+                return {
+                    ...profile,
+                    check_ins: relatedCheckIns,
+                    challenge_checkins_number: challengeCheckinsCount,
+                    regular_checkins_number: regularCheckinsCount
+                };
+            });
+
+            // Even if no check-ins exist, the event_profiles will be kept
+            mergedResults.forEach(profile => {
+                if (!profile.check_ins.length) {
+                    profile.challenge_checkins_number = 0;
+                    profile.regular_checkins_number = 0;
+                }
+            });
+
+            // Set the full list of participants once the data is ready
+            setFullList(mergedResults.filter(({ profile }) => !!profile?.email));
+            setLoading(false);
         } catch (e) {
-            console.log("Error", e);
+            console.log("Error fetching data", e);
             setFullList([]);
+            setLoading(false);
         }
-        setLoading(false);
-    }, [currentRoute, category, gender, isCouple]);
+    }, [currentRoute]);
+
+    useEffect(() => {
+        // Apply the filter whenever the category, search query, or full list changes
+        const filtered = fullList.filter((item) => {
+            const categoryMatch = category === 'all' || !category
+                ? true
+                : category === 'female'
+                    ? item.gender?.toLocaleLowerCase() === 'female'
+                    : category === 'couple'
+                        ? item.is_couple === true
+                        : item.category?.toLocaleLowerCase() === category.toLocaleLowerCase();
+            
+            const searchMatch = searchQuery ? item.profile.name.toLowerCase().includes(searchQuery.toLowerCase()) : true;
+
+            return categoryMatch && searchMatch;
+        });
+
+        setFilteredData(filtered);
+    }, [category, searchQuery, fullList]);
 
     const handleClose = () => {
         setIsOpen(false);
@@ -88,27 +138,15 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
         setSelectedUser(null);
     };
 
-    const getFilteredData = () => {
-        return filteredData.filter((item) => {
-            const categoryMatch = category ? item.category?.toLocaleLowerCase() === category?.toLocaleLowerCase() : true;
-            const genderMatch = gender ? item.gender?.toLocaleLowerCase() === gender?.toLocaleLowerCase() : true;
-            const coupleMatch = isCouple ? item.is_couple === true : true;
-            return categoryMatch && genderMatch && coupleMatch;
-        });
-    };
-
     const getMarkers = () => {
         if (!searchQuery) return data.map((i, idx) => ({ latitude: i.current_lat, longitude: i.current_lng, id: i.id, text: i.position }));
-        const newData = getFilteredData();
+        const newData = filteredData;
         return newData.map((i) => ({ latitude: i.current_lat, longitude: i.current_lng, id: i.id, text: i.position }));
     };
 
     const handleEdit = (u) => {
         setSelectedUser(u);
     };
-
-    const [isPollingEnabled, setIsPollingEnabled] = useState(false);
-    const intervalRef = useRef(null);
 
     const handlePolling = useCallback(() => {
         if (isPollingEnabled) {
@@ -219,14 +257,8 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                 <Select
                     placeholder='Filtrar por categoria'
                     showEmpty
-                    items={[{ id: null, title: 'Todos' }, ...CATEGORIES]}
+                    items={CATEGORIES}
                     onChange={(e) => setCategory(e?.id ?? '')}
-                />
-                <Select
-                    placeholder='Filtrar por género'
-                    showEmpty
-                    items={[{ id: null, title: 'Todos' }, ...GENDERS]}
-                    onChange={(e) => setGender(e?.id ?? '')}
                 />
             </div>
             <div className='w-full mb-2 flex flex-row space-around gap-2 items-center'>
@@ -246,15 +278,6 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                 <label>
                     <input
                         type="checkbox"
-                        checked={isCouple}
-                        onChange={() => setIsCouple(!isCouple)}
-                    />
-                    Mostrar solo parejas
-                </label>
-
-                <label>
-                    <input
-                        type="checkbox"
                         checked={isPollingEnabled}
                         onChange={togglePolling}
                     />
@@ -263,7 +286,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
             </div>
             <Widget>
                 <div className='flex h-vp-70'>
-                    <ParticipantsList isLoading={isLoading} data={data} onReload={getData} isFiltered={!!searchQuery || !!category || !!gender || isCouple} onEdit={handleEdit} isPrivateView={isPrivateView} />
+                    <ParticipantsList isLoading={isLoading} initialData={data} onReload={getData} isFiltered={!!searchQuery || !!category} onEdit={handleEdit} isPrivateView={isPrivateView} />
                 </div>
             </Widget>
             <AddParticipantModal isOpen={isOpen || !!selectedUser} onClose={handleClose} allList={fullList} user={selectedUser} />

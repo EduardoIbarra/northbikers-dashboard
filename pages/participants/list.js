@@ -6,13 +6,19 @@ import Button from "../../components/button";
 import { AiFillEdit } from "react-icons/ai";
 import { getSupabase } from "../../utils/supabase";
 
-const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPrivateView = true }) => {
+const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit, isPrivateView = true }) => {
     const [selectedUser, setSelectedUser] = useState(null);
+    const [data, setData] = useState([]);
     const supabase2 = getSupabase();
 
+    useEffect(() => {
+        setData(initialData);
+        console.log("Initial Data set in ParticipantsList:", initialData);
+    }, [initialData]);
+
     const getSelectValue = useCallback((value, dict) => {
-        return dict.find(({ id }) => value?.toLocaleLowerCase() === id?.toLocaleLowerCase())?.title ?? 'Sin definir'
-    }, [])
+        return dict.find(({ id }) => value?.toLocaleLowerCase() === id?.toLocaleLowerCase())?.title ?? 'Sin definir';
+    }, []);
 
     const downloadCSV = () => {
         const csvString = convertToCSV(data, getSelectValue);
@@ -25,14 +31,14 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    }    
+    };
 
     const convertToCSV = (data, getSelectValue) => {
         const headers = [
             "Posición", "Puntos", "Número", "Participante", "Categoría",
             "Email", "Género", "# Checkins", "# Retos", "Ruta", "Pago"
         ].join(',');
-    
+
         const rows = data.map(row => [
             row.position,
             row.points ?? 0,
@@ -41,65 +47,29 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
             getSelectValue(row.category, CATEGORIES),
             row.profile.email,
             getSelectValue(row.gender, GENDERS),
-            row.checkins,
-            row.challenges,
+            row.regular_checkins_number ?? 0,
+            row.challenge_checkins_number ?? 0,
             row.route.title,
             row.payment_status === 'paid' ? 'Paid' : 'Not Paid'
         ].join(','));
-    
+
         return [headers, ...rows].join('\n');
-    }    
+    };
 
     const TableItem = memo((row) => {
-        const { profile, participant_number, position, category, points, route: { title }, gender, payment_status } = row;
-        const [checkins, setCheckins] = useState(null);
-        const [challenges, setChallenges] = useState(null);
+        const { profile, participant_number, position, category, points, route: { title }, gender, payment_status, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
         const { name, email } = profile;
-
-        const getCheckins = useCallback(async (row) => {
-            try {
-                let res = await supabase2.from("check_ins").select
-                    (`*,
-                checkpoints!inner(*)`)
-                    .eq('route_id', row.route_id)
-                    .eq('profile_id', row.profile_id)
-                    .not('checkpoints.icon', 'like', '%challenges.png')
-                setCheckins(res.data.length);
-            } catch (e) {
-                console.log("Error", e);
-            }
-        }, [])
-
-        const getChallenges = useCallback(async (row) => {
-            try {
-                let res = await supabase2.from("check_ins").select
-                    (`*,
-                checkpoints!inner(*)`)
-                    .eq('route_id', row.route_id)
-                    .eq('profile_id', row.profile_id)
-                    .like('checkpoints.icon', '%challenges.png')
-                setChallenges(res.data.length);
-            } catch (e) {
-                console.log("Error", e);
-            }
-        }, [])
-
-        useEffect(() => {
-            getCheckins(row)
-            getChallenges(row)
-                .catch(console.error);
-        }, [getCheckins])
-
+    
         return (
             <tr onClick={() => {
-                if (isPrivateView) setSelectedUser(profile)
+                if (isPrivateView) setSelectedUser(profile);
             }} className='cursor-pointer hover:bg-gray-100 rounded'>
                 {isPrivateView ? (
                     <td>
                         <Button
                             className=""
                             onClick={(e) => {
-                                onEdit(row)
+                                onEdit(row);
                                 e.stopPropagation();
                                 e.preventDefault();
                             }}><AiFillEdit />
@@ -113,8 +83,8 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
                 <td>{getSelectValue(category, CATEGORIES)}</td>
                 <td>{email}</td>
                 <td>{getSelectValue(gender, GENDERS)}</td>
-                <td>{checkins}</td>
-                <td>{challenges}</td>
+                <td>{regular_checkins_number}</td>
+                <td>{challenge_checkins_number}</td>
                 <td>{title}</td>
                 <td>
                     {payment_status === 'paid' ? (
@@ -135,9 +105,28 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
                         }}></div>
                     )}
                 </td>
+                <td>
+                <td>
+                {avatar_url && (
+                    <a
+                        href={avatar_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                            e.stopPropagation(); // Prevent row click
+                            e.preventDefault(); // Prevent default link behavior
+                            window.open(avatar_url, "_blank"); // Open the avatar in a new tab
+                        }}
+                        title="View Avatar"
+                    >
+                        Abrir Foto
+                    </a>
+                )}
+            </td>
+                </td>
             </tr>
-        )
-    })
+        );
+    });    
 
     const fields = [
         ...(isPrivateView ? [{ name: 'Editar' }] : []),
@@ -152,12 +141,13 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
         { name: '# Retos' },
         { name: 'Ruta' },
         { name: 'Pago' },
-    ]
+        { name: 'Avatar' },
+    ];
 
     const handleToggleModal = (shouldUpdateListOnDismiss) => {
-        setSelectedUser(null)
-        if (shouldUpdateListOnDismiss) onReload()
-    }
+        setSelectedUser(null);
+        if (shouldUpdateListOnDismiss) onReload();
+    };
 
     return (
         <div className='overflow-auto'>
@@ -177,7 +167,7 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
                         </thead>
                         <tbody>
                             {data.map((u) => {
-                                return <TableItem key={u.id} {...u} />
+                                return <TableItem key={u.id} {...u} />;
                             })}
                         </tbody>
                     </table>
@@ -193,7 +183,7 @@ const ParticipantsList = ({ isLoading, data, onReload, isFiltered, onEdit, isPri
 
             <CheckInsModal isOpen={!!selectedUser} profile={selectedUser} onClose={handleToggleModal} />
         </div>
-    )
-}
+    );
+};
 
-export default ParticipantsList
+export default ParticipantsList;
