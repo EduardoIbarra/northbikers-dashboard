@@ -18,6 +18,7 @@ export const CATEGORIES = [
     { id: 'street', title: 'Street' },
     { id: 'female', title: 'Female' },
     { id: 'couple', title: 'Couple' },
+    { id: 'team', title: 'Team' },
   ];
 export const GENDERS = [
     {id: 'MALE', title: 'Hombre'},

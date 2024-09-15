@@ -122,8 +122,10 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                     ? item.gender?.toLocaleLowerCase() === 'female'
                     : category === 'couple'
                         ? item.is_couple === true
-                        : item.category?.toLocaleLowerCase() === category.toLocaleLowerCase();
-            
+                        : category === 'team'
+                            ? item.is_team === true
+                            : item.category?.toLocaleLowerCase() === category.toLocaleLowerCase();
+
             const searchMatch = searchQuery ? item.profile.name.toLowerCase().includes(searchQuery.toLowerCase()) : true;
 
             return categoryMatch && searchMatch;
