@@ -1,11 +1,11 @@
-import {FiLogOut, FiMenu} from 'react-icons/fi'
-import {useRecoilState, useRecoilValue, useSetRecoilState} from "recoil";
-import {CurrentRoute, Routes, SideNavCollapsed} from "../../store/atoms/global";
+import { FiLogOut, FiMenu } from 'react-icons/fi'
+import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
+import { CurrentRoute, Routes, SideNavCollapsed } from "../../store/atoms/global";
 import Select from "../select";
-import {getSupabase} from "../../utils/supabase";
-import {useCallback, useEffect} from "react";
-import {setLoggedUser} from "../../utils";
-import {useRouter} from "next/router";
+import { getSupabase } from "../../utils/supabase";
+import { useCallback, useEffect } from "react";
+import { setLoggedUser } from "../../utils";
+import { useRouter } from "next/router";
 
 const Navbar = () => {
     const [isOpen, setOpen] = useRecoilState(SideNavCollapsed);
@@ -16,7 +16,7 @@ const Navbar = () => {
     const supabase = getSupabase();
 
 
-    const logout = ()=> {
+    const logout = () => {
         return supabase.auth.signOut().then(() => {
             setLoggedUser('')
             router.push('/login')
@@ -26,7 +26,11 @@ const Navbar = () => {
 
     const getRoutes = useCallback(async () => {
         try {
-            const {data} = await supabase.from("routes").select()
+            const { data, error } = await supabase
+                .from("routes")
+                .select()
+                .order('featured', { ascending: true })  // Featured routes first
+                .order('title', { ascending: true });
             if (data) {
                 data.reverse();
                 setRoutes(data)
@@ -50,12 +54,12 @@ const Navbar = () => {
                         setOpen(!isOpen)
                     }}
                     className="mx-4">
-                    <FiMenu size={20}/>
+                    <FiMenu size={20} />
                 </button>
 
-                <Select size='w-80' placeholder='Selecciona ruta' selected={currentRoute?.id} items={routes} inline onChange={setCurrentRoute}/>
+                <Select size='w-80' placeholder='Selecciona ruta' selected={currentRoute?.id} items={routes} inline onChange={setCurrentRoute} />
 
-                <span className="ml-auto"/>
+                <span className="ml-auto" />
                 <button
                     onClick={logout}
                     className="btn-transparent flex items-center justify-center h-16 w-8 mx-4">
