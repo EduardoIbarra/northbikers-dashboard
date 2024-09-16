@@ -13,6 +13,17 @@ const RouteBuilder = () => {
     const currentRoute = useRecoilValue(CurrentRoute);
     const setCurrentRoute = useSetRecoilState(CurrentRoute);
     const [checkpoints, setCheckpoints] = useState([]);
+    const [newCheckpoint, setNewCheckpoint] = useState({
+        name: '',
+        lat: '',
+        lng: '',
+        description: '',
+        points: 0,
+        challenge: false,
+        terrain: 'pavement',
+        weakSignal: false,
+        picture: '',
+    });
     const supabase = getSupabase();
 
     // Fetch routes and checkpoints
@@ -70,6 +81,67 @@ const RouteBuilder = () => {
         }
     };
 
+    const handleSaveNewCheckpoint = async () => {
+        try {
+            // Insert the new checkpoint into the checkpoints table
+            const { data: newCheckpointData, error: newCheckpointError } = await supabase
+                .from('checkpoints')
+                .insert({
+                    name: newCheckpoint.name,
+                    lat: newCheckpoint.lat,
+                    lng: newCheckpoint.lng,
+                    description: newCheckpoint.description,
+                    points: newCheckpoint.points,
+                    icon: newCheckpoint.challenge
+                        ? "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/challenges.png"
+                        : "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/road.png",
+                    terrain: newCheckpoint.terrain,
+                    weakSignal: newCheckpoint.weakSignal,
+                })
+                .select('id');  // Select the ID of the newly inserted checkpoint
+
+            if (newCheckpointError) {
+                console.error("Error saving new checkpoint:", newCheckpointError);
+                return;
+            }
+
+            // Get the ID of the newly created checkpoint
+            const newCheckpointId = newCheckpointData[0].id;
+
+            // Insert a record into the event_checkpoints table to associate the checkpoint with the current route
+            const { error: eventCheckpointError } = await supabase
+                .from('event_checkpoints')
+                .insert({
+                    event_id: currentRoute.id,  // Tie the checkpoint to the current route
+                    checkpoint_id: newCheckpointId,  // Use the newly created checkpoint ID
+                });
+
+            if (eventCheckpointError) {
+                console.error("Error inserting into event_checkpoints:", eventCheckpointError);
+                return;
+            }
+
+            alert("Nuevo checkpoint creado y asociado exitosamente.");
+
+            // Reset the form and refresh the checkpoints list
+            setNewCheckpoint({
+                name: '',
+                lat: '',
+                lng: '',
+                description: '',
+                points: 0,
+                challenge: false,
+                terrain: 'pavement',
+                weakSignal: false,
+                picture: '',
+            });
+
+            getCheckpoints(); // Refresh the checkpoints after adding a new one
+        } catch (e) {
+            console.error("Error creating new checkpoint and associating it with the route", e);
+        }
+    };
+
     const handleImageUpload = async (e, checkpoint) => {
         const file = e.target.files[0];
         const fileName = `pictures/checkpoint/${Date.now()}.jpg`;
@@ -121,11 +193,9 @@ const RouteBuilder = () => {
                         <Navbar />
                         <div className="min-h-screen w-full p-4">
                             <div className="route-builder">
-
                                 <h2 className="text-center mt-6">Constructor de Rutas</h2>
 
                                 <div className="container mx-auto mt-4">
-                                    {/* Add the following div to enable horizontal scrolling */}
                                     <div className="overflow-x-auto">
                                         <table className="table-auto w-full text-left">
                                             <thead>
@@ -145,6 +215,98 @@ const RouteBuilder = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                {/* New Checkpoint Row */}
+                                                <tr>
+                                                    <td>Nuevo</td>
+                                                    <td>
+                                                        <input
+                                                            type="text"
+                                                            value={newCheckpoint.name}
+                                                            onChange={(e) =>
+                                                                setNewCheckpoint({ ...newCheckpoint, name: e.target.value })
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="number"
+                                                            value={newCheckpoint.lat}
+                                                            onChange={(e) =>
+                                                                setNewCheckpoint({ ...newCheckpoint, lat: e.target.value })
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="number"
+                                                            value={newCheckpoint.lng}
+                                                            onChange={(e) =>
+                                                                setNewCheckpoint({ ...newCheckpoint, lng: e.target.value })
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="text"
+                                                            value={newCheckpoint.description}
+                                                            onChange={(e) =>
+                                                                setNewCheckpoint({ ...newCheckpoint, description: e.target.value })
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="number"
+                                                            value={newCheckpoint.points}
+                                                            onChange={(e) =>
+                                                                setNewCheckpoint({ ...newCheckpoint, points: e.target.value })
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={newCheckpoint.challenge}
+                                                            onChange={(e) =>
+                                                                setNewCheckpoint({ ...newCheckpoint, challenge: e.target.checked })
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <select
+                                                            value={newCheckpoint.terrain}
+                                                            onChange={(e) =>
+                                                                setNewCheckpoint({ ...newCheckpoint, terrain: e.target.value })
+                                                            }
+                                                        >
+                                                            <option value="pavement">Pavimento</option>
+                                                            <option value="dirt">Terracería</option>
+                                                        </select>
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={newCheckpoint.weakSignal}
+                                                            onChange={(e) =>
+                                                                setNewCheckpoint({ ...newCheckpoint, weakSignal: e.target.checked })
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        {/* Image upload logic can be added here if necessary */}
+                                                    </td>
+                                                    <td>
+                                                    </td>
+                                                    <td>
+                                                        <button
+                                                            style={{ backgroundColor: 'black', color: 'white', padding: '8px 16px', borderRadius: '4px' }}
+                                                            onClick={handleSaveNewCheckpoint}>
+                                                            Guardar
+                                                        </button>
+                                                    </td>
+                                                </tr>
+
+                                                {/* Existing Checkpoints */}
                                                 {checkpoints.map((cp, index) => (
                                                     <tr key={cp.id}>
                                                         <td>{cp.checkpoint_id}</td>
