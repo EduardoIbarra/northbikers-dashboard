@@ -17,4 +17,11 @@ export const routes = [
         badge: null,
         items: []
     },
+    {
+        url: '/routes',
+        icon: <BsFillPeopleFill size={18}/>,
+        title: 'Rutas',
+        badge: null,
+        items: []
+    },
 ]
