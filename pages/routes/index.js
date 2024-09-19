@@ -193,8 +193,17 @@ const RouteBuilder = () => {
                         <Navbar />
                         <div className="min-h-screen w-full p-4">
                             <div className="route-builder">
-                                <h2 className="text-center mt-6">Constructor de Rutas</h2>
-
+                                {/* <h2 className="text-center mt-6">Constructor de Rutas {currentRoute.title}</h2> */}
+                                <div className="text-center mt-6">
+                                    <a
+                                        href={`https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=https://www.northbikers.com/${currentRoute.slug}`}
+                                        target="_blank"
+                                        download={`qr-${currentRoute.slug}.png`}
+                                        className="inline-block bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition duration-300 ease-in-out"
+                                    >
+                                        Descargar QR para este evento
+                                    </a>
+                                </div>
                                 <div className="container mx-auto mt-4">
                                     <div className="overflow-x-auto">
                                         <table className="table-auto w-full text-left">
