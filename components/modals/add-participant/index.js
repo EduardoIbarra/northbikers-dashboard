@@ -63,9 +63,9 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             console.log("No user selected!");
             return;
         }
-    
+
         setIsSaving(true);
-    
+
         try {
             // Step 1: Check if any records with the same profile_id and route_id exist
             const { data: existingProfiles, error: checkError } = await supabase
@@ -73,13 +73,13 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 .select('id, participant_number')
                 .eq('profile_id', selectedUser.id)
                 .eq('route_id', currentRoute.id);
-    
+
             if (checkError) {
                 console.error("Error checking existing profiles:", checkError);
                 setIsSaving(false);
                 return;
             }
-    
+
             // Step 2: If any of the existing profiles have participant_number > 0, show alert and do not save
             const validProfile = existingProfiles.find(profile => profile.participant_number > 0);
             if (validProfile) {
@@ -87,7 +87,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 setIsSaving(false);
                 return;
             }
-    
+
             // Step 3: Delete all records with participant_number === 0 or null
             const invalidProfiles = existingProfiles.filter(profile => !profile.participant_number || profile.participant_number === 0);
             if (invalidProfiles.length > 0) {
@@ -95,14 +95,14 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                     .from('event_profile')
                     .delete()
                     .in('id', invalidProfiles.map(profile => profile.id));  // Delete by array of IDs
-    
+
                 if (deleteError) {
                     console.error("Error deleting invalid profiles:", deleteError);
                     setIsSaving(false);
                     return;
                 }
             }
-    
+
             // Step 4: Get the largest participant_number for the current route and assign +1
             const { data: maxNumberData, error: maxNumberError } = await supabase
                 .from('event_profile')
@@ -110,43 +110,65 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 .eq('route_id', currentRoute.id)
                 .order('participant_number', { ascending: false })
                 .limit(1);
-    
+
             let nextParticipantNumber = 1;  // Default to 1 if no records exist
             if (!maxNumberError && maxNumberData && maxNumberData.length > 0) {
                 nextParticipantNumber = maxNumberData[0].participant_number + 1;
             }
-    
+
             // Step 5: Prepare the payload for saving (remove mode field)
             const { mode, ...filteredFormData } = {
                 ...formData,
                 profile_id: selectedUser.id,  // Ensure profile_id is set
                 participant_number: nextParticipantNumber  // Assign next available participant number
             };
-    
+
             // Step 6: Perform the insert operation
-            const { error: insertError } = await supabase.from('event_profile').upsert([{ 
-                ...filteredFormData, 
-                route_id: currentRoute.id
-            }]);
-    
+            const { data: upsertedData, error: insertError } = await supabase
+                .from('event_profile')
+                .upsert([{
+                    ...filteredFormData,
+                    route_id: currentRoute.id
+                }]);
+
             if (insertError) {
                 console.error("Error inserting/upserting profile:", insertError);
                 setIsSaving(false);
                 return;
             }
-    
-            // Step 7: Close the modal and reset form data
+
+            // Step 7: Call the email confirmation endpoint with the upserted event_profile id
+            const upsertedProfileId = upsertedData?.[0]?.id;  // Assuming upsertedData contains the new event_profile id
+            if (upsertedProfileId) {
+                try {
+                    await fetch('https://api.northbikers.com/api/send_confirmation_email', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            eventProfileId: upsertedProfileId,  // Send the just upserted profile id
+                        }),
+                    });
+                    console.log('Confirmation email sent successfully.');
+                } catch (emailError) {
+                    console.error('Error sending confirmation email:', emailError);
+                }
+            }
+
+            // Step 8: Close the modal and reset form data
             onClose();
             clearData();
         } catch (e) {
             console.log("ERROR SAVING", e);
         }
-    
+
         setIsSaving(false);
         setShowAlert(false);
     };
-    
-    
+
+
+
     const handleSelectUser = (user) => {
         setSelectedUser(user);
         setFormData({
@@ -160,7 +182,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
         });
         handleToggleModal();
     };
-    
+
 
     useEffect(() => {
         if (user) {
