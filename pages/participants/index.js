@@ -243,13 +243,12 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
 
     return (
         <div>
-            {isPrivateView ? (
+
+            {isPrivateView && (loggedUser?.id === 'bd72426c-f32c-41bb-a874-d118474a3f58' || loggedUser?.id === 'dafe8d23-6b92-4d3e-8851-95bd7fb998a2') && (
                 <SectionTitle title="Detalles" subtitle="Participantes" buttonTitle={'Nuevo participante'} onClick={() => {
                     getData(false);
                     setIsOpen(true);
                 }} />
-            ) : (
-                <SectionTitle title="Detalles" subtitle="Participantes" />
             )}
 
             <div className='w-full mb-2 flex flex-row space-around gap-2 items-end'>
