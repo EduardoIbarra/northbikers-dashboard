@@ -191,11 +191,6 @@ const RouteBuilder = () => {
                 toast.success("Imagen subida exitosamente.", {
                     position: "top-right", // Position the toast at the top-right corner
                     autoClose: 3000, // Automatically close after 3 seconds
-                    hideProgressBar: false, // Show a progress bar
-                    closeOnClick: true, // Close the toast when clicked
-                    pauseOnHover: true, // Pause timer on hover
-                    draggable: true, // Allow drag-and-drop dismiss
-                    progress: undefined, // Use the default progress bar styling
                   });
                 getCheckpoints(); // Refresh checkpoints after successful upload
             }
