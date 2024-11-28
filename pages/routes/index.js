@@ -6,6 +6,8 @@ import { getSupabase } from "../../utils/supabase";
 import Navbar from "../../components/navbar";
 import Sidebar from "../../components/sidebar";
 import { SideNavCollapsed } from "../../store/atoms/global";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const RouteBuilder = () => {
     const isOpen = useRecoilValue(SideNavCollapsed);
@@ -13,6 +15,7 @@ const RouteBuilder = () => {
     const currentRoute = useRecoilValue(CurrentRoute);
     const setCurrentRoute = useSetRecoilState(CurrentRoute);
     const [checkpoints, setCheckpoints] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [newCheckpoint, setNewCheckpoint] = useState({
         name: '',
         lat: '',
@@ -26,20 +29,37 @@ const RouteBuilder = () => {
     });
     const supabase = getSupabase();
 
+    const fetchCategories = async () => {
+        try {
+            const { data: categoryData, error: categoryError } = await supabase
+                .from('checkpoint_categories')
+                .select('id, name');
+
+            if (categoryError) {
+                toast.error("Error fetching categories:", categoryError);
+            } else {
+                console.log("Fetched categories:", categoryData); // Add this line for debugging
+                setCategories(categoryData);
+            }
+        } catch (error) {
+            toast.error("Unexpected error fetching categories:", error);
+        }
+    };
+
     // Fetch routes and checkpoints
     const getCheckpoints = useCallback(async () => {
         if (currentRoute?.id) {
             try {
                 const { data, error } = await supabase
                     .from('event_checkpoints')
-                    .select('id, checkpoint_id, checkpoints(name, lat, lng, description, points, icon, terrain, weakSignal, picture)')
+                    .select('id, checkpoint_id, checkpoints(name, lat, lng, description, points, icon, terrain, weakSignal, picture, category_id)')
                     .eq('event_id', currentRoute.id);
 
                 if (data) {
                     setCheckpoints(data);
                 }
             } catch (e) {
-                console.error("Error fetching checkpoints", e);
+                toast.error("Error fetching checkpoints", e);
                 setCheckpoints([]);
             }
         }
@@ -47,6 +67,7 @@ const RouteBuilder = () => {
 
     useEffect(() => {
         getCheckpoints();
+        fetchCategories();
     }, [currentRoute, getCheckpoints]);
 
     const handleSaveCheckpoint = async (checkpoint) => {
@@ -66,18 +87,19 @@ const RouteBuilder = () => {
                         ? "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/challenges.png"
                         : "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/road.png",
                     terrain: updatedCheckpoint.terrain,
-                    order: updatedCheckpoint.order,
                     weakSignal: updatedCheckpoint.weakSignal,
+                    is_challenge: updatedCheckpoint.challenge,
+                    category_id: updatedCheckpoint.category,  // Ensure category is included here
                 })
                 .eq('id', checkpoint.checkpoint_id);  // Use checkpoint_id from the parent object
 
             if (error) {
-                console.error("Error saving checkpoint:", error);
+                toast.error("Error saving checkpoint:", error);
             } else {
-                alert("Cambios guardados exitosamente.");
+                toast.success("Cambios guardados exitosamente.");
             }
         } catch (e) {
-            console.error("Error updating checkpoint", e);
+            toast.error("Error updating checkpoint", e);
         }
     };
 
@@ -101,7 +123,7 @@ const RouteBuilder = () => {
                 .select('id');  // Select the ID of the newly inserted checkpoint
 
             if (newCheckpointError) {
-                console.error("Error saving new checkpoint:", newCheckpointError);
+                toast.error("Error saving new checkpoint:", newCheckpointError);
                 return;
             }
 
@@ -117,11 +139,11 @@ const RouteBuilder = () => {
                 });
 
             if (eventCheckpointError) {
-                console.error("Error inserting into event_checkpoints:", eventCheckpointError);
+                toast.error("Error inserting into event_checkpoints:", eventCheckpointError);
                 return;
             }
 
-            alert("Nuevo checkpoint creado y asociado exitosamente.");
+            toast.success("Nuevo checkpoint creado y asociado exitosamente.");
 
             // Reset the form and refresh the checkpoints list
             setNewCheckpoint({
@@ -138,7 +160,7 @@ const RouteBuilder = () => {
 
             getCheckpoints(); // Refresh the checkpoints after adding a new one
         } catch (e) {
-            console.error("Error creating new checkpoint and associating it with the route", e);
+            toast.error("Error creating new checkpoint and associating it with the route", e);
         }
     };
 
@@ -153,7 +175,7 @@ const RouteBuilder = () => {
                 .upload(fileName, file);
 
             if (error) {
-                console.error("Error uploading image:", error);
+                toast.error("Error uploading image:", error);
                 return;
             }
 
@@ -164,13 +186,21 @@ const RouteBuilder = () => {
                 .eq('id', checkpoint.checkpoint_id);  // Use checkpoint_id to identify the row
 
             if (updateError) {
-                console.error("Error updating checkpoint with image:", updateError);
+                toast.error("Error updating checkpoint with image:", updateError);
             } else {
-                alert("Imagen subida exitosamente.");
+                toast.success("Imagen subida exitosamente.", {
+                    position: "top-right", // Position the toast at the top-right corner
+                    autoClose: 3000, // Automatically close after 3 seconds
+                    hideProgressBar: false, // Show a progress bar
+                    closeOnClick: true, // Close the toast when clicked
+                    pauseOnHover: true, // Pause timer on hover
+                    draggable: true, // Allow drag-and-drop dismiss
+                    progress: undefined, // Use the default progress bar styling
+                  });
                 getCheckpoints(); // Refresh checkpoints after successful upload
             }
         } catch (e) {
-            console.error("Error uploading image", e);
+            toast.error("Error uploading image", e);
         }
     };
 
@@ -218,6 +248,7 @@ const RouteBuilder = () => {
                                                     <th>Reto</th>
                                                     <th>Terreno</th>
                                                     <th>Señal Débil</th>
+                                                    <th>Categoría</th>
                                                     <th>Imagen</th>
                                                     <th>Ver</th>
                                                     <th>Guardar</th>
@@ -301,6 +332,27 @@ const RouteBuilder = () => {
                                                             }
                                                         />
                                                     </td>
+
+                                                    <td>
+                                                        <select
+                                                            value={newCheckpoint.category || ''} // Preselect existing category if present
+                                                            onChange={(e) =>
+                                                                setCheckpoints((prev) =>
+                                                                    prev.map((item, i) =>
+                                                                        i === index ? { ...item, selectedCategory: e.target.value } : item
+                                                                    )
+                                                                )
+                                                            }
+                                                        >
+                                                            <option value="">Seleccionar categoría</option>
+                                                            {categories.map((category) => (
+                                                                <option key={category.id} value={category.id}>
+                                                                    {category.name}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </td>
+
                                                     <td>
                                                         {/* Image upload logic can be added here if necessary */}
                                                     </td>
@@ -425,6 +477,36 @@ const RouteBuilder = () => {
                                                                 }
                                                             />
                                                         </td>
+
+                                                        <td>
+                                                            <select
+                                                                value={cp.checkpoints.category_id || ''}  // Preselect existing category using category_id
+                                                                onChange={(e) =>
+                                                                    setCheckpoints((prev) =>
+                                                                        prev.map((item, i) =>
+                                                                            i === index
+                                                                                ? {
+                                                                                    ...item,
+                                                                                    checkpoints: {
+                                                                                        ...item.checkpoints,
+                                                                                        category_id: e.target.value,  // Update category_id directly
+                                                                                    },
+                                                                                }
+                                                                                : item
+                                                                        )
+                                                                    )
+                                                                }
+                                                            >
+                                                                <option value="">Seleccionar categoría</option>
+                                                                {categories.map((category) => (
+                                                                    <option key={category.id} value={category.id}>
+                                                                        {category.name}
+                                                                    </option>
+                                                                ))}
+                                                            </select>
+                                                        </td>
+
+
 
                                                         <td>
                                                             <input type="file" onChange={(e) => handleImageUpload(e, cp)} />
