@@ -1,25 +1,24 @@
 @media (max-width: 767px) {
   .arrow {
-    transform: rotate(90deg);
-    transition: transform 0.15s ease-in-out;
+    @apply transition-transform duration-150 ease-in-out rotate-90;
   }
 
   .hidden-sibling {
     + ul {
       @apply hidden;
     }
-    &.left-sidebar-item {
-      .arrow {
-        transform: rotate(-90deg) !important;
-      }
+
+    &.left-sidebar-item .arrow {
+      @apply -rotate-90;
     }
   }
 
   .left-sidebar-1 {
     .logo {
-      @apply uppercase font-bold text-base tracking-wider flex flex-row items-center justify-start h-24 w-full whitespace-nowrap pl-4;
-      max-width: calc(theme('spacing.1') * 64);
-      @apply text-blue-500;
+      @apply uppercase font-bold text-base tracking-wider flex items-center justify-start h-24 w-full pl-4 whitespace-nowrap text-blue-500;
+
+      max-width: theme("spacing.64");
+
       span {
         @apply block;
       }
@@ -27,81 +26,72 @@
   }
 
   .left-sidebar-item {
-    @apply flex flex-row h-10 items-center justify-start relative whitespace-nowrap;
-    min-width: calc(theme('spacing.1') * 16);
-    max-width: calc(theme('spacing.1') * 64);
-    width: calc(theme('spacing.1') * 64);
+    @apply flex items-center relative h-10 w-full whitespace-nowrap;
+
+    min-width: theme("spacing.16");
+    max-width: theme("spacing.64");
+    width: theme("spacing.64");
+
     > svg {
-      width: calc(theme('spacing.1') * 16);
+      width: theme("spacing.16");
     }
+
     &.open-sibling {
       @apply text-blue-500;
-      &:after {
+
+      &::after {
+        @apply bg-blue-500 absolute top-0 bottom-0 left-0 w-1;
         content: "";
-        display: block;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        width: 4px;
-        @apply bg-blue-500;
       }
     }
-    &:after {
+
+    &::after {
+      @apply bg-blue-500 hidden absolute top-0 bottom-0 left-0 w-1;
       content: "";
-      display: none;
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      width: 4px;
-      @apply bg-blue-500;
     }
+
     &:hover,
     &.active {
       @apply text-blue-500;
-      &:after {
-        display: block;
+
+      &::after {
+        @apply block;
       }
     }
   }
 
-  .l0 {
-    > .left-sidebar-item {
-      > .title {
-        @apply visible opacity-100;
-      }
-    }
-  }
-
-  .left-sidebar-title {
-    @apply uppercase font-normal text-xs tracking-wider flex flex-row items-center justify-start h-16 w-full px-4;
+  .l0 > .left-sidebar-item > .title {
     @apply visible opacity-100;
   }
 
+  .left-sidebar-title {
+    @apply uppercase font-normal text-xs tracking-wider flex items-center h-16 w-full px-4 visible opacity-100;
+  }
+
   ul ul .left-sidebar-item {
-    padding-left: calc(theme('spacing.1') * 16);
+    padding-left: theme("spacing.16");
   }
   ul ul ul .left-sidebar-item {
-    padding-left: calc(theme('spacing.1') * 20);
+    padding-left: theme("spacing.20");
   }
   ul ul ul ul .left-sidebar-item {
-    padding-left: calc(theme('spacing.1') * 24);
+    padding-left: theme("spacing.24");
   }
   ul ul ul ul ul .left-sidebar-item {
-    padding-left: calc(theme('spacing.1') * 28);
+    padding-left: theme("spacing.28");
   }
 
   .left-sidebar-1 {
     @apply text-sm shadow-lg;
+
     [data-left-sidebar="light"] & {
       @apply bg-white border-r border-gray-200 text-gray-900;
     }
+
     [data-left-sidebar="dark"] & {
-      @apply border-r text-white;
-      background: color(theme('colors.gray.900') tint(5%));
-      border-color: color(theme('colors.gray.900') tint(10%));
+      @apply bg-gray-900 border-gray-800 text-white;
     }
+
     .badge {
       @apply hidden;
     }

@@ -78,11 +78,11 @@
 .rdtPrev span,
 .rdtNext span {
   display: block;
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Chrome/Safari/Opera */
-  -khtml-user-select: none; /* Konqueror */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 
@@ -121,9 +121,6 @@ td.rdtYear {
 
 .rdtCounter {
   height: 100px;
-}
-
-.rdtCounter {
   width: 40px;
 }
 
@@ -137,11 +134,11 @@ td.rdtYear {
   cursor: pointer;
   display: block;
 
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Chrome/Safari/Opera */
-  -khtml-user-select: none; /* Konqueror */
-  -moz-user-select: none; /* Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 .rdtCounter .rdtCount {
@@ -164,136 +161,3 @@ td.rdtYear {
 .rdtTime td {
   cursor: default;
 }
-
-[data-background="light"] {
-  .rdtPicker {
-    background: #fff;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid theme("colors.gray.50");
-  }
-  .rdtPicker td.rdtDay:hover,
-  .rdtPicker td.rdtHour:hover,
-  .rdtPicker td.rdtMinute:hover,
-  .rdtPicker td.rdtSecond:hover,
-  .rdtPicker .rdtTimeToggle:hover {
-    background: theme("colors.gray.200");
-  }
-  .rdtPicker td.rdtOld,
-  .rdtPicker td.rdtNew {
-    color: theme("colors.gray.500");
-  }
-  .rdtPicker td.rdtToday:before {
-    border-bottom: 7px solid theme("colors.blue.500");
-    border-top-color: rgba(0, 0, 0, 0.2);
-  }
-  .rdtPicker td.rdtActive,
-  .rdtPicker td.rdtActive:hover {
-    background-color: theme("colors.blue.500");
-    color: #fff;
-  }
-  .rdtPicker td.rdtActive.rdtToday:before {
-    border-bottom-color: #fff;
-  }
-  .rdtPicker td.rdtDisabled,
-  .rdtPicker td.rdtDisabled:hover {
-    color: theme("colors.gray.500");
-  }
-
-  .rdtPicker td span.rdtOld {
-    color: theme("colors.gray.500");
-  }
-  .rdtPicker td span.rdtDisabled,
-  .rdtPicker td span.rdtDisabled:hover {
-    color: theme("colors.gray.500");
-  }
-  .rdtPicker th {
-    border-bottom: 1px solid theme("colors.gray.50");
-  }
-  .rdtPicker th.rdtDisabled,
-  .rdtPicker th.rdtDisabled:hover {
-    color: theme("colors.gray.500");
-  }
-  .rdtPicker thead tr:first-child th:hover {
-    background: theme("colors.gray.200");
-  }
-  .rdtPicker tfoot {
-    border-top: 1px solid theme("colors.gray.50");
-  }
-  .rdtPicker button:hover {
-    background-color: theme("colors.gray.200");
-  }
-  td.rdtMonth:hover,
-  td.rdtYear:hover {
-    background: theme("colors.gray.200");
-  }
-  .rdtCounter .rdtBtn .rdtCounter .rdtBtn:hover {
-    background: theme("colors.gray.200");
-  }
-}
-
-[data-background="dark"] {
-  .rdtPicker {
-    background: theme("colors.gray.800");
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid theme("colors.gray.700");
-  }
-  .rdtPicker td.rdtDay:hover,
-  .rdtPicker td.rdtHour:hover,
-  .rdtPicker td.rdtMinute:hover,
-  .rdtPicker td.rdtSecond:hover,
-  .rdtPicker .rdtTimeToggle:hover {
-    background: theme("colors.gray.600");
-  }
-  .rdtPicker td.rdtOld,
-  .rdtPicker td.rdtNew {
-    color: theme("colors.gray.700");
-  }
-  .rdtPicker td.rdtToday:before {
-    border-bottom: 7px solid theme("colors.blue.500");
-    border-top-color: rgba(0, 0, 0, 0.2);
-  }
-  .rdtPicker td.rdtActive,
-  .rdtPicker td.rdtActive:hover {
-    background-color: theme("colors.blue.500");
-    color: #fff;
-  }
-  .rdtPicker td.rdtActive.rdtToday:before {
-    border-bottom-color: theme("colors.gray.800");
-  }
-  .rdtPicker td.rdtDisabled,
-  .rdtPicker td.rdtDisabled:hover {
-    color: theme("colors.gray.700");
-  }
-
-  .rdtPicker td span.rdtOld {
-    color: theme("colors.gray.700");
-  }
-  .rdtPicker td span.rdtDisabled,
-  .rdtPicker td span.rdtDisabled:hover {
-    color: theme("colors.gray.700");
-  }
-  .rdtPicker th {
-    border-bottom: 1px solid theme("colors.gray.700");
-  }
-  .rdtPicker th.rdtDisabled,
-  .rdtPicker th.rdtDisabled:hover {
-    color: theme("colors.gray.700");
-  }
-  .rdtPicker thead tr:first-child th:hover {
-    background: theme("colors.gray.600");
-  }
-  .rdtPicker tfoot {
-    border-top: 1px solid theme("colors.gray.700");
-  }
-  .rdtPicker button:hover {
-    background-color: theme("colors.gray.600");
-  }
-  td.rdtMonth:hover,
-  td.rdtYear:hover {
-    background: theme("colors.gray.600");
-  }
-  .rdtCounter .rdtBtn .rdtCounter .rdtBtn:hover {
-    background: theme("colors.gray.600");
-  }
-}
-

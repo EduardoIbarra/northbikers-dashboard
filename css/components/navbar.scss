@@ -1,10 +1,10 @@
 [data-navbar="light"] {
   .navbar {
-    @apply text-gray-900;
-    @apply bg-white border-gray-100;
+    @apply text-gray-900 bg-white border border-gray-100;
+
     .navbar-search {
       input {
-      @apply bg-gray-100 border-gray-100;
+        @apply bg-gray-100 border border-gray-100;
       }
     }
   }
@@ -12,13 +12,11 @@
 
 [data-navbar="dark"] {
   .navbar {
-    @apply text-white;
-    background: color(theme('colors.gray.900') tint(5%));
-    border-color: color(theme('colors.gray.900') tint(10%));
+    @apply text-white bg-gray-900 border border-gray-800;
+
     .navbar-search {
       input {
-        background: color(theme('colors.gray.900') tint(10%));
-        border-color: color(theme('colors.gray.900') tint(10%));
+        @apply bg-gray-800 border-gray-800;
       }
     }
   }

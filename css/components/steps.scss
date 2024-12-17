@@ -1,6 +1,7 @@
 .steps-1 {
   .number {
-    @apply relative;
+    position: relative;
+
     &::before {
       display: block;
       content: "";
@@ -10,7 +11,7 @@
       left: 0;
       right: 0;
       height: 4px;
-      @apply bg-blue-500;
+      background-color: #3b82f6; /* blue-500 */
     }
   }
 }

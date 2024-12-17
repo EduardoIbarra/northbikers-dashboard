@@ -1,19 +1,36 @@
 @media (max-width: 767px) {
   [data-layout="layout-1"] {
     width: 100%;
+
     .wrapper {
-      @apply flex flex-row items-stretch relative;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      position: relative;
+
       .left-sidebar {
-        @apply absolute top-0 left-0 bottom-0 h-full w-64 z-10;
-        @apply transform transition-transform duration-300 ease-in-out -translate-x-64;
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        height: 100%;
+        width: 16rem; /* Equivalent to w-64 */
+        z-index: 10;
+        transform: translateX(-16rem); /* -translate-x-64 */
+        transition: transform 0.3s ease-in-out;
       }
+
       .main {
-        @apply flex flex-col w-full z-0;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        z-index: 0;
       }
     }
+
     &[data-collapsed="true"] {
       .left-sidebar {
-        @apply translate-x-0;
+        transform: translateX(0);
       }
     }
   }
@@ -22,27 +39,35 @@
 @media (min-width: 768px) {
   [data-layout="layout-1"] {
     width: 100%;
+
     .wrapper {
-      @apply flex flex-row items-stretch;
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+
       .left-sidebar {
-        @apply w-full;
-        min-width: calc(theme("spacing.1") * 16);
-        max-width: calc(theme("spacing.1") * 64);
+        width: 100%;
+        min-width: calc(4px * 16); /* Equivalent to theme('spacing.1') * 16 */
+        max-width: calc(4px * 64); /* Equivalent to theme('spacing.1') * 64 */
         transition: max-width 0.25s ease-in-out;
       }
+
       .main {
-        min-width: calc(100% - (theme("spacing.1") * 64));
-        @apply flex flex-col;
+        min-width: calc(100% - (4px * 64)); /* Equivalent to 100% - theme('spacing.1') * 64 */
+        display: flex;
+        flex-direction: column;
       }
     }
+
     &[data-collapsed="false"] {
       .left-sidebar {
-        max-width: calc(theme("spacing.1") * 64);
+        max-width: calc(4px * 64); /* Equivalent to theme('spacing.1') * 64 */
       }
     }
+
     &[data-collapsed="true"] {
       .left-sidebar {
-        max-width: calc(theme("spacing.1") * 16);
+        max-width: calc(4px * 16); /* Equivalent to theme('spacing.1') * 16 */
       }
     }
   }
