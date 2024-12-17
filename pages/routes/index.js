@@ -331,7 +331,7 @@ const RouteBuilder = () => {
                                     </div>
 
                                     {/* Description */}
-                                    <div className="mb-4">
+                                    {/* <div className="mb-4">
                                         <label className="block font-bold">Descripción</label>
                                         <ReactQuill
                                             value={routeAttributes.description}
@@ -343,7 +343,7 @@ const RouteBuilder = () => {
                                         >
                                             Guardar Descripción
                                         </button>
-                                    </div>
+                                    </div> */}
 
                                     {/* Long Description */}
                                     <div className="mb-4">
