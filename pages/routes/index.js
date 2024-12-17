@@ -7,10 +7,15 @@ import Navbar from "../../components/navbar";
 import Sidebar from "../../components/sidebar";
 import { SideNavCollapsed } from "../../store/atoms/global";
 import { toast, ToastContainer } from 'react-toastify';
-import ReactQuill from "react-quill";
+// import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import 'react-toastify/dist/ReactToastify.css';
-
+import dynamic from "next/dynamic";
+// Import ReactQuill dynamically with SSR disabled
+const ReactQuill = dynamic(() => import("react-quill"), { 
+    ssr: false, 
+    loading: () => <p>Loading editor...</p> // Optional loading message
+});
 const RouteBuilder = () => {
     const isOpen = useRecoilValue(SideNavCollapsed);
     const [routes, setRoutes] = useRecoilState(Routes);
