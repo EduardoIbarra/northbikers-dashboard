@@ -7,6 +7,8 @@ import Navbar from "../../components/navbar";
 import Sidebar from "../../components/sidebar";
 import { SideNavCollapsed } from "../../store/atoms/global";
 import { toast, ToastContainer } from 'react-toastify';
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import 'react-toastify/dist/ReactToastify.css';
 
 const RouteBuilder = () => {
@@ -27,7 +29,77 @@ const RouteBuilder = () => {
         weakSignal: false,
         picture: '',
     });
+    const [routeAttributes, setRouteAttributes] = useState({
+        title: "",
+        description: "",
+        long_description: "",
+        en_long_description: "",
+        venue_link: "",
+        venue_iframe: "",
+        start_timestamp: "",
+        end_timestamp: "",
+    });
     const supabase = getSupabase();
+
+    // Preload route data
+    const preloadRouteData = async () => {
+        if (!currentRoute?.id) return;
+
+        try {
+            const { data, error } = await supabase
+                .from("routes")
+                .select(
+                    "title, description, long_description, en_long_description, venue_link, venue_iframe, start_timestamp, end_timestamp"
+                )
+                .eq("id", currentRoute.id)
+                .single();
+
+            if (error) {
+                toast.error("Error loading route data:", error);
+                return;
+            }
+
+            // Update the state with fetched data
+            setRouteAttributes({
+                title: data.title || "",
+                description: data.description || "",
+                long_description: data.long_description || "",
+                en_long_description: data.en_long_description || "",
+                venue_link: data.venue_link || "",
+                venue_iframe: data.venue_iframe || "",
+                start_timestamp: data.start_timestamp || "",
+                end_timestamp: data.end_timestamp || "",
+            });
+        } catch (e) {
+            toast.error("Unexpected error loading route data:", e);
+        }
+    };
+
+    useEffect(() => {
+        preloadRouteData();
+    }, [currentRoute]);
+
+    // Handle field updates
+    const handleInputChange = (key, value) => {
+        setRouteAttributes((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const handleSaveAttribute = async (key, value) => {
+        try {
+            const { error } = await supabase
+                .from("routes")
+                .update({ [key]: value })
+                .eq("id", currentRoute.id);
+
+            if (error) {
+                toast.error(`Error saving ${key}:`, error);
+            } else {
+                toast.success(`"${key}" saved successfully!`);
+            }
+        } catch (e) {
+            toast.error(`Unexpected error saving ${key}:`, e);
+        }
+    };
 
     const fetchCategories = async () => {
         try {
@@ -191,7 +263,7 @@ const RouteBuilder = () => {
                 toast.success("Imagen subida exitosamente.", {
                     position: "top-right", // Position the toast at the top-right corner
                     autoClose: 3000, // Automatically close after 3 seconds
-                  });
+                });
                 getCheckpoints(); // Refresh checkpoints after successful upload
             }
         } catch (e) {
@@ -229,6 +301,145 @@ const RouteBuilder = () => {
                                         Descargar QR para este evento
                                     </a>
                                 </div>
+
+
+
+                                <div className="p-4">
+                                    <h2 className="text-2xl font-bold mb-4">Actualizar Atributos de la Ruta</h2>
+
+                                    {/* Title */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Título</label>
+                                        <input
+                                            type="text"
+                                            value={routeAttributes.title}
+                                            onChange={(e) => handleInputChange("title", e.target.value)}
+                                            className="border p-2 w-full"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("title", routeAttributes.title)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Título
+                                        </button>
+                                    </div>
+
+                                    {/* Description */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Descripción</label>
+                                        <ReactQuill
+                                            value={routeAttributes.description}
+                                            onChange={(value) => handleInputChange("description", value)}
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("description", routeAttributes.description)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Descripción
+                                        </button>
+                                    </div>
+
+                                    {/* Long Description */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Descripción Larga</label>
+                                        <ReactQuill
+                                            value={routeAttributes.long_description}
+                                            onChange={(value) => handleInputChange("long_description", value)}
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("long_description", routeAttributes.long_description)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Descripción Larga
+                                        </button>
+                                    </div>
+
+                                    {/* English Long Description */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Descripción Larga (Inglés)</label>
+                                        <ReactQuill
+                                            value={routeAttributes.en_long_description}
+                                            onChange={(value) => handleInputChange("en_long_description", value)}
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("en_long_description", routeAttributes.en_long_description)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Descripción Larga (Inglés)
+                                        </button>
+                                    </div>
+
+                                    {/* Venue Link */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Enlace del Lugar</label>
+                                        <input
+                                            type="text"
+                                            value={routeAttributes.venue_link}
+                                            onChange={(e) => handleInputChange("venue_link", e.target.value)}
+                                            className="border p-2 w-full"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("venue_link", routeAttributes.venue_link)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Enlace
+                                        </button>
+                                    </div>
+
+                                    {/* Venue Iframe */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Iframe del Lugar</label>
+                                        <textarea
+                                            value={routeAttributes.venue_iframe}
+                                            onChange={(e) => handleInputChange("venue_iframe", e.target.value)}
+                                            className="border p-2 w-full"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("venue_iframe", routeAttributes.venue_iframe)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Iframe
+                                        </button>
+                                    </div>
+
+                                    {/* Start Timestamp */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Inicio</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={routeAttributes.start_timestamp}
+                                            onChange={(e) => handleInputChange("start_timestamp", e.target.value)}
+                                            className="border p-2 w-full"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("start_timestamp", routeAttributes.start_timestamp)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Inicio
+                                        </button>
+                                    </div>
+
+                                    {/* End Timestamp */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Fin</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={routeAttributes.end_timestamp}
+                                            onChange={(e) => handleInputChange("end_timestamp", e.target.value)}
+                                            className="border p-2 w-full"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("end_timestamp", routeAttributes.end_timestamp)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Fin
+                                        </button>
+                                    </div>
+                                </div>
+
+
+
+
                                 <div className="container mx-auto mt-4">
                                     <div className="overflow-x-auto">
                                         <table className="table-auto w-full text-left">
