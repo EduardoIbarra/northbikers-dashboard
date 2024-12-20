@@ -36,10 +36,13 @@ const RouteBuilder = () => {
     });
     const [routeAttributes, setRouteAttributes] = useState({
         title: "",
+        venue: "",
+        dates: "",
         description: "",
         long_description: "",
         en_long_description: "",
         venue_link: "",
+        whatsapp_group_url: "",
         venue_iframe: "",
         start_timestamp: "",
         end_timestamp: "",
@@ -54,7 +57,7 @@ const RouteBuilder = () => {
             const { data, error } = await supabase
                 .from("routes")
                 .select(
-                    "title, description, long_description, en_long_description, venue_link, venue_iframe, start_timestamp, end_timestamp"
+                    "title, venue, dates, description, long_description, en_long_description, venue_link, whatsapp_group_url, venue_iframe, start_timestamp, end_timestamp"
                 )
                 .eq("id", currentRoute.id)
                 .single();
@@ -67,10 +70,13 @@ const RouteBuilder = () => {
             // Update the state with fetched data
             setRouteAttributes({
                 title: data.title || "",
+                venue: data.venue || "",
+                dates: data.dates || "",
                 description: data.description || "",
                 long_description: data.long_description || "",
                 en_long_description: data.en_long_description || "",
                 venue_link: data.venue_link || "",
+                whatsapp_group_url: data.whatsapp_group_url || "",
                 venue_iframe: data.venue_iframe || "",
                 start_timestamp: data.start_timestamp || "",
                 end_timestamp: data.end_timestamp || "",
@@ -330,6 +336,40 @@ const RouteBuilder = () => {
                                         </button>
                                     </div>
 
+                                    {/* Venue */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Sede</label>
+                                        <input
+                                            type="text"
+                                            value={routeAttributes.venue}
+                                            onChange={(e) => handleInputChange("venue", e.target.value)}
+                                            className="border p-2 w-full"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("venue", routeAttributes.venue)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Sede
+                                        </button>
+                                    </div>
+
+                                    {/* Dates */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Fechas (Texto)</label>
+                                        <input
+                                            type="text"
+                                            value={routeAttributes.dates}
+                                            onChange={(e) => handleInputChange("dates", e.target.value)}
+                                            className="border p-2 w-full"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("dates", routeAttributes.dates)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Fechas
+                                        </button>
+                                    </div>
+
                                     {/* Description */}
                                     {/* <div className="mb-4">
                                         <label className="block font-bold">Descripción</label>
@@ -389,6 +429,23 @@ const RouteBuilder = () => {
                                             className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
                                         >
                                             Guardar Enlace
+                                        </button>
+                                    </div>
+                                    
+                                    {/* Venue Link */}
+                                    <div className="mb-4">
+                                        <label className="block font-bold">Enlace del Grupo de WhatsApp</label>
+                                        <input
+                                            type="text"
+                                            value={routeAttributes.whatsapp_group_url}
+                                            onChange={(e) => handleInputChange("whatsapp_group_url", e.target.value)}
+                                            className="border p-2 w-full"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("whatsapp_group_url", routeAttributes.whatsapp_group_url)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Grupo de WhatsApp
                                         </button>
                                     </div>
 
