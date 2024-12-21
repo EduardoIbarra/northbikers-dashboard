@@ -11,7 +11,7 @@ const Logo = () => {
         <div className="logo">
             <Link href="/" className="flex flex-row items-center justify-start space-x-2">
                 {!isOpen ? (
-                    <Image src="/logo.jpg" height={80} width={160} alt="Logo" />
+                    <Image src="/logo_nb_white.png" height={80} width={160} alt="Logo" />
                 ) : (
                     <Image src="/icon.jpg" height={30} width={30} alt="Icon" />
                 )}

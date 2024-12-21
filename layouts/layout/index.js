@@ -1,33 +1,38 @@
-import Head from 'next/head'
-import Navbar from "../../components/navbar";
-import Sidebar from "../../components/sidebar";
-import {useRecoilValue} from "recoil";
-import {SideNavCollapsed} from "../../store/atoms/global";
+import Head from 'next/head';
+import Navbar from '../../components/navbar';
+import Sidebar from '../../components/sidebar';
+import { useRecoilValue } from 'recoil';
+import { SideNavCollapsed } from '../../store/atoms/global';
 
-const Layout = ({children}) => {
+const Layout = ({ children }) => {
     const isOpen = useRecoilValue(SideNavCollapsed);
+
     return (
         <>
             <Head>
-                <title>North Bikers</title>
+                <title>NorthBikers</title>
             </Head>
             <div
                 data-layout="layout-1"
                 data-collapsed={isOpen}
-                data-background="light"
-                data-navbar="light"
-                data-left-sidebar="light"
-                data-right-sidebar="light"
-                className='font-sans antialiased text-sm disable-scrollbars'>
-                <div className="wrapper">
-                    <Sidebar/>
-                    <div className="main w-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white">
-                        <Navbar/>
-                        <div className="min-h-screen w-full p-4">{children}</div>
-                    </div>
+                className="flex h-screen bg-gray-900 text-gray-100"
+            >
+                {/* Sidebar */}
+                <Sidebar />
+
+                {/* Main Content */}
+                <div className="flex flex-col flex-1">
+                    {/* Navbar */}
+                    <Navbar />
+
+                    {/* Page Content */}
+                    <main className="flex-1 p-4 overflow-y-auto bg-gray-800">
+                        {children}
+                    </main>
                 </div>
             </div>
         </>
-    )
-}
-export default Layout
+    );
+};
+
+export default Layout;

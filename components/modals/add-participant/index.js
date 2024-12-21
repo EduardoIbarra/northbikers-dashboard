@@ -24,6 +24,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
         mode: 'Individual',      // Default participation mode
     });
     const [selectedUser, setSelectedUser] = useState({});
+    const [avatarFile, setAvatarFile] = useState(null); // State to hold the selected file
     const currentRoute = useRecoilValue(CurrentRoute);
 
     const saveFormData = (key, value) => {
@@ -34,20 +35,41 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
         });
     };
 
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        setAvatarFile(file);
+    };
+
+    const uploadAvatar = async (file) => {
+        const fileName = `${Date.now()}_${file.name}`; // Generate unique file name
+
+        // Upload the file to the storage bucket
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(`avatars/${fileName}`, file);
+
+        if (uploadError) {
+            console.error('Error uploading avatar:', uploadError);
+            throw uploadError;
+        }
+
+        // Retrieve the public URL of the uploaded file
+        const { data: publicUrlData, error: publicUrlError } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(`avatars/${fileName}`);
+
+        if (publicUrlError) {
+            console.error('Error getting public URL:', publicUrlError);
+            throw publicUrlError;
+        }
+
+        return publicUrlData.publicURL; // Return the public URL
+    };
+
+
     const handleToggleModal = () => {
         setIsOpen(!isSearchModalOpen);
     };
-
-    // const handleSelectUser = (user) => {
-    //     saveFormData('profile_id', user.id);
-    //     saveFormData('full_name', user.name);  // Map user.name to full_name
-    //     saveFormData('stripe_webhook_email_notification', user.email);  // Map user.email
-    //     if (user.avatar_url !== "https://cdn1.iconfinder.com/data/icons/avatars-55/100/avatar_profile_user_biker_tanktop_bald_shiny-512.png") {
-    //         saveFormData('avatar_url', user.avatar_url);  // Map avatar if not default
-    //     }
-    //     setSelectedUser(user);
-    //     handleToggleModal();
-    // };
 
     const clearData = () => {
         setFormData({
@@ -56,6 +78,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             mode: 'Individual',
         });
         setSelectedUser({});
+        setAvatarFile(null);
     };
 
     const handleSave = async () => {
@@ -67,6 +90,12 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
         setIsSaving(true);
 
         try {
+            let avatarUrl = formData.avatar_url;
+            if (avatarFile) {
+                avatarUrl = await uploadAvatar(avatarFile);
+                saveFormData('avatar_url', avatarUrl);
+            }
+
             // Step 1: Check if any records with the same profile_id and route_id exist
             const { data: existingProfiles, error: checkError } = await supabase
                 .from('event_profile')
@@ -120,7 +149,8 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             const { mode, ...filteredFormData } = {
                 ...formData,
                 profile_id: selectedUser.id,  // Ensure profile_id is set
-                participant_number: nextParticipantNumber  // Assign next available participant number
+                participant_number: nextParticipantNumber, // Assign next available participant number
+                avatar_url: avatarUrl,
             };
 
             // Step 6: Perform the insert operation
@@ -299,6 +329,18 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 <TextInput label={'Contacto de Emergencia'} value={formData?.emergencyContactName} onChange={(e) => saveFormData('emergencyContactName', e)} />
                 <TextInput label={'Teléfono de Emergencia'} value={formData?.emergencyContactPhone} onChange={(e) => saveFormData('emergencyContactPhone', e)} />
                 <TextInput label={'Relación con Contacto de Emergencia'} value={formData?.emergencyContactRelation} onChange={(e) => saveFormData('emergencyContactRelation', e)} />
+                <hr />
+                <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                        Subir Avatar
+                    </label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="mt-2 border rounded-md p-2"
+                    />
+                </div>
 
                 {/* Terms agreement checkbox */}
                 <div className='flex items-center'>

@@ -1,4 +1,4 @@
-import { FiLogOut, FiMenu } from 'react-icons/fi'
+import { FiLogOut, FiMenu } from 'react-icons/fi';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { CurrentRoute, Routes, SideNavCollapsed } from "../../store/atoms/global";
 import Select from "../select";
@@ -12,62 +12,68 @@ const Navbar = () => {
     const [routes, setRoutes] = useRecoilState(Routes);
     const setCurrentRoute = useSetRecoilState(CurrentRoute);
     const currentRoute = useRecoilValue(CurrentRoute);
-    const router = useRouter()
+    const router = useRouter();
     const supabase = getSupabase();
-
 
     const logout = () => {
         return supabase.auth.signOut().then(() => {
-            setLoggedUser('')
-            router.push('/login')
+            setLoggedUser('');
+            router.push('/login');
         });
-    }
-
+    };
 
     const getRoutes = useCallback(async () => {
         try {
             const { data, error } = await supabase
                 .from("routes")
                 .select()
-                .order('featured', { ascending: true })  // Featured routes first
+                .order('featured', { ascending: true }) // Featured routes first
                 .order('title', { ascending: true });
             if (data) {
                 data.reverse();
-                setRoutes(data)
-                setCurrentRoute(data[0])
+                setRoutes(data);
+                setCurrentRoute(data[0]);
             }
         } catch (e) {
             console.log("Error", e);
-            setRoutes([])
+            setRoutes([]);
         }
-    }, [])
+    }, []);
 
     useEffect(() => {
-        getRoutes()
-    }, [])
+        getRoutes();
+    }, []);
 
     return (
-        <div className="navbar navbar-1 border-b">
-            <div className="navbar-inner w-full flex items-center justify-start">
+        <div className="w-full bg-gray-800 text-gray-100 border-b border-gray-700 shadow-md">
+            <div className="flex items-center justify-between px-4 py-2">
                 <button
-                    onClick={() => {
-                        setOpen(!isOpen)
-                    }}
-                    className="mx-4">
-                    <FiMenu size={20} />
+                    onClick={() => setOpen(!isOpen)}
+                    className="text-gray-100 hover:text-gray-300 transition duration-200"
+                >
+                    <FiMenu size={24} />
                 </button>
 
-                <Select size='w-80' placeholder='Selecciona ruta' selected={currentRoute?.id} items={routes} inline onChange={setCurrentRoute} />
+                <Select
+                    size="w-80"
+                    placeholder="Selecciona ruta"
+                    selected={currentRoute?.id}
+                    items={routes}
+                    inline
+                    onChange={setCurrentRoute}
+                    className="bg-gray-700 focus:ring focus:ring-blue-500 focus:border-blue-500"
+                />
 
-                <span className="ml-auto" />
                 <button
                     onClick={logout}
-                    className="btn-transparent flex items-center justify-center h-16 w-8 mx-4">
-                    <FiLogOut size={18} />
+                    className="text-gray-100 hover:text-gray-300 transition duration-200 flex items-center"
+                >
+                    <FiLogOut size={20} className="mr-2" />
+                    <span>Logout</span>
                 </button>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default Navbar
+export default Navbar;

@@ -296,9 +296,9 @@ const RouteBuilder = () => {
                 data-left-sidebar="light"
                 data-right-sidebar="light"
                 className='font-sans antialiased text-sm disable-scrollbars'>
-                <div className="wrapper">
+                <div className="flex h-screen bg-gray-900 text-gray-100">
                     <Sidebar />
-                    <div className="main w-full bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-white">
+                    <div className="flex-1 p-6 overflow-y-auto bg-gray-800">
                         <Navbar />
                         <div className="min-h-screen w-full p-4">
                             <div className="route-builder">
@@ -320,21 +320,21 @@ const RouteBuilder = () => {
                                     <h2 className="text-2xl font-bold mb-4">Actualizar Atributos de la Ruta</h2>
 
                                     {/* Title */}
-                                    <div className="mb-4">
-                                        <label className="block font-bold">Título</label>
-                                        <input
-                                            type="text"
-                                            value={routeAttributes.title}
-                                            onChange={(e) => handleInputChange("title", e.target.value)}
-                                            className="border p-2 w-full"
-                                        />
-                                        <button
-                                            onClick={() => handleSaveAttribute("title", routeAttributes.title)}
-                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
-                                        >
-                                            Guardar Título
-                                        </button>
-                                    </div>
+<div className="mb-4">
+    <label className="block font-bold text-gray-100">Título</label>
+    <input
+        type="text"
+        value={routeAttributes.title}
+        onChange={(e) => handleInputChange("title", e.target.value)}
+        className="bg-gray-700 text-gray-100 border border-gray-600 p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+    />
+    <button
+        onClick={() => handleSaveAttribute("title", routeAttributes.title)}
+        className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+    >
+        Guardar Título
+    </button>
+</div>
 
                                     {/* Venue */}
                                     <div className="mb-4">
@@ -343,7 +343,7 @@ const RouteBuilder = () => {
                                             type="text"
                                             value={routeAttributes.venue}
                                             onChange={(e) => handleInputChange("venue", e.target.value)}
-                                            className="border p-2 w-full"
+                                            className="bg-gray-700 border p-2 w-full"
                                         />
                                         <button
                                             onClick={() => handleSaveAttribute("venue", routeAttributes.venue)}
@@ -360,7 +360,7 @@ const RouteBuilder = () => {
                                             type="text"
                                             value={routeAttributes.dates}
                                             onChange={(e) => handleInputChange("dates", e.target.value)}
-                                            className="border p-2 w-full"
+                                            className="bg-gray-700 border p-2 w-full"
                                         />
                                         <button
                                             onClick={() => handleSaveAttribute("dates", routeAttributes.dates)}
@@ -369,21 +369,6 @@ const RouteBuilder = () => {
                                             Guardar Fechas
                                         </button>
                                     </div>
-
-                                    {/* Description */}
-                                    {/* <div className="mb-4">
-                                        <label className="block font-bold">Descripción</label>
-                                        <ReactQuill
-                                            value={routeAttributes.description}
-                                            onChange={(value) => handleInputChange("description", value)}
-                                        />
-                                        <button
-                                            onClick={() => handleSaveAttribute("description", routeAttributes.description)}
-                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
-                                        >
-                                            Guardar Descripción
-                                        </button>
-                                    </div> */}
 
                                     {/* Long Description */}
                                     <div className="mb-4">
@@ -422,7 +407,7 @@ const RouteBuilder = () => {
                                             type="text"
                                             value={routeAttributes.venue_link}
                                             onChange={(e) => handleInputChange("venue_link", e.target.value)}
-                                            className="border p-2 w-full"
+                                            className="bg-gray-700 border p-2 w-full"
                                         />
                                         <button
                                             onClick={() => handleSaveAttribute("venue_link", routeAttributes.venue_link)}
@@ -439,7 +424,7 @@ const RouteBuilder = () => {
                                             type="text"
                                             value={routeAttributes.whatsapp_group_url}
                                             onChange={(e) => handleInputChange("whatsapp_group_url", e.target.value)}
-                                            className="border p-2 w-full"
+                                            className="bg-gray-700 border p-2 w-full"
                                         />
                                         <button
                                             onClick={() => handleSaveAttribute("whatsapp_group_url", routeAttributes.whatsapp_group_url)}
@@ -456,7 +441,7 @@ const RouteBuilder = () => {
                                         <textarea
                                             value={routeAttributes.venue_iframe}
                                             onChange={(e) => handleInputChange("venue_iframe", e.target.value)}
-                                            className="border p-2 w-full"
+                                            className="bg-gray-700 border p-2 w-full"
                                         />
                                         <button
                                             onClick={() => handleSaveAttribute("venue_iframe", routeAttributes.venue_iframe)}
@@ -473,7 +458,7 @@ const RouteBuilder = () => {
                                             type="datetime-local"
                                             value={routeAttributes.start_timestamp}
                                             onChange={(e) => handleInputChange("start_timestamp", e.target.value)}
-                                            className="border p-2 w-full"
+                                            className="bg-gray-700 border p-2 w-full"
                                         />
                                         <button
                                             onClick={() => handleSaveAttribute("start_timestamp", routeAttributes.start_timestamp)}
@@ -490,7 +475,7 @@ const RouteBuilder = () => {
                                             type="datetime-local"
                                             value={routeAttributes.end_timestamp}
                                             onChange={(e) => handleInputChange("end_timestamp", e.target.value)}
-                                            className="border p-2 w-full"
+                                            className="bg-gray-700 border p-2 w-full"
                                         />
                                         <button
                                             onClick={() => handleSaveAttribute("end_timestamp", routeAttributes.end_timestamp)}
@@ -532,6 +517,7 @@ const RouteBuilder = () => {
                                                         <input
                                                             type="text"
                                                             value={newCheckpoint.name}
+                                                            className='bg-gray-700'
                                                             onChange={(e) =>
                                                                 setNewCheckpoint({ ...newCheckpoint, name: e.target.value })
                                                             }
@@ -541,6 +527,7 @@ const RouteBuilder = () => {
                                                         <input
                                                             type="number"
                                                             value={newCheckpoint.lat}
+                                                            className='bg-gray-700'
                                                             onChange={(e) =>
                                                                 setNewCheckpoint({ ...newCheckpoint, lat: e.target.value })
                                                             }
@@ -550,6 +537,7 @@ const RouteBuilder = () => {
                                                         <input
                                                             type="number"
                                                             value={newCheckpoint.lng}
+                                                            className='bg-gray-700'
                                                             onChange={(e) =>
                                                                 setNewCheckpoint({ ...newCheckpoint, lng: e.target.value })
                                                             }
@@ -559,6 +547,7 @@ const RouteBuilder = () => {
                                                         <input
                                                             type="text"
                                                             value={newCheckpoint.description}
+                                                            className='bg-gray-700'
                                                             onChange={(e) =>
                                                                 setNewCheckpoint({ ...newCheckpoint, description: e.target.value })
                                                             }
@@ -568,6 +557,7 @@ const RouteBuilder = () => {
                                                         <input
                                                             type="number"
                                                             value={newCheckpoint.points}
+                                                            className='bg-gray-700'
                                                             onChange={(e) =>
                                                                 setNewCheckpoint({ ...newCheckpoint, points: e.target.value })
                                                             }
@@ -585,6 +575,7 @@ const RouteBuilder = () => {
                                                     <td>
                                                         <select
                                                             value={newCheckpoint.terrain}
+                                                            className='bg-gray-700'
                                                             onChange={(e) =>
                                                                 setNewCheckpoint({ ...newCheckpoint, terrain: e.target.value })
                                                             }
@@ -606,6 +597,7 @@ const RouteBuilder = () => {
                                                     <td>
                                                         <select
                                                             value={newCheckpoint.category || ''} // Preselect existing category if present
+                                                            className='bg-gray-700'
                                                             onChange={(e) =>
                                                                 setCheckpoints((prev) =>
                                                                     prev.map((item, i) =>
@@ -645,6 +637,7 @@ const RouteBuilder = () => {
                                                             <input
                                                                 type="text"
                                                                 value={cp.checkpoints.name}
+                                                                className='bg-gray-700'
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
                                                                         prev.map((item, i) =>
@@ -658,6 +651,7 @@ const RouteBuilder = () => {
                                                             <input
                                                                 type="number"
                                                                 value={cp.checkpoints.lat}
+                                                                className='bg-gray-700'
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
                                                                         prev.map((item, i) =>
@@ -671,6 +665,7 @@ const RouteBuilder = () => {
                                                             <input
                                                                 type="number"
                                                                 value={cp.checkpoints.lng}
+                                                                className='bg-gray-700'
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
                                                                         prev.map((item, i) =>
@@ -684,6 +679,7 @@ const RouteBuilder = () => {
                                                             <input
                                                                 type="text"
                                                                 value={cp.checkpoints.description}
+                                                                className='bg-gray-700'
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
                                                                         prev.map((item, i) =>
@@ -697,6 +693,7 @@ const RouteBuilder = () => {
                                                             <input
                                                                 type="number"
                                                                 value={cp.checkpoints.points}
+                                                                className='bg-gray-700'
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
                                                                         prev.map((item, i) =>
@@ -722,6 +719,7 @@ const RouteBuilder = () => {
                                                         <td>
                                                             <select
                                                                 value={cp.checkpoints.terrain}
+                                                                className='bg-gray-700'
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
                                                                         prev.map((item, i) =>
@@ -737,6 +735,7 @@ const RouteBuilder = () => {
                                                         <td>
                                                             <input
                                                                 type="checkbox"
+                                                                className='bg-gray-700'
                                                                 checked={cp.checkpoints.weakSignal}
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
@@ -751,6 +750,7 @@ const RouteBuilder = () => {
                                                         <td>
                                                             <select
                                                                 value={cp.checkpoints.category_id || ''}  // Preselect existing category using category_id
+                                                                className='bg-gray-700'
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
                                                                         prev.map((item, i) =>
@@ -779,7 +779,7 @@ const RouteBuilder = () => {
 
 
                                                         <td>
-                                                            <input type="file" onChange={(e) => handleImageUpload(e, cp)} />
+                                                            <input type="file" className='bg-gray-700' onChange={(e) => handleImageUpload(e, cp)} />
                                                         </td>
 
                                                         <td>
