@@ -63,7 +63,7 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
         return (
             <tr onClick={() => {
                 if (isPrivateView) setSelectedUser(profile);
-            }} className='cursor-pointer hover:bg-gray-100 rounded'>
+            }} className='cursor-pointer hover:bg-gray-900 rounded'>
                 {isPrivateView ? (
                     <td>
                         <Button

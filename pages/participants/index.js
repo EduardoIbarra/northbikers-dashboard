@@ -285,8 +285,8 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                     Ver en Tiempo Real
                 </label>
             </div>
-            <Widget>
-                <div className='flex h-vp-70'>
+            <Widget className="bg-gray-700">
+                <div className='flex h-vp-70 bg-gray-700'>
                     <ParticipantsList isLoading={isLoading} initialData={data} onReload={getData} isFiltered={!!searchQuery || !!category} onEdit={handleEdit} isPrivateView={isPrivateView} />
                 </div>
             </Widget>

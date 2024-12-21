@@ -1,26 +1,27 @@
-import PropTypes from 'prop-types'
+import PropTypes from 'prop-types';
 
-const Widget = ({title = null, description = null, right = null, children}) => {
+const Widget = ({ title = null, description = null, right = null, children }) => {
   return (
-    <div className="widget w-full p-4 mb-4 rounded-lg bg-white border border-gray-100 dark:bg-gray-900 dark:border-gray-800">
+    <div className="w-full p-4 mb-4 rounded-lg bg-gray-800 border border-gray-700">
       {(title || description || right) && (
-        <div className="flex flex-row items-center justify-between">
+        <div className="flex flex-row items-center justify-between mb-4">
           <div className="flex flex-col">
-            <div className="text-sm font-light text-gray-500">{title}</div>
-            <div className="text-xl font-bold">{description}</div>
+            {title && <div className="text-sm font-light text-gray-400">{title}</div>}
+            {description && <div className="text-xl font-bold text-gray-100">{description}</div>}
           </div>
           {right}
         </div>
       )}
-      {children}
+      <div className="text-gray-200">{children}</div>
     </div>
-  )
-}
+  );
+};
 
 Widget.propTypes = {
   title: PropTypes.any,
   description: PropTypes.any,
   right: PropTypes.any,
-  children: PropTypes.any
-}
-export default Widget
+  children: PropTypes.any,
+};
+
+export default Widget;
