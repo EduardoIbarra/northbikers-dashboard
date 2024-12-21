@@ -256,6 +256,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                     <TextInput label={'Buscar...'} type='text' placeholder='Busca participantes' value={searchQuery} onChange={setSearchQuery} />
                 </div>
                 <Select
+                    className='bg-gray-700 text-gray-100 border border-gray-600'
                     placeholder='Filtrar por categoria'
                     showEmpty
                     items={CATEGORIES}
@@ -265,6 +266,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
             <div className='w-full mb-2 flex flex-row space-around gap-2 items-center'>
                 <div className='w-4/12'>
                     <Select
+                        className='bg-gray-700 text-gray-100 border border-gray-600'
                         label={'Ordenar por:'}
                         placeholder='Selecciona'
                         items={[
