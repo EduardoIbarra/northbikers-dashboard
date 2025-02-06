@@ -49,24 +49,27 @@ const Navbar = () => {
             <div className="flex items-center justify-between px-4 py-2">
                 <button
                     onClick={() => setOpen(!isOpen)}
-                    className="text-gray-100 hover:text-gray-300 transition duration-200"
+                    className="text-gray-100 hover:text-gray-300 transition duration-200 md:hidden"
                 >
                     <FiMenu size={24} />
                 </button>
 
-                <Select
-                    size="w-80"
-                    placeholder="Selecciona ruta"
-                    selected={currentRoute?.id}
-                    items={routes}
-                    inline
-                    onChange={setCurrentRoute}
-                    className="text-gray-900 focus:ring focus:ring-blue-500 focus:border-blue-500"
-                />
+                {/* Show select only on larger screens */}
+                <div className="hidden md:flex">
+                    <Select
+                        size="w-80"
+                        placeholder="Selecciona ruta"
+                        selected={currentRoute?.id}
+                        items={routes}
+                        inline
+                        onChange={setCurrentRoute}
+                        className="text-gray-900 focus:ring focus:ring-blue-500 focus:border-blue-500"
+                    />
+                </div>
 
                 <button
                     onClick={logout}
-                    className="text-gray-100 hover:text-gray-300 transition duration-200 flex items-center"
+                    className="text-gray-100 hover:text-gray-300 transition duration-200 flex items-center text-sm md:text-base"
                 >
                     <FiLogOut size={20} className="mr-2" />
                     <span>Logout</span>
