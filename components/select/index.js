@@ -12,7 +12,7 @@ export const Select = (
     }) => (
     <div className={`form-element  ${inline ? 'form-element-inline' : ''} ${size}`}>
         {label && <div className="form-label">{label}</div>}
-        <select className="form-select rounded " onChange={(event) => {
+        <select className="form-select rounded text-gray-900" onChange={(event) => {
             onChange(items.find((i) => i.id == event.target.value))
         }}>
             {placeholder && (

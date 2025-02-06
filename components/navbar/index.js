@@ -61,7 +61,7 @@ const Navbar = () => {
                     items={routes}
                     inline
                     onChange={setCurrentRoute}
-                    className="bg-gray-700 focus:ring focus:ring-blue-500 focus:border-blue-500"
+                    className="text-gray-900 focus:ring focus:ring-blue-500 focus:border-blue-500"
                 />
 
                 <button
