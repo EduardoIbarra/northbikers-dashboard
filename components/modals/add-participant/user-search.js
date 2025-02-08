@@ -14,9 +14,16 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
     const getResults = useCallback(async () => {
         setLoading(true)
         try {
-            const {data} = await supabase.from('profiles')
-                .select('*')
+            const {data} = await supabase
+                .from('profiles')
+                .select(`
+                    *,
+                    event_profile!inner(*)
+                `)
                 .ilike('email', `%${query}%`)
+                .order('created_at', { foreignTable: 'event_profile', ascending: false })
+                .limit(1);
+
             if (data) {
                 setUsers(data)
             }
@@ -30,13 +37,15 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
 
 
     const Item = (user) => {
-        const {id, name, email} = user;
+        const {id, name, email, event_profile} = user;
+        const latestEventProfile = event_profile?.[0]; // Get the latest event profile
+        user.latestEventProfile = latestEventProfile;
+
         return (
             <div className='mt-1 p-1 rounded hover:bg-gray-100 cursor-pointer' key={id} onClick={() => {
                 onSelect(user)
             }}>
-                <p>{name}</p>
-                <p className='text-gray-400 font-light'>{email}</p>
+                <p>{name}, {email}</p>
             </div>
         )
     }

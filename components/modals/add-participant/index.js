@@ -200,12 +200,22 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
 
 
     const handleSelectUser = (user) => {
+        console.log(user);
         setSelectedUser(user);
         setFormData({
             ...formData,
             profile_id: user.id,  // Always set profile_id when a user is selected
             full_name: user.name,  // Map user.name to full_name
             stripe_webhook_email_notification: user.email,  // Map user.email
+            name_on_jersey: user.latestEventProfile?.name_on_jersey,
+            jersey_size: user.latestEventProfile?.jersey_size,
+            motorcycle: user.latestEventProfile?.motorcycle,
+            city: user.latestEventProfile?.city,
+            birthday: user.latestEventProfile?.birthday,
+            phone: user.latestEventProfile?.phone,
+            emergencyContactName: user.latestEventProfile?.emergencyContactName,
+            emergencyContactPhone: user.latestEventProfile?.emergencyContactPhone,
+            emergencyContactRelation: user.latestEventProfile?.emergencyContactRelation,
             avatar_url: user.avatar_url !== "https://cdn1.iconfinder.com/data/icons/avatars-55/100/avatar_profile_user_biker_tanktop_bald_shiny-512.png"
                 ? user.avatar_url
                 : formData.avatar_url
