@@ -133,6 +133,7 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                 onClick: () => onClose(dataHasChanged),
                 label: 'Cerrar',
             }}
+            className="z-[60]"
         >
             <div className='flex'>
                 <div className='flex m-3 bg-gray-50 p-2 rounded items-center'>

@@ -10,9 +10,9 @@ const Sidebar = () => {
 
     return (
         <div
-            className={`fixed md:relative top-0 left-0 h-full w-64 bg-gray-900 text-gray-200 flex flex-col shadow-lg transform ${
+            className={`md:relative top-0 left-0 h-full w-64 bg-gray-900 text-gray-200 flex flex-col shadow-lg transform ${
                 isOpen ? 'translate-x-0' : '-translate-x-full'
-            } md:translate-x-0 transition-transform duration-300 ease-in-out z-50`}
+            } md:translate-x-0 transition-transform duration-300 ease-in-out`}
         >
             {/* Logo Section */}
             <div className="p-6 border-b border-gray-700">
