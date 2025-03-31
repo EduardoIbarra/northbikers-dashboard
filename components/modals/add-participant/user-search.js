@@ -12,28 +12,28 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
     const [isLoading, setLoading] = useState(false);
 
     const getResults = useCallback(async () => {
-        setLoading(true)
+        setLoading(true);
         try {
-            const {data} = await supabase
+            const { data, error } = await supabase
                 .from('profiles')
                 .select(`
                     *,
-                    event_profile!inner(*)
+                    event_profile!left(*)
                 `)
                 .ilike('email', `%${query}%`)
                 .order('created_at', { foreignTable: 'event_profile', ascending: false })
                 .limit(1);
-
-            if (data) {
-                setUsers(data)
-            }
+    
+            if (error) throw error;
+            
+            setUsers(data ?? []);
         } catch (e) {
             console.log("Error", e);
-            setUsers([])
+            setUsers([]);
         }
-
-        setLoading(false)
-    }, [query])
+    
+        setLoading(false);
+    }, [query]);    
 
 
     const Item = (user) => {
