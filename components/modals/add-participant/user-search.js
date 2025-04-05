@@ -38,7 +38,7 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
 
     const Item = (user) => {
         const {id, name, email, event_profile} = user;
-        const latestEventProfile = event_profile?.[0]; // Get the latest event profile
+        const latestEventProfile = event_profile?.find(p => p.name_on_jersey) ?? event_profile?.[0];
         user.latestEventProfile = latestEventProfile;
 
         return (
