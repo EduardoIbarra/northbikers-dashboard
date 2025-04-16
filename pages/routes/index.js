@@ -12,8 +12,8 @@ import "react-quill/dist/quill.snow.css";
 import 'react-toastify/dist/ReactToastify.css';
 import dynamic from "next/dynamic";
 // Import ReactQuill dynamically with SSR disabled
-const ReactQuill = dynamic(() => import("react-quill"), { 
-    ssr: false, 
+const ReactQuill = dynamic(() => import("react-quill"), {
+    ssr: false,
     loading: () => <p>Loading editor...</p> // Optional loading message
 });
 const RouteBuilder = () => {
@@ -282,6 +282,40 @@ const RouteBuilder = () => {
         }
     };
 
+    const downloadCheckpointsCSV = () => {
+        const headers = [
+            "ID", "Nombre", "Latitud", "Longitud", "Descripción", "Puntos",
+            "Es Reto", "Terreno", "Señal Débil", "Categoría", "Imagen"
+        ];
+
+        const rows = checkpoints.map(cp => {
+            const c = cp.checkpoints;
+            return [
+                cp.checkpoint_id,
+                c.name,
+                c.lat,
+                c.lng,
+                c.description,
+                c.points,
+                c.icon.includes("challenges.png") ? "Sí" : "No",
+                c.terrain,
+                c.weakSignal ? "Sí" : "No",
+                c.category_id ?? "",
+                c.picture ?? ""
+            ];
+        });
+
+        const csv = [headers, ...rows].map(row => row.join(",")).join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `checkpoints_${currentRoute?.slug ?? "ruta"}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <>
             <ToastContainer></ToastContainer>
@@ -320,21 +354,21 @@ const RouteBuilder = () => {
                                     <h2 className="text-2xl font-bold mb-4">Actualizar Atributos de la Ruta</h2>
 
                                     {/* Title */}
-<div className="mb-4">
-    <label className="block font-bold text-gray-100">Título</label>
-    <input
-        type="text"
-        value={routeAttributes.title}
-        onChange={(e) => handleInputChange("title", e.target.value)}
-        className="bg-gray-700 text-gray-100 border border-gray-600 p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-    />
-    <button
-        onClick={() => handleSaveAttribute("title", routeAttributes.title)}
-        className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
-    >
-        Guardar Título
-    </button>
-</div>
+                                    <div className="mb-4">
+                                        <label className="block font-bold text-gray-100">Título</label>
+                                        <input
+                                            type="text"
+                                            value={routeAttributes.title}
+                                            onChange={(e) => handleInputChange("title", e.target.value)}
+                                            className="bg-gray-700 text-gray-100 border border-gray-600 p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute("title", routeAttributes.title)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Título
+                                        </button>
+                                    </div>
 
                                     {/* Venue */}
                                     <div className="mb-4">
@@ -416,7 +450,7 @@ const RouteBuilder = () => {
                                             Guardar Enlace
                                         </button>
                                     </div>
-                                    
+
                                     {/* Venue Link */}
                                     <div className="mb-4">
                                         <label className="block font-bold">Enlace del Grupo de WhatsApp</label>
@@ -433,7 +467,7 @@ const RouteBuilder = () => {
                                             Guardar Grupo de WhatsApp
                                         </button>
                                     </div>
-                                    
+
 
                                     {/* Venue Iframe */}
                                     <div className="mb-4">
@@ -490,6 +524,14 @@ const RouteBuilder = () => {
 
 
                                 <div className="container mx-auto mt-4">
+                                    <div className="text-right mb-4">
+                                        <button
+                                            onClick={downloadCheckpointsCSV}
+                                            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded shadow-lg transition duration-300"
+                                        >
+                                            Descargar Checkpoints en CSV
+                                        </button>
+                                    </div>
                                     <div className="overflow-x-auto">
                                         <table className="table-auto w-full text-left">
                                             <thead>

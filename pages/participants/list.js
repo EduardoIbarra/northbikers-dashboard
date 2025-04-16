@@ -33,6 +33,91 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
         document.body.removeChild(link);
     };
 
+    const downloadParticipantJerseys = async () => {
+        const { data: jerseyData, error } = await supabase2
+            .from("event_profile")
+            .select("participant_number, gender, name_on_jersey, full_name, jersey_size, phone, stripe_webhook_email_notification")
+            .eq("route_id", data[0]?.route_id)
+            .gt("participant_number", 0);
+
+        if (error) return console.error("Error fetching participant jerseys:", error);
+
+        const sorted = jerseyData.sort((a, b) => a.participant_number - b.participant_number);
+
+        const headers = ["Número", "Género", "Nombre Jersey", "Nombre Completo", "Talla", "Teléfono", "Email"];
+        const rows = sorted.map(j => [
+            j.participant_number,
+            j.gender,
+            j.name_on_jersey,
+            j.full_name,
+            j.jersey_size,
+            j.phone,
+            j.stripe_webhook_email_notification
+        ]);
+
+        downloadCSVFile("jerseys_participantes.csv", headers, rows);
+    };
+
+    const downloadCoupleJerseys = async () => {
+        const routeId = data[0]?.route_id;
+    
+        const { data: coupleData, error } = await supabase2
+            .from("event_profile_couple")
+            .select(`
+                email,
+                full_name,
+                phone,
+                name_on_jersey,
+                jersey_size,
+                gender,
+                event_profile (
+                    participant_number,
+                    full_name,
+                    route_id
+                )
+            `);
+    
+        if (error) {
+            console.error("Error fetching couple jerseys:", error);
+            return;
+        }
+    
+        const filtered = coupleData
+            .filter(c => c.event_profile?.route_id === routeId && c.event_profile?.participant_number > 0)
+            .sort((a, b) => a.event_profile.participant_number - b.event_profile.participant_number); // Sort in JS
+    
+        const headers = [
+            "Número Participante", "Piloto", "Email", "Nombre Completo",
+            "Teléfono", "Nombre Jersey", "Talla", "Género"
+        ];
+    
+        const rows = filtered.map(c => [
+            c.event_profile.participant_number,
+            c.event_profile.full_name,
+            c.email,
+            c.full_name,
+            c.phone,
+            c.name_on_jersey,
+            c.jersey_size,
+            c.gender
+        ]);
+    
+        downloadCSVFile("jerseys_parejas.csv", headers, rows);
+    };
+    
+    
+    
+
+    const downloadCSVFile = (filename, headers, rows) => {
+        const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.click();
+    };
+
     const convertToCSV = (data, getSelectValue) => {
         const headers = [
             "Posición", "Puntos", "Número", "Participante", "Categoría",
@@ -59,7 +144,7 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
     const TableItem = memo((row) => {
         const { profile, participant_number, position, category, points, route: { title }, gender, payment_status, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
         const { name, email } = profile;
-    
+
         return (
             <tr onClick={() => {
                 if (isPrivateView) setSelectedUser(profile);
@@ -106,27 +191,27 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                     )}
                 </td>
                 <td>
-                <td>
-                {avatar_url && (
-                    <a
-                        href={avatar_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => {
-                            e.stopPropagation(); // Prevent row click
-                            e.preventDefault(); // Prevent default link behavior
-                            window.open(avatar_url, "_blank"); // Open the avatar in a new tab
-                        }}
-                        title="View Avatar"
-                    >
-                        Abrir Foto
-                    </a>
-                )}
-            </td>
+                    <td>
+                        {avatar_url && (
+                            <a
+                                href={avatar_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Prevent row click
+                                    e.preventDefault(); // Prevent default link behavior
+                                    window.open(avatar_url, "_blank"); // Open the avatar in a new tab
+                                }}
+                                title="View Avatar"
+                            >
+                                Abrir Foto
+                            </a>
+                        )}
+                    </td>
                 </td>
             </tr>
         );
-    });    
+    });
 
     const fields = [
         ...(isPrivateView ? [{ name: 'Editar' }] : []),
@@ -156,6 +241,12 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                 <>
                     <Button onClick={downloadCSV} className="download-csv-button">
                         Descargar en Excel
+                    </Button>
+                    <Button onClick={downloadParticipantJerseys} className="ml-2">
+                        Jerseys participantes
+                    </Button>
+                    <Button onClick={downloadCoupleJerseys} className="ml-2">
+                        Jerseys parejas
                     </Button>
                     <table className="table no-border">
                         <thead>
