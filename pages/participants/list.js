@@ -60,38 +60,49 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
 
     const downloadCoupleJerseys = async () => {
         const routeId = data[0]?.route_id;
-    
+
         const { data: coupleData, error } = await supabase2
             .from("event_profile_couple")
             .select(`
-                email,
+            email,
+            full_name,
+            phone,
+            name_on_jersey,
+            jersey_size,
+            gender,
+            event_profile (
+                participant_number,
                 full_name,
-                phone,
-                name_on_jersey,
-                jersey_size,
-                gender,
-                event_profile (
-                    participant_number,
-                    full_name,
-                    route_id
-                )
-            `);
-    
+                route_id
+            )
+        `);
+
         if (error) {
             console.error("Error fetching couple jerseys:", error);
             return;
         }
-    
+
         const filtered = coupleData
             .filter(c => c.event_profile?.route_id === routeId && c.event_profile?.participant_number > 0)
-            .sort((a, b) => a.event_profile.participant_number - b.event_profile.participant_number); // Sort in JS
-    
+            .sort((a, b) => a.event_profile.participant_number - b.event_profile.participant_number);
+
+        // ✅ Deduplicate by participant_number
+        const uniqueByParticipantNumber = new Map();
+        filtered.forEach(c => {
+            const num = c.event_profile.participant_number;
+            if (!uniqueByParticipantNumber.has(num)) {
+                uniqueByParticipantNumber.set(num, c);
+            }
+        });
+
+        const uniqueFiltered = Array.from(uniqueByParticipantNumber.values());
+
         const headers = [
             "Número Participante", "Piloto", "Email", "Nombre Completo",
             "Teléfono", "Nombre Jersey", "Talla", "Género"
         ];
-    
-        const rows = filtered.map(c => [
+
+        const rows = uniqueFiltered.map(c => [
             c.event_profile.participant_number,
             c.event_profile.full_name,
             c.email,
@@ -101,12 +112,9 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
             c.jersey_size,
             c.gender
         ]);
-    
+
         downloadCSVFile("jerseys_parejas.csv", headers, rows);
     };
-    
-    
-    
 
     const downloadCSVFile = (filename, headers, rows) => {
         const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
