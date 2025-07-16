@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getSupabase } from '../../utils/supabase';
+import RewardLayout from './_layout';
 
-export default function RewardRedeemPage() {
+function RewardRedeemPage() {
   const supabase = getSupabase();
 
   const [search, setSearch] = useState('');
@@ -190,3 +191,5 @@ export default function RewardRedeemPage() {
     </div>
   );
 }
+RewardRedeemPage.getLayout = (page) => <RewardLayout>{page}</RewardLayout>;
+export default RewardRedeemPage;

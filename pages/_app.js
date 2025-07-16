@@ -1,7 +1,7 @@
 import Head from 'next/head'
 import Router from 'next/router'
 import NProgress from 'nprogress'
-import Layout from '../layouts'
+import Layout from '../layouts' // your main layout
 import '../css/tailwind.scss'
 import '../css/main.scss'
 import '../css/layout.scss'
@@ -23,32 +23,32 @@ import '../css/components/tables.scss'
 import '../css/components/tabs.scss'
 import '../css/components/user-widgets/widget-2.scss'
 import '../css/components/user-widgets/widget-4.scss'
-import {RecoilRoot} from "recoil";
-import {LoadScript} from "@react-google-maps/api";
+import { RecoilRoot } from 'recoil'
+import { LoadScript } from '@react-google-maps/api'
 
 Router.events.on('routeChangeStart', () => NProgress.start())
 Router.events.on('routeChangeComplete', () => NProgress.done())
 Router.events.on('routeChangeError', () => NProgress.done())
 
-export default function App({Component, pageProps}) {
+export default function App({ Component, pageProps }) {
+  // If page has a custom layout, use it
+  const getLayout = Component.getLayout || ((page) => (
+    <Layout>
+      <LoadScript googleMapsApiKey="AIzaSyDinWw03ObW9w4RzpIposc_qTLNI9dCGcQ">
+        {page}
+      </LoadScript>
+    </Layout>
+  ))
 
-    return (
-        <>
-            <Head>
-                <meta
-                    name="viewport"
-                    content="width=device-width, initial-scale=1, shrink-to-fit=no"
-                />
-            </Head>
-            <RecoilRoot>
-                <Layout>
-                    <LoadScript
-                        googleMapsApiKey="AIzaSyDinWw03ObW9w4RzpIposc_qTLNI9dCGcQ"
-                    >
-                        <Component {...pageProps} />
-                    </LoadScript>
-                </Layout>
-            </RecoilRoot>
-        </>
-    )
+  return (
+    <>
+      <Head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
+      </Head>
+      <RecoilRoot>{getLayout(<Component {...pageProps} />)}</RecoilRoot>
+    </>
+  )
 }

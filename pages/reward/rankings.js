@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getSupabase } from '../../utils/supabase';
 import Link from 'next/link';
+import RewardLayout from './_layout';
 
-export default function RewardRankingsPage() {
+function RewardRankingsPage() {
   const [rankings, setRankings] = useState([]);
   const [loading, setLoading] = useState(true);
   const supabase = getSupabase();
@@ -37,7 +38,7 @@ export default function RewardRankingsPage() {
               className="flex justify-between items-center px-4 py-2 bg-white shadow rounded-lg hover:bg-gray-50 transition"
             >
               <Link
-                href={`/reward-profile-detail/${r.profile_id}`}
+                href={`/reward/profile-detail/${r.profile_id}`}
                 className="text-gray-800 hover:text-blue-600 font-medium"
               >
                 #{index + 1} — {r.name}
@@ -50,3 +51,6 @@ export default function RewardRankingsPage() {
     </div>
   );
 }
+
+RewardRankingsPage.getLayout = (page) => <RewardLayout>{page}</RewardLayout>;
+export default RewardRankingsPage;

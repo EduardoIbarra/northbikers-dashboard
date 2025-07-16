@@ -1,8 +1,9 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
-import { getSupabase } from '../../utils/supabase';
+import { getSupabase } from '../../../utils/supabase';
+import RewardLayout from './../_layout';
 
-export default function RewardProfileDetail() {
+function RewardProfileDetail() {
     const router = useRouter();
     const { id } = router.query;
     const supabase = getSupabase();
@@ -234,3 +235,5 @@ export default function RewardProfileDetail() {
         </div>
     );
 }
+RewardProfileDetail.getLayout = (page) => <RewardLayout>{page}</RewardLayout>;
+export default RewardProfileDetail;
