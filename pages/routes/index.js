@@ -33,6 +33,7 @@ const RouteBuilder = () => {
         terrain: 'pavement',
         weakSignal: false,
         picture: '',
+        category_id: '', // ✅ Add this line
     });
     const [routeAttributes, setRouteAttributes] = useState({
         title: "",
@@ -155,7 +156,6 @@ const RouteBuilder = () => {
 
     const handleSaveCheckpoint = async (checkpoint) => {
         try {
-            // Extract the nested checkpoint data
             const updatedCheckpoint = checkpoint.checkpoints;
 
             const { error } = await supabase
@@ -172,9 +172,11 @@ const RouteBuilder = () => {
                     terrain: updatedCheckpoint.terrain,
                     weakSignal: updatedCheckpoint.weakSignal,
                     is_challenge: updatedCheckpoint.challenge,
-                    category_id: updatedCheckpoint.category,  // Ensure category is included here
+                    category_id: updatedCheckpoint.category_id
+                        ? Number(updatedCheckpoint.category_id)
+                        : null, // ✅ Correct field
                 })
-                .eq('id', checkpoint.checkpoint_id);  // Use checkpoint_id from the parent object
+                .eq('id', checkpoint.checkpoint_id);
 
             if (error) {
                 toast.error("Error saving checkpoint:", error);
@@ -202,6 +204,7 @@ const RouteBuilder = () => {
                         : "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/road.png",
                     terrain: newCheckpoint.terrain,
                     weakSignal: newCheckpoint.weakSignal,
+                    category_id: newCheckpoint.category_id ? Number(newCheckpoint.category_id) : null,
                 })
                 .select('id');  // Select the ID of the newly inserted checkpoint
 
@@ -638,14 +641,10 @@ const RouteBuilder = () => {
 
                                                     <td>
                                                         <select
-                                                            value={newCheckpoint.category || ''} // Preselect existing category if present
+                                                            value={newCheckpoint.category_id || ''}
                                                             className='bg-gray-700'
                                                             onChange={(e) =>
-                                                                setCheckpoints((prev) =>
-                                                                    prev.map((item, i) =>
-                                                                        i === index ? { ...item, selectedCategory: e.target.value } : item
-                                                                    )
-                                                                )
+                                                                setNewCheckpoint({ ...newCheckpoint, category_id: e.target.value })
                                                             }
                                                         >
                                                             <option value="">Seleccionar categoría</option>
