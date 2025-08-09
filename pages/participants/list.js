@@ -12,8 +12,9 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
     const supabase2 = getSupabase();
 
     useEffect(() => {
-        setData(initialData);
-        console.log("Initial Data set in ParticipantsList:", initialData);
+        const sorted = sortParticipants(initialData);
+        setData(sorted);
+        console.log("Initial Data set in ParticipantsList (sorted w/ tiebreaker):", sorted);
     }, [initialData]);
 
     const getSelectValue = useCallback((value, dict) => {
@@ -284,5 +285,47 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
         </div>
     );
 };
+
+const getLastCheckInMs = (row) => {
+    // Try several possible shapes; missing dates go to the bottom of ties
+    const candidates = [
+        row?.last_check_in?.created_at,
+        row?.lastCheckInCreatedAt,
+        row?.last_checkin_created_at,
+        Array.isArray(row?.check_ins) ? row.check_ins[row.check_ins.length - 1]?.created_at : undefined,
+    ].filter(Boolean);
+
+    if (!candidates.length) return Number.POSITIVE_INFINITY;
+
+    const t = Date.parse(candidates[candidates.length - 1]); // use the latest in the array we built
+    return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+};
+
+const sortParticipants = (list) => {
+    const arr = [...(list || [])];
+
+    arr.sort((a, b) => {
+        const pa = a?.points ?? 0;
+        const pb = b?.points ?? 0;
+        if (pb !== pa) return pb - pa; // higher points first
+
+        const ta = getLastCheckInMs(a);
+        const tb = getLastCheckInMs(b);
+        if (ta !== tb) return ta - tb; // earlier last check-in first
+
+        // Stable final tie-breakers (optional but recommended)
+        const na = a?.participant_number ?? Number.POSITIVE_INFINITY;
+        const nb = b?.participant_number ?? Number.POSITIVE_INFINITY;
+        if (na !== nb) return na - nb;
+
+        const an = a?.profile?.name ?? "";
+        const bn = b?.profile?.name ?? "";
+        return an.localeCompare(bn);
+    });
+
+    // Recompute positions to reflect new order
+    return arr.map((item, idx) => ({ ...item, position: idx + 1 }));
+};
+
 
 export default ParticipantsList;
