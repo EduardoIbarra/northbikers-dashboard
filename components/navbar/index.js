@@ -4,7 +4,7 @@ import { CurrentRoute, Routes, SideNavCollapsed } from "../../store/atoms/global
 import Select from "../select";
 import { getSupabase } from "../../utils/supabase";
 import { useCallback, useEffect } from "react";
-import { setLoggedUser } from "../../utils";
+import { setLoggedUser, getLoggedUser } from "../../utils";
 import { useRouter } from "next/router";
 
 const Navbar = () => {
@@ -23,12 +23,39 @@ const Navbar = () => {
     };
 
     const getRoutes = useCallback(async () => {
+        const userId = getLoggedUser()?.id;
+        console.log('User id: ', userId);
+
+        if (!userId) {
+            setRoutes([]);
+            return;
+        }
+
         try {
-            const { data, error } = await supabase
-                .from("routes")
-                .select()
-                .order('featured', { ascending: true }) // Featured routes first
+            // Step 1: Get the route_access from profile
+            const { data: profile, error: profileError } = await supabase
+                .from("profiles")
+                .select("route_access")
+                .eq("id", userId)
+                .single();
+
+            if (profileError) throw profileError;
+
+            let query = supabase.from("routes").select();
+
+            // Step 2: Apply filtering logic
+            if (profile?.route_access && profile.route_access !== "0") {
+                const ids = profile.route_access.split(",").map(id => parseInt(id.trim(), 10));
+                query = query.in("id", ids);
+            }
+
+            // Step 3: Order routes
+            const { data, error } = await query
+                .order('featured', { ascending: true })
                 .order('title', { ascending: true });
+
+            if (error) throw error;
+
             if (data) {
                 data.reverse();
                 setRoutes(data);
