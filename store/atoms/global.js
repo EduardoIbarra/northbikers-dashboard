@@ -2,7 +2,7 @@ import {atom} from "recoil";
 
 export const SideNavCollapsed = atom({
     key: 'SideNavCollapsed',
-    default: false
+    default: true
 })
 
 export const Routes = atom({

@@ -1,11 +1,9 @@
+// pages/routes/index.js
 import Head from 'next/head'
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { CurrentRoute, Routes } from "../../store/atoms/global";
 import { useEffect, useState, useCallback } from "react";
 import { getSupabase } from "../../utils/supabase";
-import Navbar from "../../components/navbar";
-import Sidebar from "../../components/sidebar";
-import { SideNavCollapsed } from "../../store/atoms/global";
 import { toast, ToastContainer } from 'react-toastify';
 // import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -17,7 +15,6 @@ const ReactQuill = dynamic(() => import("react-quill"), {
     loading: () => <p>Loading editor...</p> // Optional loading message
 });
 const RouteBuilder = () => {
-    const isOpen = useRecoilValue(SideNavCollapsed);
     const [routes, setRoutes] = useRecoilState(Routes);
     const currentRoute = useRecoilValue(CurrentRoute);
     const setCurrentRoute = useSetRecoilState(CurrentRoute);
@@ -327,16 +324,14 @@ const RouteBuilder = () => {
             </Head>
             <div
                 data-layout="layout-1"
-                data-collapsed={isOpen}
                 data-background="light"
                 data-navbar="light"
                 data-left-sidebar="light"
                 data-right-sidebar="light"
                 className='font-sans antialiased text-sm disable-scrollbars'>
                 <div className="flex h-screen bg-gray-900 text-gray-100">
-                    <Sidebar />
+                    {/* <Sidebar /> */}
                     <div className="flex-1 p-6 overflow-y-auto bg-gray-800">
-                        <Navbar />
                         <div className="min-h-screen w-full p-4">
                             <div className="route-builder">
                                 {/* <h2 className="text-center mt-6">Constructor de Rutas {currentRoute.title}</h2> */}
