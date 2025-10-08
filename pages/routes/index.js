@@ -9,6 +9,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import "react-quill/dist/quill.snow.css";
 import 'react-toastify/dist/ReactToastify.css';
 import dynamic from "next/dynamic";
+import Link from 'next/link';
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamic(() => import("react-quill"), {
     ssr: false,
@@ -335,7 +336,7 @@ const RouteBuilder = () => {
                         <div className="min-h-screen w-full p-4">
                             <div className="route-builder">
                                 {/* <h2 className="text-center mt-6">Constructor de Rutas {currentRoute.title}</h2> */}
-                                <div className="text-center mt-6">
+                                <div className="text-center mt-6 flex items-center justify-center gap-3">
                                     <a
                                         href={`https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=https://www.northbikers.com/${currentRoute.slug}`}
                                         target="_blank"
@@ -344,9 +345,15 @@ const RouteBuilder = () => {
                                     >
                                         Descargar QR para este evento
                                     </a>
+
+                                    {/* Nuevo botón para ver compras */}
+                                    <Link
+                                        href={`/routes/purchases?routeId=${encodeURIComponent(currentRoute?.id ?? '')}`}
+                                        className="inline-block bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:bg-emerald-700 hover:shadow-xl transition duration-300 ease-in-out"
+                                    >
+                                        Ver productos comprados
+                                    </Link>
                                 </div>
-
-
 
                                 <div className="p-4">
                                     <h2 className="text-2xl font-bold mb-4">Actualizar Atributos de la Ruta</h2>

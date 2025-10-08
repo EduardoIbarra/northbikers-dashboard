@@ -8,6 +8,7 @@ export default function RewardLayout({ children }) {
     { href: '/reward/rankings', label: '🏁 Ranking' },
     { href: '/reward/redeem', label: '🎁 Canjear puntos' },
     { href: '/reward/manage', label: '📝 Administrar Artículos' },
+    { href: '/route/metrics', label: '📝 Métricas de Rutas' },
   ];
 
   return (
