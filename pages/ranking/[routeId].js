@@ -7,6 +7,11 @@ import { getSupabase } from '../../utils/supabase';
 const AVATAR_FALLBACK = '/iso_nb_white.png?v=1';
 const REFRESH_MS = 60_000;
 
+const firstTwo = (s = '') => {
+  const parts = String(s).trim().split(/\s+/).filter(Boolean);
+  return parts.slice(0, 2).join(' ') || s;
+};
+
 export default function PublicRouteRankingPage() {
   const supabase = useRef(getSupabase()).current;
   const router = useRouter();
@@ -111,7 +116,7 @@ export default function PublicRouteRankingPage() {
     const cleaned = (eps ?? []).map(p => ({
       ...p,
       points: Number(p.points ?? 0),
-      full_name: p.full_name ?? 'Sin nombre',
+      full_name: firstTwo(p.full_name) ?? 'Sin nombre',
       participant_number: Number(p.participant_number ?? 0),
     }));
 
@@ -119,7 +124,7 @@ export default function PublicRouteRankingPage() {
     cleaned.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       if (a.participant_number !== b.participant_number) return a.participant_number - b.participant_number;
-      return a.full_name.localeCompare(b.full_name, 'es', { sensitivity: 'base' });
+      return a.full_name.localeCompare(firstTwo(b.full_name), 'es', { sensitivity: 'base' });
     });
     let last = null, pos = 0;
     cleaned.forEach((it, idx) => { if (last===null || it.points!==last){ pos = idx+1; last = it.points; } it.rank = pos; });
@@ -233,7 +238,7 @@ export default function PublicRouteRankingPage() {
       const html = `
         <div class="nbm">
           <div class="nbm-avatar" style="background-image:url('${img}')"></div>
-          <span class="nbm-name">${esc(p.full_name)}</span>
+          <span class="nbm-name">${esc(firstTwo(p.full_name))}</span>
         </div>
       `;
       const icon = L.divIcon({ html, className: 'leaflet-plain-icon', iconSize: [0, 0] });
@@ -340,9 +345,9 @@ function PodiumCard({ place, data, size = 'md', metal = 'gold' }) {
         <span className="font-black">#{data.rank}</span> {medal && <span>{medal}</span>}
       </div>
       <div className={`mx-auto rounded-full overflow-hidden ring-2 ring-white/30 ${s.avatar}`}>
-        <img src={data.avatar_url || AVATAR_FALLBACK} alt={data.full_name} className="w-full h-full object-cover" />
+        <img src={data.avatar_url || AVATAR_FALLBACK} alt={firstTwo(data.full_name)} className="w-full h-full object-cover" />
       </div>
-      <div className="mt-2 font-semibold truncate">{data.full_name}</div>
+      <div className="mt-2 font-semibold truncate">{firstTwo(data.full_name)}</div>
       <div className={`text-gray-300 ${s.num}`}>#{data.participant_number}</div>
       <div className={`mt-2 font-extrabold tabular-nums ${s.points}`}>{data.points}</div>
     </div>
@@ -363,12 +368,12 @@ function RowItem({ r }) {
         <div className="w-11 h-11 sm:w-10 sm:h-10 rounded-full overflow-hidden ring-2 ring-white/15 shrink-0">
           <img
             src={r.avatar_url || AVATAR_FALLBACK}
-            alt={r.full_name}
+            alt={firstTwo(r.full_name)}
             className="w-full h-full object-cover rounded-full"
           />
         </div>
         <div className="leading-4 min-w-0">
-          <div className="text-sm sm:text-base font-semibold truncate">{r.full_name}</div>
+          <div className="text-sm sm:text-base font-semibold truncate">{firstTwo(r.full_name)}</div>
           <div className="text-[10px] sm:text-xs text-gray-400">ID {r.profile_id?.slice(0, 8)}</div>
         </div>
       </div>
