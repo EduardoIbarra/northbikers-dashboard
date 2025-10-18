@@ -2,6 +2,7 @@ import Head from 'next/head'
 import Router from 'next/router'
 import NProgress from 'nprogress'
 import Layout from '../layouts' // your main layout
+import 'leaflet/dist/leaflet.css';
 import '../css/tailwind.scss'
 import '../css/main.scss'
 import '../css/layout.scss'
