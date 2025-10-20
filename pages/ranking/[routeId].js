@@ -213,38 +213,69 @@ export default function PublicRouteRankingPage() {
   }, [leafletRef.current]);
 
   // ---------- markers ----------
-  useEffect(() => {
-    if (!leafletRef.current || !mapRef.current) return;
-    const L = leafletRef.current;
-    const layer = markersLayerRef.current;
-    layer.clearLayers();
+useEffect(() => {
+  if (!leafletRef.current || !mapRef.current) return;
+  const L = leafletRef.current;
+  const layer = markersLayerRef.current;
+  layer.clearLayers();
 
-    const pts = rows.filter(p => Number.isFinite(p.current_lat) && Number.isFinite(p.current_lng));
-    if (!pts.length) {
-      mapRef.current.setView([25.6866, -100.3161], 10);
-      return;
-    }
+  const pts = rows.filter(
+    (p) => Number.isFinite(p.current_lat) && Number.isFinite(p.current_lng)
+  );
 
-    const esc = (s) => String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const bounds = L.latLngBounds([]);
+  if (!pts.length) {
+    mapRef.current.setView([25.6866, -100.3161], 10);
+    return;
+  }
 
-    pts.forEach(p => {
-      const img = encodeURI(p.avatar_url || AVATAR_FALLBACK);
-      const html = `
-        <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-full ring-2 ring-cyan-400 overflow-hidden">
-            <img src="${img}" alt="${esc(firstTwo(p.full_name))}" style="width:100%;height:100%;object-fit:cover"/>
-          </div>
-          <span class="text-xs font-semibold text-white">${esc(firstTwo(p.full_name))}</span>
+  const esc = (s) =>
+    String(s || '').replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+    );
+
+  const bounds = L.latLngBounds([]);
+
+  pts.forEach((p) => {
+    const img = encodeURI(p.avatar_url || AVATAR_FALLBACK);
+
+    const html = `
+      <div class="nbm flex flex-col items-center text-center">
+        <div
+          class="nbm-avatar"
+          style="
+            width:52px;
+            height:52px;
+            border-radius:9999px;
+            background-image:url('${img}');
+            background-size:cover;
+            background-position:center;
+            box-shadow:
+              0 0 0 2px rgba(34,211,238,.9),
+              0 0 12px rgba(34,211,238,.45),
+              inset 0 0 6px rgba(255,255,255,.25);
+          "
+        ></div>
+        <div
+          class="mt-1 px-2 py-[2px] text-[11px] font-semibold text-white rounded-md bg-black/50 border border-white/10 max-w-[70px] truncate"
+        >
+          ${esc(firstTwo(p.full_name))}
         </div>
-      `;
-      const icon = L.divIcon({ html, className: 'leaflet-plain-icon', iconSize: [0, 0] });
-      L.marker([p.current_lat, p.current_lng], { icon }).addTo(layer);
-      bounds.extend([p.current_lat, p.current_lng]);
+      </div>
+    `;
+
+    const icon = L.divIcon({
+      html,
+      className: 'leaflet-plain-icon',
+      iconSize: [0, 0],
     });
 
-    mapRef.current.fitBounds(bounds.pad(0.2));
-  }, [rows]);
+    L.marker([p.current_lat, p.current_lng], { icon }).addTo(layer);
+    bounds.extend([p.current_lat, p.current_lng]);
+  });
+
+  mapRef.current.fitBounds(bounds.pad(0.2));
+}, [rows]);
+
 
   // ---------- UI ----------
   const [p1, p2, p3, ...rest] = rows;
