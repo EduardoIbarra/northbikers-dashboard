@@ -37,7 +37,7 @@ const resolveBrandIcon = (brandField) => {
   return BRAND_FALLBACK;
 };
 
-// misma plantilla de columnas (POS | MARCA | PARTICIPANTE | KM | TIEMPO | PUNTOS)
+// Desktop template (POS | MARCA | PARTICIPANTE | KM | TIEMPO | PUNTOS)
 const GRID_COLS = '70px 70px 1fr 100px 140px 90px';
 
 export default function PublicRouteRankingPage() {
@@ -90,6 +90,8 @@ export default function PublicRouteRankingPage() {
         border: 1px solid rgba(250,204,170,.20);
       }
       .leaflet-container { background:#0b0f14; }
+      /* Small badge for POS on mobile cards */
+      .pos-badge { background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); }
     `}</style>
   );
 
@@ -128,21 +130,19 @@ export default function PublicRouteRankingPage() {
         points: Number(p.points ?? 0),
         full_name: firstTwo(p.full_name) || 'Sin nombre',
         total_km: isFiniteNum(km) ? km : NaN,
-        _finish_ts: isFiniteNum(finishTs) ? finishTs : Infinity, // si no tiene odómetro final, al final del desempate
+        _finish_ts: isFiniteNum(finishTs) ? finishTs : Infinity,
         brand_icon: resolveBrandIcon(p.motorcycle_brand),
       };
     });
 
-    // ORDEN OFICIAL: 1) puntos DESC  2) last_check_in_at ASC (quien termina antes gana)
+    // ORDEN OFICIAL: 1) puntos DESC  2) last_check_in_at ASC
     cleaned.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
       if (a._finish_ts !== b._finish_ts) return a._finish_ts - b._finish_ts;
       return a.full_name.localeCompare(b.full_name, 'es', { sensitivity: 'base' });
     });
 
-    // rank secuencial
     cleaned.forEach((it, idx) => { it.rank = idx + 1; });
-
     setRows(cleaned);
     setLoading(false);
   }, [routeId, supabase]);
@@ -212,70 +212,69 @@ export default function PublicRouteRankingPage() {
     markersLayerRef.current = L.layerGroup().addTo(m);
   }, [leafletRef.current]);
 
-  // ---------- markers ----------
-useEffect(() => {
-  if (!leafletRef.current || !mapRef.current) return;
-  const L = leafletRef.current;
-  const layer = markersLayerRef.current;
-  layer.clearLayers();
+  // ---------- markers (round avatars) ----------
+  useEffect(() => {
+    if (!leafletRef.current || !mapRef.current) return;
+    const L = leafletRef.current;
+    const layer = markersLayerRef.current;
+    layer.clearLayers();
 
-  const pts = rows.filter(
-    (p) => Number.isFinite(p.current_lat) && Number.isFinite(p.current_lng)
-  );
-
-  if (!pts.length) {
-    mapRef.current.setView([25.6866, -100.3161], 10);
-    return;
-  }
-
-  const esc = (s) =>
-    String(s || '').replace(/[&<>"']/g, (c) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+    const pts = rows.filter(
+      (p) => Number.isFinite(p.current_lat) && Number.isFinite(p.current_lng)
     );
 
-  const bounds = L.latLngBounds([]);
+    if (!pts.length) {
+      mapRef.current.setView([25.6866, -100.3161], 10);
+      return;
+    }
 
-  pts.forEach((p) => {
-    const img = encodeURI(p.avatar_url || AVATAR_FALLBACK);
+    const esc = (s) =>
+      String(s || '').replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+      );
 
-    const html = `
-      <div class="nbm flex flex-col items-center text-center">
-        <div
-          class="nbm-avatar"
-          style="
-            width:52px;
-            height:52px;
-            border-radius:9999px;
-            background-image:url('${img}');
-            background-size:cover;
-            background-position:center;
-            box-shadow:
-              0 0 0 2px rgba(34,211,238,.9),
-              0 0 12px rgba(34,211,238,.45),
-              inset 0 0 6px rgba(255,255,255,.25);
-          "
-        ></div>
-        <div
-          class="mt-1 px-2 py-[2px] text-[11px] font-semibold text-white rounded-md bg-black/50 border border-white/10 max-w-[70px] truncate"
-        >
-          ${esc(firstTwo(p.full_name))}
+    const bounds = L.latLngBounds([]);
+
+    pts.forEach((p) => {
+      const img = encodeURI(p.avatar_url || AVATAR_FALLBACK);
+
+      const html = `
+        <div class="nbm flex flex-col items-center text-center">
+          <div
+            class="nbm-avatar"
+            style="
+              width:52px;
+              height:52px;
+              border-radius:9999px;
+              background-image:url('${img}');
+              background-size:cover;
+              background-position:center;
+              box-shadow:
+                0 0 0 2px rgba(34,211,238,.9),
+                0 0 12px rgba(34,211,238,.45),
+                inset 0 0 6px rgba(255,255,255,.25);
+            "
+          ></div>
+          <div
+            class="mt-1 px-2 py-[2px] text-[11px] font-semibold text-white rounded-md bg-black/50 border border-white/10 max-w-[76px] truncate"
+          >
+            ${esc(firstTwo(p.full_name))}
+          </div>
         </div>
-      </div>
-    `;
+      `;
 
-    const icon = L.divIcon({
-      html,
-      className: 'leaflet-plain-icon',
-      iconSize: [0, 0],
+      const icon = L.divIcon({
+        html,
+        className: 'leaflet-plain-icon',
+        iconSize: [0, 0],
+      });
+
+      L.marker([p.current_lat, p.current_lng], { icon }).addTo(layer);
+      bounds.extend([p.current_lat, p.current_lng]);
     });
 
-    L.marker([p.current_lat, p.current_lng], { icon }).addTo(layer);
-    bounds.extend([p.current_lat, p.current_lng]);
-  });
-
-  mapRef.current.fitBounds(bounds.pad(0.2));
-}, [rows]);
-
+    mapRef.current.fitBounds(bounds.pad(0.2));
+  }, [rows]);
 
   // ---------- UI ----------
   const [p1, p2, p3, ...rest] = rows;
@@ -316,10 +315,13 @@ useEffect(() => {
             {p3 ? (<PodiumCard place={3} data={p3} leaderFinishMs={leaderFinishMs} size="md" metal="bronze" />) : <div />}
           </div>
 
-          {/* Tabla */}
+          {/* Tabla / Cards */}
           <div className="overflow-hidden rounded-xl border border-white/10">
-            <div className="grid text-[11px] uppercase tracking-wide bg-white/5 text-gray-300"
-                 style={{ gridTemplateColumns: GRID_COLS }}>
+            {/* Desktop header */}
+            <div
+              className="hidden sm:grid text-[11px] uppercase tracking-wide bg-white/5 text-gray-300"
+              style={{ gridTemplateColumns: GRID_COLS }}
+            >
               <div className="px-3 py-2">Pos</div>
               <div className="px-3 py-2">Marca</div>
               <div className="px-3 py-2">Participante</div>
@@ -327,10 +329,18 @@ useEffect(() => {
               <div className="px-3 py-2 text-right">Tiempo</div>
               <div className="px-3 py-2 text-right">Puntos</div>
             </div>
+
             <ul className="divide-y divide-white/5">
               {([p1, p2, p3].filter(Boolean).length ? rest : rows).map(r => (
-                <RowItem key={r.id} r={r} leaderFinishMs={leaderFinishMs} />
+                <li key={r.id}>
+                  {/* Mobile card */}
+                  <RowItemMobile r={r} leaderFinishMs={leaderFinishMs} />
+
+                  {/* Desktop row */}
+                  <RowItemDesktop r={r} leaderFinishMs={leaderFinishMs} />
+                </li>
               ))}
+
               {!rows.length && !loading && (
                 <li className="px-3 py-6 text-sm text-gray-400">No hay participantes todavía.</li>
               )}
@@ -372,7 +382,6 @@ function PodiumCard({ place, data, leaderFinishMs, size = 'md', metal = 'gold' }
   const s = sizeMap[size];
   const metalClass = metal === 'gold' ? 'nb-metal' : metal === 'silver' ? 'nb-metal-silver' : 'nb-metal-bronze';
 
-  // Podio: 1º Interval, 2º/3º +diferencia vs finish del líder
   const hasFinish = isFiniteNum(data._finish_ts) && isFiniteNum(leaderFinishMs);
   const timeText = place === 1
     ? 'Interval'
@@ -401,10 +410,9 @@ function PodiumCard({ place, data, leaderFinishMs, size = 'md', metal = 'gold' }
   );
 }
 
-function RowItem({ r, leaderFinishMs }) {
+/* Desktop row (hidden on mobile) */
+function RowItemDesktop({ r, leaderFinishMs }) {
   const kmText = fmtKm(isFiniteNum(r.total_km) ? r.total_km : NaN);
-
-  // Tabla: 1º => "Interval"; demás => +diferencia vs finish del líder
   let timeText = 'Interval';
   if (r.rank !== 1) {
     const diff = (isFiniteNum(r._finish_ts) && isFiniteNum(leaderFinishMs))
@@ -414,32 +422,71 @@ function RowItem({ r, leaderFinishMs }) {
   }
 
   return (
-    <li
-      className="grid items-center px-3 py-3 bg-black/30 hover:bg-black/40 transition-colors"
+    <div
+      className="hidden sm:grid items-center px-3 py-3 bg-black/30 hover:bg-black/40 transition-colors"
       style={{ gridTemplateColumns: GRID_COLS }}
     >
       {/* POS */}
-      <div className="text-base sm:text-lg font-black tracking-tight">#{r.rank}</div>
+      <div className="text-base font-black tracking-tight">#{r.rank}</div>
 
       {/* MARCA */}
       <div className="flex items-center justify-center">
         <img src={r.brand_icon} alt="marca" className="w-6 h-6 object-contain opacity-90" />
       </div>
 
-      {/* PARTICIPANTE (sin avatar) */}
+      {/* PARTICIPANTE */}
       <div className="min-w-0">
-        <div className="text-sm sm:text-base font-semibold truncate">{firstTwo(r.full_name)}</div>
-        <div className="text-[10px] sm:text-xs text-gray-400">ID {String(r.profile_id || '').slice(0, 8)}</div>
+        <div className="text-sm font-semibold truncate">{firstTwo(r.full_name)}</div>
+        <div className="text-[10px] text-gray-400">ID {String(r.profile_id || '').slice(0, 8)}</div>
       </div>
 
       {/* KM */}
-      <div className="text-right text-sm sm:text-base font-semibold tabular-nums">{kmText}</div>
+      <div className="text-right text-sm font-semibold tabular-nums">{kmText}</div>
 
       {/* TIEMPO */}
-      <div className="text-right text-sm sm:text-base font-semibold tabular-nums">{timeText}</div>
+      <div className="text-right text-sm font-semibold tabular-nums">{timeText}</div>
 
       {/* PUNTOS */}
-      <div className="text-right text-sm sm:text-base font-extrabold tabular-nums">{r.points}</div>
-    </li>
+      <div className="text-right text-sm font-extrabold tabular-nums">{r.points}</div>
+    </div>
+  );
+}
+
+/* Mobile card (shown on mobile only) */
+function RowItemMobile({ r, leaderFinishMs }) {
+  const kmText = fmtKm(isFiniteNum(r.total_km) ? r.total_km : NaN);
+  let timeText = 'Interval';
+  if (r.rank !== 1) {
+    const diff = (isFiniteNum(r._finish_ts) && isFiniteNum(leaderFinishMs))
+      ? (r._finish_ts - leaderFinishMs)
+      : NaN;
+    timeText = isFiniteNum(diff) && diff > 0 ? `+${fmtHHMMSS(diff)}` : '+00:00:00';
+  }
+
+  return (
+    <div className="sm:hidden px-3 py-3 bg-black/30 hover:bg-black/40 transition-colors">
+      {/* Top row: POS + brand + name + points */}
+      <div className="flex items-center gap-3">
+        <div className="pos-badge rounded-md px-2 py-1 text-xs font-black tabular-nums">#{r.rank}</div>
+        <img src={r.brand_icon} alt="marca" className="w-5 h-5 object-contain opacity-90" />
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-semibold truncate">{firstTwo(r.full_name)}</div>
+          <div className="text-[10px] text-gray-400">ID {String(r.profile_id || '').slice(0, 8)}</div>
+        </div>
+        <div className="text-right text-base font-extrabold tabular-nums">{r.points}</div>
+      </div>
+
+      {/* Bottom row: KM & Tiempo */}
+      <div className="mt-2 flex items-center justify-between text-sm">
+        <div className="text-gray-300">
+          <span className="uppercase text-[10px] tracking-wide text-gray-400 mr-1">KM</span>
+          <span className="font-semibold tabular-nums">{kmText}</span>
+        </div>
+        <div className="text-gray-300">
+          <span className="uppercase text-[10px] tracking-wide text-gray-400 mr-1">Tiempo</span>
+          <span className="font-semibold tabular-nums">{timeText}</span>
+        </div>
+      </div>
+    </div>
   );
 }
