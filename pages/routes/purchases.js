@@ -16,6 +16,26 @@ const calcFeeCents = (amountCents) => Math.round(cents(amountCents) * 0.072) + 3
 // Descuento porcentual
 const applyPercentDiscountCents = (amountCents, pct) => Math.round(cents(amountCents) * (pct / 100));
 
+// --- CSV helpers ---
+const csvEscape = (val) => {
+  if (val === null || val === undefined) return '';
+  const s = String(val);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+};
+const downloadCSV = (rows, filename) => {
+  const csv = rows.map((arr) => arr.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+};
+
 export default function RoutePurchasesPage() {
   const router = useRouter();
   const { routeId } = router.query;
@@ -47,19 +67,21 @@ export default function RoutePurchasesPage() {
         couple_price_cents: Math.round((routeRow?.couple_price ?? 0) * 100),
       });
 
-      // 2) Compras de productos
+      // 2) Compras de productos — SOLO de esta ruta
+      //   Clave: usar INNER JOIN en event_profile y filtrar por route_id
       const { data, error } = await supabase
         .from('event_profile_product')
         .select(`
           id, quantity, unit_price_cents, notes, created_at,
           product:products ( id, title, price_cents, pictures_csv ),
-          event_profile:event_profile (
+          event_profile!inner (
             id, route_id,
             profile:profiles ( id, name, email, avatar_url, city, bike )
           )
         `)
         .eq('event_profile.route_id', rId)
         .order('created_at', { ascending: true });
+
       if (error) throw error;
 
       const flat = (data ?? []).map((row) => ({
@@ -225,31 +247,66 @@ export default function RoutePurchasesPage() {
 
   // ---------- Export CSV (PARTICIPANTES, neto) ----------
   const downloadCSVParticipants = () => {
-    const headers = [
+    const header = [
       'Nombre','Referrer','Participante','Cupón','Descuento%',
       'Ticket Base (MXN)','Descuento (MXN)','Base - Desc (MXN)',
       'Fee (MXN)','Total Neto (MXN)','Es Pareja',
     ];
-    const lines = participants.map((p) => [
+    const body = participants.map((p) => [
       p.profile?.name ?? '(sin nombre)',
       p.ep?.referrer ?? '',
       p.ep?.participant_number ?? '',
       p.coupon?.code ?? '',
       p.coupon?.discount_percentage ?? 0,
-      (p.baseCents / 100).toFixed(2),
-      (p.couponDiscountCents / 100).toFixed(2),
-      ((p.baseCents - p.couponDiscountCents) / 100).toFixed(2),
-      (p.feeCents / 100).toFixed(2),
-      (p.totalPayableCents / 100).toFixed(2),
+      (cents(p.baseCents) / 100).toFixed(2),
+      (cents(p.couponDiscountCents) / 100).toFixed(2),
+      ((cents(p.baseCents) - cents(p.couponDiscountCents)) / 100).toFixed(2),
+      (cents(p.feeCents) / 100).toFixed(2),
+      (cents(p.totalPayableCents) / 100).toFixed(2),
       p.ep?.is_couple ? 'Sí' : 'No',
     ]);
-    const csv = [headers, ...lines].map((arr) => arr.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `participantes_route_${routeId}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
+    downloadCSV([header, ...body], `participantes_route_${routeId}.csv`);
+  };
+
+  // ---------- Export CSV (PRODUCTOS, detalle por línea con neto) ----------
+  const downloadCSVProducts = () => {
+    const header = [
+      'Fecha','Producto','Cantidad','Unitario (MXN)','Subtotal (MXN)',
+      'Fee (MXN)','Total Neto (MXN)','Notas',
+      'Nombre','Email','Ciudad','Moto',
+      'product_id','event_profile_id','profile_id','purchase_id'
+    ];
+    const body = rows.map((r) => {
+      const qty = cents(r.quantity);
+      const unit = cents(r.unit_price_cents);
+      const lineSubtotal = qty * unit;
+      const fee = calcFeeCents(lineSubtotal);
+      const neto = lineSubtotal - fee;
+      return [
+        new Date(r.created_at).toLocaleString('es-MX'),
+        r.product_title,
+        qty,
+        (unit / 100).toFixed(2),
+        (lineSubtotal / 100).toFixed(2),
+        (fee / 100).toFixed(2),
+        (neto / 100).toFixed(2),
+        r.notes || '',
+        r.name || '',
+        r.email || '',
+        r.city || '',
+        r.bike || '',
+        r.product_id ?? '',
+        r.event_profile_id ?? '',
+        r.profile_id ?? '',
+        r.id ?? '',
+      ];
+    });
+    downloadCSV([header, ...body], `productos_route_${routeId}.csv`);
+  };
+
+  const handleExportActiveTab = () => {
+    if (activeTab === 'PRODUCTS') downloadCSVProducts();
+    else downloadCSVParticipants();
   };
 
   return (
@@ -267,12 +324,20 @@ export default function RoutePurchasesPage() {
               </p>
             </div>
             <div className="flex gap-3">
+              {activeTab === 'PRODUCTS' && (
+                <button
+                  onClick={downloadCSVProducts}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded"
+                >
+                  Exportar CSV (Productos)
+                </button>
+              )}
               {activeTab === 'PARTICIPANTS' && (
                 <button
                   onClick={downloadCSVParticipants}
                   className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded"
                 >
-                  Exportar CSV
+                  Exportar CSV (Participantes)
                 </button>
               )}
               <Link href="/routes" className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded">
