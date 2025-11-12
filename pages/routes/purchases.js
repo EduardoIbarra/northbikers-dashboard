@@ -80,6 +80,7 @@ export default function RoutePurchasesPage() {
           )
         `)
         .eq('event_profile.route_id', rId)
+        .eq('event_profile.payment_status', 'paid')
         .order('created_at', { ascending: true });
 
       if (error) throw error;
