@@ -120,7 +120,7 @@ export default function RoutePurchasesPage() {
       const { data: eps, error } = await supabase
         .from('event_profile')
         .select(`
-          id, created_at, updated_at, profile_id,
+          id, created_at, updated_at, profile_id, payment_status,
           participant_number, is_couple, referrer, coupon_code,
           stripe_webhook_email_notification
         `)
@@ -154,6 +154,8 @@ export default function RoutePurchasesPage() {
         const coupon = ep.coupon_code ? couponsByCode[ep.coupon_code] : null;
         const discountPct = coupon?.discount_percentage ?? 0;
 
+        const isPromo = ep.payment_status === 'promo';
+
         const baseCents = ep.is_couple
           ? Math.round((routeRow?.couple_price ?? 0) * 100)
           : Math.round((routeRow?.amount ?? 0) * 100);
@@ -169,10 +171,10 @@ export default function RoutePurchasesPage() {
           ep,
           profile,
           coupon,
-          baseCents,
-          couponDiscountCents,
-          feeCents,
-          totalPayableCents, // neto
+          baseCents: isPromo ? 0 : baseCents,
+          couponDiscountCents: isPromo ? 0 : couponDiscountCents,
+          feeCents: isPromo ? 0 : feeCents,
+          totalPayableCents: isPromo ? 0 : totalPayableCents,
         };
       });
 
@@ -249,9 +251,9 @@ export default function RoutePurchasesPage() {
   // ---------- Export CSV (PARTICIPANTES, neto) ----------
   const downloadCSVParticipants = () => {
     const header = [
-      'Nombre','Referrer','Participante','Cupón','Descuento%',
-      'Ticket Base (MXN)','Descuento (MXN)','Base - Desc (MXN)',
-      'Fee (MXN)','Total Neto (MXN)','Es Pareja',
+      'Nombre', 'Referrer', 'Participante', 'Cupón', 'Descuento%',
+      'Ticket Base (MXN)', 'Descuento (MXN)', 'Base - Desc (MXN)',
+      'Fee (MXN)', 'Total Neto (MXN)', 'Es Pareja',
     ];
     const body = participants.map((p) => [
       p.profile?.name ?? '(sin nombre)',
@@ -272,10 +274,10 @@ export default function RoutePurchasesPage() {
   // ---------- Export CSV (PRODUCTOS, detalle por línea con neto) ----------
   const downloadCSVProducts = () => {
     const header = [
-      'Fecha','Producto','Cantidad','Unitario (MXN)','Subtotal (MXN)',
-      'Fee (MXN)','Total Neto (MXN)','Notas',
-      'Nombre','Email','Ciudad','Moto',
-      'product_id','event_profile_id','profile_id','purchase_id'
+      'Fecha', 'Producto', 'Cantidad', 'Unitario (MXN)', 'Subtotal (MXN)',
+      'Fee (MXN)', 'Total Neto (MXN)', 'Notas',
+      'Nombre', 'Email', 'Ciudad', 'Moto',
+      'product_id', 'event_profile_id', 'profile_id', 'purchase_id'
     ];
     const body = rows.map((r) => {
       const qty = cents(r.quantity);
@@ -350,13 +352,13 @@ export default function RoutePurchasesPage() {
           {/* Tabs */}
           <div className="mb-6 inline-flex rounded-lg overflow-hidden border border-gray-700">
             <button
-              className={`px-4 py-2 text-sm ${activeTab==='PRODUCTS' ? 'bg-gray-700' : 'bg-gray-800 hover:bg-gray-700'}`}
+              className={`px-4 py-2 text-sm ${activeTab === 'PRODUCTS' ? 'bg-gray-700' : 'bg-gray-800 hover:bg-gray-700'}`}
               onClick={() => setActiveTab('PRODUCTS')}
             >
               Productos
             </button>
             <button
-              className={`px-4 py-2 text-sm ${activeTab==='PARTICIPANTS' ? 'bg-gray-700' : 'bg-gray-800 hover:bg-gray-700'}`}
+              className={`px-4 py-2 text-sm ${activeTab === 'PARTICIPANTS' ? 'bg-gray-700' : 'bg-gray-800 hover:bg-gray-700'}`}
               onClick={() => setActiveTab('PARTICIPANTS')}
             >
               Participantes
