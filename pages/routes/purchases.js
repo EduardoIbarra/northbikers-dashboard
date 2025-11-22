@@ -75,7 +75,7 @@ export default function RoutePurchasesPage() {
           id, quantity, unit_price_cents, notes, created_at,
           product:products ( id, title, price_cents, pictures_csv ),
           event_profile!inner (
-            id, route_id,
+            id, route_id, full_name,
             profile:profiles ( id, name, email, avatar_url, city, bike )
           )
         `)
@@ -97,7 +97,7 @@ export default function RoutePurchasesPage() {
         pictures_csv: row.product?.pictures_csv ?? null,
         event_profile_id: row.event_profile?.id ?? null,
         profile_id: row.event_profile?.profile?.id ?? null,
-        name: row.event_profile?.profile?.name ?? '(sin nombre)',
+        name: row.event_profile?.full_name ?? '(sin nombre)',
         email: row.event_profile?.profile?.email ?? '',
         city: row.event_profile?.profile?.city ?? '',
         bike: row.event_profile?.profile?.bike ?? '',
