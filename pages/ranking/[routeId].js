@@ -10,7 +10,7 @@ const REFRESH_MS = 60_000;
 
 // ---------- helpers ----------
 const firstTwo = (s = '') => {
-  const parts = String(s).trim().split(/\s+/).filter(Boolean);
+  const parts = String(s).trim().trim().split(/\s+/).filter(Boolean);
   return parts.slice(0, 2).join(' ') || s;
 };
 const isFiniteNum = (n) => Number.isFinite(n) && !Number.isNaN(n);
@@ -39,6 +39,7 @@ const resolveBrandIcon = (brandField) => {
 
 // Desktop template (POS | MARCA | PARTICIPANTE | KM | TIEMPO | PUNTOS)
 const GRID_COLS = '70px 70px 1fr 100px 140px 90px';
+const GRID_COLS_RALLY = '70px 70px 1fr 90px';
 
 export default function PublicRouteRankingPage() {
   const supabase = useRef(getSupabase()).current;
@@ -90,7 +91,6 @@ export default function PublicRouteRankingPage() {
         border: 1px solid rgba(250,204,170,.20);
       }
       .leaflet-container { background:#0b0f14; }
-      /* Small badge for POS on mobile cards */
       .pos-badge { background: rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); }
     `}</style>
   );
@@ -102,9 +102,11 @@ export default function PublicRouteRankingPage() {
 
     const { data: routes } = await supabase
       .from('routes')
-      .select('id,title,dates,banner,slug')
+      .select('id,title,dates,banner,slug,rally')
       .eq('id', routeId).limit(1);
-    setRoute(routes?.[0] ?? null);
+
+    const routeData = routes?.[0] ?? null;
+    setRoute(routeData);
 
     const { data: eps, error } = await supabase
       .from('event_profile')
@@ -120,11 +122,12 @@ export default function PublicRouteRankingPage() {
     if (error) { console.error(error); setRows([]); setLoading(false); return; }
 
     const cleaned = (eps ?? []).map(p => {
-      const km = hasBoth(p.odo_start, p.odo_end)
+      const km = (hasBoth(p.odo_start, p.odo_end) && !routeData?.rally)
         ? Number(p.odo_end) - Number(p.odo_start)
         : NaN;
 
-      const finishTs = toMs(p.last_check_in_at); // criterio de desempate oficial
+      const finishTs = toMs(p.last_check_in_at);
+
       return {
         ...p,
         points: Number(p.points ?? 0),
@@ -135,10 +138,12 @@ export default function PublicRouteRankingPage() {
       };
     });
 
-    // ORDEN OFICIAL: 1) puntos DESC  2) last_check_in_at ASC
+    // ORDEN OFICIAL: 1) puntos DESC  2) last_check_in_at ASC (solo si no es rally)
     cleaned.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
-      if (a._finish_ts !== b._finish_ts) return a._finish_ts - b._finish_ts;
+      if (!routeData?.rally) {
+        if (a._finish_ts !== b._finish_ts) return a._finish_ts - b._finish_ts;
+      }
       return a.full_name.localeCompare(b.full_name, 'es', { sensitivity: 'base' });
     });
 
@@ -163,7 +168,10 @@ export default function PublicRouteRankingPage() {
     if (!intervalRef.current) {
       intervalRef.current = setInterval(() => { if (pageVisibleRef.current) loadData(); }, REFRESH_MS);
     }
-    return () => { clearInterval(intervalRef.current); intervalRef.current = null; };
+    return () => {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    };
   }, [routeId, loadData]);
 
   // ---------- Leaflet (CDN) ----------
@@ -277,10 +285,14 @@ export default function PublicRouteRankingPage() {
   }, [rows]);
 
   // ---------- UI ----------
-  const [p1, p2, p3, ...rest] = rows;
+  const isRally = !!route?.rally;
 
-  // líder por finish time (odómetro final)
-  const leaderFinishMs = useMemo(() => rows[0]?._finish_ts ?? NaN, [rows]);
+  const leaderFinishMs = useMemo(() => {
+    if (!rows.length || isRally) return NaN;
+    return rows[0]?._finish_ts ?? NaN;
+  }, [rows, isRally]);
+
+  const [p1, p2, p3, ...rest] = rows;
 
   return (
     <div className="min-h-screen">
@@ -309,10 +321,10 @@ export default function PublicRouteRankingPage() {
           <h2 className="text-lg font-semibold">Leaderboard</h2>
 
           {/* Podio */}
-          <div className="grid grid-cols-3 gap-3 sm:gap-4 items-end">
-            {p2 ? (<PodiumCard place={2} data={p2} leaderFinishMs={leaderFinishMs} size="md" metal="silver" />) : <div />}
-            {p1 ? (<PodiumCard place={1} data={p1} leaderFinishMs={leaderFinishMs} size="lg" metal="gold" />) : <div />}
-            {p3 ? (<PodiumCard place={3} data={p3} leaderFinishMs={leaderFinishMs} size="md" metal="bronze" />) : <div />}
+          <div className="grid grid-cols-3 gap-3 sm:gap-gap-4 items-end">
+            {p2 && (<PodiumCard place={2} data={p2} leaderFinishMs={leaderFinishMs} size="md" metal="silver" isRally={isRally} />)}
+            {p1 && (<PodiumCard place={1} data={p1} leaderFinishMs={leaderFinishMs} size="lg" metal="gold" isRally={isRally} />)}
+            {p3 && (<PodiumCard place={3} data={p3} leaderFinishMs={leaderFinishMs} size="md" metal="bronze" isRally={isRally} />)}
           </div>
 
           {/* Tabla / Cards */}
@@ -320,24 +332,22 @@ export default function PublicRouteRankingPage() {
             {/* Desktop header */}
             <div
               className="hidden sm:grid text-[11px] uppercase tracking-wide bg-white/5 text-gray-300"
-              style={{ gridTemplateColumns: GRID_COLS }}
+              style={{ gridTemplateColumns: isRally ? GRID_COLS_RALLY : GRID_COLS }}
             >
               <div className="px-3 py-2">Pos</div>
               <div className="px-3 py-2">Marca</div>
               <div className="px-3 py-2">Participante</div>
-              <div className="px-3 py-2 text-right">KM</div>
-              <div className="px-3 py-2 text-right">Tiempo</div>
+              {!isRally && <div className="px-3 py-2 text-right">KM</div>}
+              {!isRally && <div className="px-3 py-2 text-right">Tiempo</div>}
               <div className="px-3 py-2 text-right">Puntos</div>
             </div>
 
             <ul className="divide-y divide-white/5">
               {([p1, p2, p3].filter(Boolean).length ? rest : rows).map(r => (
                 <li key={r.id}>
-                  {/* Mobile card */}
-                  <RowItemMobile r={r} leaderFinishMs={leaderFinishMs} />
+                  <RowItemMobile r={r} leaderFinishMs={leaderFinishMs} isRally={isRally} />
 
-                  {/* Desktop row */}
-                  <RowItemDesktop r={r} leaderFinishMs={leaderFinishMs} />
+                  <RowItemDesktop r={r} leaderFinishMs={leaderFinishMs} isRally={isRally} />
                 </li>
               ))}
 
@@ -373,7 +383,7 @@ export default function PublicRouteRankingPage() {
 
 /* --------------------- Subcomponents --------------------- */
 
-function PodiumCard({ place, data, leaderFinishMs, size = 'md', metal = 'gold' }) {
+function PodiumCard({ place, data, leaderFinishMs, size = 'md', metal = 'gold', isRally = false }) {
   const medal = place === 1 ? '🥇' : place === 2 ? '🥈' : place === 3 ? '🥉' : null;
   const sizeMap = {
     lg: { wrap: 'py-4', avatar: 'w-20 h-20', name: 'text-base', points: 'text-xl', num: 'text-sm', brand: 'w-6 h-6' },
@@ -382,12 +392,13 @@ function PodiumCard({ place, data, leaderFinishMs, size = 'md', metal = 'gold' }
   const s = sizeMap[size];
   const metalClass = metal === 'gold' ? 'nb-metal' : metal === 'silver' ? 'nb-metal-silver' : 'nb-metal-bronze';
 
-  const hasFinish = isFiniteNum(data._finish_ts) && isFiniteNum(leaderFinishMs);
-  const timeText = place === 1
-    ? 'Interval'
-    : (hasFinish ? `+${fmtHHMMSS(data._finish_ts - leaderFinishMs)}` : '+00:00:00');
+  const kmText = fmtKm(data.total_km);
 
-  const kmText = fmtKm(isFiniteNum(data.total_km) ? data.total_km : NaN);
+  let timeText = '';
+  if (!isRally) {
+    const hasFinish = isFiniteNum(data._finish_ts) && isFiniteNum(leaderFinishMs);
+    timeText = place === 1 ? 'Líder' : (hasFinish ? `+${fmtHHMMSS(data._finish_ts - leaderFinishMs)}` : '—');
+  }
 
   return (
     <div className={`rounded-xl ${metalClass} px-3 sm:px-4 ${s.wrap} text-center`}>
@@ -402,65 +413,72 @@ function PodiumCard({ place, data, leaderFinishMs, size = 'md', metal = 'gold' }
         <span>{firstTwo(data.full_name)}</span>
       </div>
       <div className={`mt-2 font-extrabold tabular-nums ${s.points}`}>{data.points}</div>
-      <div className="mt-1 text-[11px] text-gray-300/90 tabular-nums">
-        <span className="mr-2">KM: <b>{kmText}</b></span>
-        <span>Tiempo: <b>{timeText}</b></span>
-      </div>
+
+      {!isRally && (
+        <div className="mt-1 text-[11px] text-gray-300/90 tabular-nums">
+          <span className="mr-2">KM: <b>{kmText}</b></span>
+          <span>Tiempo: <b>{timeText}</b></span>
+        </div>
+      )}
     </div>
   );
 }
 
 /* Desktop row (hidden on mobile) */
-function RowItemDesktop({ r, leaderFinishMs }) {
-  const kmText = fmtKm(isFiniteNum(r.total_km) ? r.total_km : NaN);
-  let timeText = 'Interval';
-  if (r.rank !== 1) {
-    const diff = (isFiniteNum(r._finish_ts) && isFiniteNum(leaderFinishMs))
-      ? (r._finish_ts - leaderFinishMs)
-      : NaN;
-    timeText = isFiniteNum(diff) && diff > 0 ? `+${fmtHHMMSS(diff)}` : '+00:00:00';
+function RowItemDesktop({ r, leaderFinishMs, isRally = false }) {
+  const kmText = fmtKm(r.total_km);
+
+  let timeText = '';
+  if (!isRally) {
+    if (r.rank === 1) {
+      timeText = 'Líder';
+    } else {
+      const diff = isFiniteNum(r._finish_ts) && isFiniteNum(leaderFinishMs)
+        ? r._finish_ts - leaderFinishMs
+        : NaN;
+      timeText = isFiniteNum(diff) && diff > 0 ? `+${fmtHHMMSS(diff)}` : (diff === 0 ? 'Líder' : '—');
+    }
   }
 
   return (
     <div
       className="hidden sm:grid items-center px-3 py-3 bg-black/30 hover:bg-black/40 transition-colors"
-      style={{ gridTemplateColumns: GRID_COLS }}
+      style={{ gridTemplateColumns: isRally ? GRID_COLS_RALLY : GRID_COLS }}
     >
-      {/* POS */}
       <div className="text-base font-black tracking-tight">#{r.rank}</div>
 
-      {/* MARCA */}
       <div className="flex items-center justify-center">
         <img src={r.brand_icon} alt="marca" className="w-6 h-6 object-contain opacity-90" />
       </div>
 
-      {/* PARTICIPANTE */}
       <div className="min-w-0">
         <div className="text-sm font-semibold truncate">{firstTwo(r.full_name)}</div>
         <div className="text-[10px] text-gray-400">ID {String(r.profile_id || '').slice(0, 8)}</div>
       </div>
 
-      {/* KM */}
-      <div className="text-right text-sm font-semibold tabular-nums">{kmText}</div>
+      {!isRally && <div className="text-right text-sm font-semibold tabular-nums">{kmText}</div>}
 
-      {/* TIEMPO */}
-      <div className="text-right text-sm font-semibold tabular-nums">{timeText}</div>
+      {!isRally && <div className="text-right text-sm font-semibold tabular-nums">{timeText}</div>}
 
-      {/* PUNTOS */}
       <div className="text-right text-sm font-extrabold tabular-nums">{r.points}</div>
     </div>
   );
 }
 
 /* Mobile card (shown on mobile only) */
-function RowItemMobile({ r, leaderFinishMs }) {
-  const kmText = fmtKm(isFiniteNum(r.total_km) ? r.total_km : NaN);
-  let timeText = 'Interval';
-  if (r.rank !== 1) {
-    const diff = (isFiniteNum(r._finish_ts) && isFiniteNum(leaderFinishMs))
-      ? (r._finish_ts - leaderFinishMs)
-      : NaN;
-    timeText = isFiniteNum(diff) && diff > 0 ? `+${fmtHHMMSS(diff)}` : '+00:00:00';
+function RowItemMobile({ r, leaderFinishMs, isRally = false }) {
+  const kmText = fmtKm(r.total_km);
+
+  let timeText = '';
+  if (!isRally) {
+    if (r.rank === 1) {
+      timeText = 'Líder';
+    } else {
+      const diff = isFiniteNum(r._finish_ts) && isFiniteNum(leaderFinishMs)
+        ? r._finish_ts - leaderFinishMs
+        : NaN;
+      timeText = isFiniteNum(diff) && diff > 0 ? `+${fmtHHMMSS(diff)}` : (diff === 0 ? 'Líder' : '—');
+    }
   }
 
   return (
@@ -477,16 +495,18 @@ function RowItemMobile({ r, leaderFinishMs }) {
       </div>
 
       {/* Bottom row: KM & Tiempo */}
-      <div className="mt-2 flex items-center justify-between text-sm">
-        <div className="text-gray-300">
-          <span className="uppercase text-[10px] tracking-wide text-gray-400 mr-1">KM</span>
-          <span className="font-semibold tabular-nums">{kmText}</span>
+      {!isRally && (
+        <div className="mt-2 flex items-center justify-between text-sm">
+          <div className="text-gray-300">
+            <span className="uppercase text-[10px] tracking-wide text-gray-400 mr-1">KM</span>
+            <span className="font-semibold tabular-nums">{kmText}</span>
+          </div>
+          <div className="text-gray-300">
+            <span className="uppercase text-[10px] tracking-wide text-gray-400 mr-1">Tiempo</span>
+            <span className="font-semibold tabular-nums">{timeText}</span>
+          </div>
         </div>
-        <div className="text-gray-300">
-          <span className="uppercase text-[10px] tracking-wide text-gray-400 mr-1">Tiempo</span>
-          <span className="font-semibold tabular-nums">{timeText}</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
