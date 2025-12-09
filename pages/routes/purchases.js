@@ -12,7 +12,13 @@ const cents = (n) => (n ?? 0);
 const centsToMoney = (c) => MXN.format(cents(c) / 100);
 
 // Comisión: 7.2% + $3.00 MXN
-const calcFeeCents = (amountCents) => Math.round(cents(amountCents) * 0.072) + 300;
+// const calcFeeCents = (amountCents) => Math.round(cents(amountCents) * 0.072) + 300;
+// la línea de arriba estaba omitiendo el IVA del 16% sobre la comisión
+const calcFeeCents = (amountCents) => {
+  const commission = Math.round(amountCents * 0.072) + 300;
+  const tax = Math.round(commission * 0.16);
+  return commission + tax;
+};
 // Descuento porcentual
 const applyPercentDiscountCents = (amountCents, pct) => Math.round(cents(amountCents) * (pct / 100));
 
