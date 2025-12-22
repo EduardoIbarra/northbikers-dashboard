@@ -158,6 +158,7 @@ function RewardRedeemPage() {
                 <thead>
                   <tr className="bg-gray-100 text-gray-700">
                     <th className="px-4 py-2 border-b">Premio</th>
+                    <th className="px-4 py-2 border-b">#</th>
                     <th className="px-4 py-2 border-b">Costo (pts)</th>
                     <th className="px-4 py-2 border-b text-right">Acción</th>
                   </tr>
@@ -166,6 +167,7 @@ function RewardRedeemPage() {
                   {rewards.map((r) => (
                     <tr key={r.id} className="hover:bg-gray-50 transition">
                       <td className="px-4 py-2 border-b">{r.name}</td>
+                      <td className="px-4 py-2 border-b">{r.part_number}</td>
                       <td className="px-4 py-2 border-b">{r.minimum_points}</td>
                       <td className="px-4 py-2 border-b text-right">
                         <button
