@@ -21,6 +21,7 @@ function RewardArticlesManagePage() {
     const fields = [
         'name',
         'description',
+        'part_number',
         'minimum_routes',
         'minimum_points',
         'valid_until',
