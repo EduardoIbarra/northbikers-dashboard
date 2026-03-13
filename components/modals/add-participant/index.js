@@ -171,7 +171,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             const upsertedProfileId = upsertedData?.[0]?.id;  // Assuming upsertedData contains the new event_profile id
             if (upsertedProfileId) {
                 try {
-                    await fetch('https://api.northbikers.com/api/send_confirmation_email', {
+                    await fetch('https://northbikers.com/api/send_confirmation_email', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

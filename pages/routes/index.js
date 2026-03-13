@@ -46,6 +46,8 @@ const RouteBuilder = () => {
         start_timestamp: "",
         end_timestamp: "",
     });
+    const [bannerFile, setBannerFile] = useState(null);
+    const [bannerHFile, setBannerHFile] = useState(null);
     const supabase = getSupabase();
 
     // Preload route data
@@ -56,7 +58,9 @@ const RouteBuilder = () => {
             const { data, error } = await supabase
                 .from("routes")
                 .select(
-                    "title, venue, dates, description, long_description, en_long_description, venue_link, whatsapp_group_url, venue_iframe, start_timestamp, end_timestamp"
+                    "title, venue, dates, description, long_description, en_long_description, " +
+                    "venue_link, whatsapp_group_url, venue_iframe, start_timestamp, end_timestamp, " +
+                    "banner, banner_h"   // ← added
                 )
                 .eq("id", currentRoute.id)
                 .single();
@@ -79,6 +83,8 @@ const RouteBuilder = () => {
                 venue_iframe: data.venue_iframe || "",
                 start_timestamp: data.start_timestamp || "",
                 end_timestamp: data.end_timestamp || "",
+                banner: data.banner || "",
+                banner_h: data.banner_h || "",
             });
         } catch (e) {
             toast.error("Unexpected error loading route data:", e);
@@ -108,6 +114,62 @@ const RouteBuilder = () => {
             }
         } catch (e) {
             toast.error(`Unexpected error saving ${key}:`, e);
+        }
+    };
+
+    const handleBannerUpload = async (file, fieldName) => {
+        console.log(file, fieldName);
+        if (!file || !currentRoute?.id) return;
+
+        // Use rallies/ subfolder inside pictures bucket
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const fileName = `rallies/${currentRoute.id}/${Date.now()}.${fileExt}`;
+
+        try {
+            // 1. Upload file
+            const { error: uploadError } = await supabase.storage
+                .from('pictures')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false,
+                });
+
+            if (uploadError) {
+                toast.error(`Error al subir imagen: ${uploadError.message}`);
+                return;
+            }
+
+            // 2. Build public URL manually (works even if getPublicUrl glitches)
+            const projectRef = 'aezxnubglexywadbjpgo'; // ← your Supabase project ref
+            const publicUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/pictures/${fileName}`;
+
+            // Quick sanity check
+            console.log('Generated public URL:', publicUrl);
+
+            if (!publicUrl) {
+                toast.error("No se pudo construir la URL pública");
+                return;
+            }
+
+            // 3. Save URL to routes table
+            const { error: updateError } = await supabase
+                .from('routes')
+                .update({ [fieldName]: publicUrl })
+                .eq('id', currentRoute.id);
+
+            if (updateError) {
+                toast.error(`Error al guardar ${fieldName}: ${updateError.message}`);
+                return;
+            }
+
+            toast.success(`Imagen subida y guardada en ${fieldName}`);
+
+            // Optional: update local state to show immediately
+            setRouteAttributes(prev => ({ ...prev, [fieldName]: publicUrl }));
+
+        } catch (err) {
+            toast.error("Error inesperado al subir banner");
+            console.error(err);
         }
     };
 
@@ -522,6 +584,62 @@ const RouteBuilder = () => {
                                         >
                                             Guardar Fin
                                         </button>
+                                    </div>
+
+                                    {/* Banner principal (routes.banner) */}
+                                    <div className="mb-6">
+                                        <label className="block font-bold text-gray-100 mb-1">Banner principal (routes.banner)</label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    setBannerFile(file);
+                                                    handleBannerUpload(file, "banner");
+                                                }
+                                            }}
+                                            className="bg-gray-700 text-gray-300 border border-gray-600 p-2 rounded w-full"
+                                        />
+                                        {routeAttributes.banner && (
+                                            <div className="mt-3">
+                                                <p className="text-sm text-gray-400 mb-1">Vista previa actual:</p>
+                                                <img
+                                                    src={routeAttributes.banner}
+                                                    alt="Banner actual"
+                                                    className="max-h-48 object-contain rounded border border-gray-600"
+                                                    onError={(e) => { e.target.src = "/placeholder-image.jpg"; }} // fallback
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Banner horizontal / alternativa (routes.banner_h) */}
+                                    <div className="mb-6">
+                                        <label className="block font-bold text-gray-100 mb-1">Banner horizontal / secundario (routes.banner_h)</label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    setBannerHFile(file);
+                                                    handleBannerUpload(file, "banner_h");
+                                                }
+                                            }}
+                                            className="bg-gray-700 text-gray-300 border border-gray-600 p-2 rounded w-full"
+                                        />
+                                        {routeAttributes.banner_h && (
+                                            <div className="mt-3">
+                                                <p className="text-sm text-gray-400 mb-1">Vista previa actual:</p>
+                                                <img
+                                                    src={routeAttributes.banner_h}
+                                                    alt="Banner horizontal actual"
+                                                    className="max-h-48 object-contain rounded border border-gray-600"
+                                                    onError={(e) => { e.target.src = "/placeholder-image.jpg"; }}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
