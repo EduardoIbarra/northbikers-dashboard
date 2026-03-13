@@ -137,13 +137,13 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
             row.position,
             row.points ?? 0,
             row.participant_number,
-            row.profile.name,
+            `"${row.profile.name.replace(/"/g, '""')}"`,
             getSelectValue(row.category, CATEGORIES),
             row.profile.email,
             getSelectValue(row.gender, GENDERS),
             row.regular_checkins_number ?? 0,
             row.challenge_checkins_number ?? 0,
-            row.route.title,
+            `"${row.route.title.replace(/"/g, '""')}"`,
             row.payment_status === 'paid' ? 'Paid' : 'Not Paid'
         ].join(','));
 
@@ -157,85 +157,98 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
         return (
             <tr onClick={() => {
                 if (isPrivateView) setSelectedUser(profile);
-            }} className='cursor-pointer hover:bg-gray-900 rounded'>
+            }} className='group cursor-pointer hover:bg-white/5 border-b border-white/5 transition-all duration-200'>
                 {isPrivateView ? (
-                    <td>
-                        <Button
-                            className=""
+                    <td className="py-4 px-4">
+                        <button
+                            className="p-2 transition-all hover:bg-blue-500/20 hover:text-blue-400 rounded-lg text-gray-400"
                             onClick={(e) => {
                                 onEdit(row);
                                 e.stopPropagation();
                                 e.preventDefault();
-                            }}><AiFillEdit />
-                        </Button>
+                            }}
+                        >
+                            <AiFillEdit size={18} />
+                        </button>
                     </td>
                 ) : null}
-                <td>{position}</td>
-                <td>{points ?? 0}</td>
-                <td>{participant_number}</td>
-                <td>{name}</td>
-                <td>{getSelectValue(category, CATEGORIES)}</td>
-                <td>{email}</td>
-                <td>{getSelectValue(gender, GENDERS)}</td>
-                <td>{regular_checkins_number}</td>
-                <td>{challenge_checkins_number}</td>
-                <td>{title}</td>
-                <td>
-                    {payment_status === 'paid' ? (
-                        <div style={{
-                            width: '15px',
-                            height: '15px',
-                            borderRadius: '50%',
-                            backgroundColor: 'green',
-                            display: 'inline-block'
-                        }}></div>
-                    ) : (
-                        <div style={{
-                            width: '15px',
-                            height: '15px',
-                            borderRadius: '50%',
-                            backgroundColor: 'red',
-                            display: 'inline-block'
-                        }}></div>
-                    )}
+                <td className="py-4 px-4 font-bold text-gray-400">#{position}</td>
+                <td className="py-4 px-4">
+                    <span className="text-xl font-bold premium-gradient-text">{points ?? 0}</span>
                 </td>
-                <td>
-                    <td>
-                        {avatar_url && (
-                            <a
-                                href={avatar_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => {
-                                    e.stopPropagation(); // Prevent row click
-                                    e.preventDefault(); // Prevent default link behavior
-                                    window.open(avatar_url, "_blank"); // Open the avatar in a new tab
-                                }}
-                                title="View Avatar"
-                            >
-                                Abrir Foto
-                            </a>
-                        )}
-                    </td>
+                <td className="py-4 px-4">
+                    <span className="bg-gray-800 border border-gray-700 text-gray-300 font-mono px-2 py-1 rounded text-xs">
+                        {participant_number}
+                    </span>
+                </td>
+                <td className="py-4 px-4">
+                    <div className="flex flex-col">
+                        <span className="font-bold text-white group-hover:text-blue-300 transition-colors uppercase tracking-tight">{name}</span>
+                        <span className="text-xs text-gray-500">{email}</span>
+                    </div>
+                </td>
+                <td className="py-4 px-4">
+                    <span className="text-xs font-medium text-gray-400 lowercase italic">
+                        {getSelectValue(category, CATEGORIES)}
+                    </span>
+                </td>
+                <td className="py-4 px-4 text-xs text-gray-400">
+                    {getSelectValue(gender, GENDERS)}
+                </td>
+                <td className="py-4 px-4">
+                    <div className="flex items-center space-x-2">
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-gray-500 uppercase font-semibold">Checkins</span>
+                            <span className="font-bold text-gray-200">{regular_checkins_number}</span>
+                        </div>
+                        <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
+                        <div className="flex flex-col items-center">
+                            <span className="text-xs text-gray-500 uppercase font-semibold">Retos</span>
+                            <span className="font-bold text-blue-400">{challenge_checkins_number}</span>
+                        </div>
+                    </div>
+                </td>
+                <td className="py-4 px-4">
+                    <span className="text-xs px-2 py-1 bg-white/5 rounded border border-white/10 text-gray-400 truncate max-w-[100px] inline-block">
+                        {title}
+                    </span>
+                </td>
+                <td className="py-4 px-4">
+                    <span className={payment_status === 'paid' ? 'status-paid' : 'status-unpaid'}>
+                        {payment_status === 'paid' ? 'Pagado' : 'Pendiente'}
+                    </span>
+                </td>
+                <td className="py-4 px-4">
+                    {avatar_url ? (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(avatar_url, "_blank");
+                            }}
+                            className="text-2xs font-bold uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors"
+                        >
+                            Ver Foto
+                        </button>
+                    ) : (
+                        <span className="text-2xs text-gray-600 uppercase">Sin Foto</span>
+                    )}
                 </td>
             </tr>
         );
     });
 
     const fields = [
-        ...(isPrivateView ? [{ name: 'Editar' }] : []),
-        { name: 'Posición' },
-        { name: 'Puntos' },
-        { name: 'Número' },
+        ...(isPrivateView ? [{ name: '' }] : []),
+        { name: 'Pos' },
+        { name: 'Pts' },
+        { name: '#' },
         { name: 'Participante' },
         { name: 'Categoría' },
-        { name: 'Email' },
         { name: 'Género' },
-        { name: '# Checkins' },
-        { name: '# Retos' },
+        { name: 'Progreso' },
         { name: 'Ruta' },
-        { name: 'Pago' },
-        { name: 'Avatar' },
+        { name: 'Status' },
+        { name: 'Foto' },
     ];
 
     const handleToggleModal = (shouldUpdateListOnDismiss) => {
@@ -244,24 +257,45 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
     };
 
     return (
-        <div className='overflow-auto'>
-            {isLoading && <Spinner size={50} />}
+        <div className='overflow-x-auto w-full'>
+            {isLoading && (
+                <div className="flex flex-col items-center justify-center p-20 space-y-4">
+                    <Spinner size={50} />
+                    <span className="text-gray-500 font-medium animate-pulse">Cargando participantes...</span>
+                </div>
+            )}
             {!isLoading && data?.length ? (
-                <>
-                    <Button onClick={downloadCSV} className="download-csv-button">
-                        Descargar en Excel
-                    </Button>
-                    <Button onClick={downloadParticipantJerseys} className="ml-2">
-                        Jerseys participantes
-                    </Button>
-                    <Button onClick={downloadCoupleJerseys} className="ml-2">
-                        Jerseys parejas
-                    </Button>
-                    <table className="table no-border">
+                <div className="flex flex-col">
+                    <div className="flex flex-row items-center justify-between p-6 border-b border-white/5 bg-white/5">
+                        <div className="flex space-x-3">
+                            <Button
+                                onClick={downloadCSV}
+                                className="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all"
+                            >
+                                CSV Maestro
+                            </Button>
+                            <Button
+                                onClick={downloadParticipantJerseys}
+                                className="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all"
+                            >
+                                Jerseys Pilotos
+                            </Button>
+                            <Button
+                                onClick={downloadCoupleJerseys}
+                                className="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all"
+                            >
+                                Jerseys Parejas
+                            </Button>
+                        </div>
+                        <div className="text-xs text-gray-500 font-medium">
+                            Mostrando <span className="text-gray-200">{data.length}</span> participantes
+                        </div>
+                    </div>
+                    <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr>
+                            <tr className="bg-black/20 text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em]">
                                 {fields.map(({ name }) => (
-                                    <th key={name}>{name}</th>
+                                    <th key={name} className="py-4 px-4 border-b border-white/5">{name}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -271,13 +305,22 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                             })}
                         </tbody>
                     </table>
-                </>
+                </div>
             ) : null}
 
             {!data?.length && !isLoading && (
-                <div className="mt-10 p-10 text-center">
-                    <h6>{isFiltered ? 'No se han encontrado resultados con la búsqueda' : 'No se encontraron usuarios registrados en esta ruta'}</h6>
-                    <p>{isFiltered ? 'Ajusta tu búsqueda e intenta de nuevo' : ''}</p>
+                <div className="flex flex-col items-center justify-center py-20 px-10 text-center">
+                    <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-6 border border-gray-700">
+                        <span className="text-4xl">🔍</span>
+                    </div>
+                    <h6 className="text-xl font-bold text-white mb-2">
+                        {isFiltered ? 'Sin coincidencias' : 'Lista vacía'}
+                    </h6>
+                    <p className="text-gray-500 max-w-xs">
+                        {isFiltered
+                            ? 'No encontramos participantes que coincidan con tus filtros. Intenta ajustar la búsqueda.'
+                            : 'Aún no hay usuarios registrados en esta ruta.'}
+                    </p>
                 </div>
             )}
 

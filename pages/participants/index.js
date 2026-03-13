@@ -245,53 +245,90 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
         <div>
 
             {isPrivateView && (loggedUser?.id === 'bd72426c-f32c-41bb-a874-d118474a3f58' || loggedUser?.id === 'dafe8d23-6b92-4d3e-8851-95bd7fb998a2') && (
-                <SectionTitle title="Detalles" subtitle="Participantes" buttonTitle={'Nuevo participante'} onClick={() => {
-                    getData(false);
-                    setIsOpen(true);
-                }} />
+                <div className="flex flex-row items-center justify-between mb-8 pt-4">
+                    <div className="flex flex-col">
+                        <div className="text-xs uppercase font-semibold tracking-wider text-blue-400 mb-1">
+                            DETALLES DE EVENTO
+                        </div>
+                        <h1 className="text-4xl font-extrabold premium-gradient-text tracking-tight">
+                            Participantes
+                        </h1>
+                    </div>
+                    <Button
+                        className="btn btn-default btn-rounded bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-lg transition-all"
+                        onClick={() => {
+                            getData(false);
+                            setIsOpen(true);
+                        }}
+                    >
+                        + Nuevo participante
+                    </Button>
+                </div>
             )}
 
-            <div className='w-full mb-2 flex flex-row space-around gap-2 items-end'>
-                <div className='w-4/12'>
-                    <TextInput label={'Buscar...'} type='text' placeholder='Busca participantes' value={searchQuery} onChange={setSearchQuery} />
+            <div className="premium-card p-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                    <div className="md:col-span-4">
+                        <TextInput
+                            label={'Búsqueda Rápida'}
+                            type='text'
+                            placeholder='Nombre del participante...'
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            className="search-input-premium w-full"
+                        />
+                    </div>
+                    <div className="md:col-span-3">
+                        <Select
+                            label="Categoría"
+                            className='bg-gray-800 border-gray-700 text-gray-200 rounded-xl'
+                            placeholder='Todas las categorías'
+                            showEmpty
+                            items={CATEGORIES}
+                            onChange={(e) => setCategory(e?.id ?? '')}
+                        />
+                    </div>
+                    <div className="md:col-span-3">
+                        <Select
+                            label="Ordenar Por"
+                            className='bg-gray-800 border-gray-700 text-gray-200 rounded-xl'
+                            placeholder='Seleccionar'
+                            items={[
+                                { id: 'points', title: 'Puntos' },
+                                { id: 'name', title: 'Nombre' },
+                                { id: 'participant_number', title: 'Número' }
+                            ]}
+                            onChange={(e) => setOrder(e?.id)}
+                        />
+                    </div>
+                    <div className="md:col-span-2 flex items-center justify-center bg-gray-800/50 rounded-xl p-3 border border-white/5">
+                        <label className="flex items-center space-x-3 cursor-pointer group">
+                            <input
+                                type="checkbox"
+                                className="form-checkbox h-5 w-5 text-blue-500 rounded border-gray-600 bg-gray-700 focus:ring-0 focus:ring-offset-0 transition-all"
+                                checked={isPollingEnabled}
+                                onChange={togglePolling}
+                            />
+                            <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                                Real-time
+                            </span>
+                        </label>
+                    </div>
                 </div>
-                <Select
-                    className='bg-gray-700 text-gray-100 border border-gray-600'
-                    placeholder='Filtrar por categoria'
-                    showEmpty
-                    items={CATEGORIES}
-                    onChange={(e) => setCategory(e?.id ?? '')}
-                />
             </div>
-            <div className='w-full mb-2 flex flex-row space-around gap-2 items-center'>
-                <div className='w-4/12'>
-                    <Select
-                        className='bg-gray-700 text-gray-100 border border-gray-600'
-                        label={'Ordenar por:'}
-                        placeholder='Selecciona'
-                        items={[
-                            { id: 'points', title: 'Puntos' },
-                            { id: 'name', title: 'Nombre' },
-                            { id: 'participant_number', title: 'Número de participante' }
-                        ]}
-                        onChange={(e) => setOrder(e?.id)}
-                    />
-                </div>
 
-                <label>
-                    <input
-                        type="checkbox"
-                        checked={isPollingEnabled}
-                        onChange={togglePolling}
+            <div className="premium-card overflow-hidden">
+                <div className='flex flex-col bg-transparent'>
+                    <ParticipantsList
+                        isLoading={isLoading}
+                        initialData={data}
+                        onReload={getData}
+                        isFiltered={!!searchQuery || !!category}
+                        onEdit={handleEdit}
+                        isPrivateView={isPrivateView}
                     />
-                    Ver en Tiempo Real
-                </label>
-            </div>
-            <Widget className="bg-gray-700">
-                <div className='flex h-vp-70 bg-gray-700'>
-                    <ParticipantsList isLoading={isLoading} initialData={data} onReload={getData} isFiltered={!!searchQuery || !!category} onEdit={handleEdit} isPrivateView={isPrivateView} />
                 </div>
-            </Widget>
+            </div>
             <AddParticipantModal isOpen={isOpen || !!selectedUser} onClose={handleClose} allList={fullList} user={selectedUser} />
         </div>
     );

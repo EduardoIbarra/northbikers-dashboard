@@ -206,3 +206,64 @@ body {
     transform: translateX(100%);
   }
 }
+
+/* Premium Styles */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.premium-card {
+  @extend .glass;
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.premium-gradient-text {
+  background: linear-gradient(135deg, #fff 0%, #9ca3af 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.status-pill {
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.status-paid {
+  @extend .status-pill;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: rgb(16, 185, 129);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-unpaid {
+  @extend .status-pill;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: rgb(239, 68, 68);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.search-input-premium {
+  @extend .glass;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1rem;
+  color: white;
+  transition: all 0.3s ease;
+  &:focus {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+}
