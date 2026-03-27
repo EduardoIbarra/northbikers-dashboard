@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { getSupabase } from '../../utils/supabase';
 
 const AVATAR_FALLBACK = '/iso_nb_white.png';
-const BRAND_FALLBACK = 'https://www.svgrepo.com/show/308300/motorcycle-race-fast-motorbike.svg';
+const BRAND_FALLBACK = 'https://www.svgrepo.com/show8300/motorcycle-race-fast-motorbike.svg';
 const REFRESH_MS = 60_000;
 
 // ---------- helpers ----------
@@ -264,7 +264,7 @@ export default function PublicRouteRankingPage() {
             "
           ></div>
           <div
-            class="mt-1 px-2 py-[2px] text-[11px] font-semibold text-white rounded-md bg-black/50 border border-white/10 max-w-[76px] truncate"
+            class="mt-1 px-2 py-[2px] text-[11px] font-semibold text-white rounded-md bg-black border border-white max-w-[76px] truncate"
           >
             ${esc(firstTwo(p.full_name))}
           </div>
@@ -302,12 +302,12 @@ export default function PublicRouteRankingPage() {
         <meta name="robots" content="index,follow" />
       </Head>
 
-      <header className="px-4 sm:px-6 py-5 border-b border-white/10 nb-glass">
+      <header className="px-4 sm:px-6 py-5 border-b border-white nb-glass">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
           <img src="/logo_nb_white.png" alt="NorthBikers" className="w-10 h-10 object-contain flex-none" style={{minWidth:40,minHeight:40}}/>
           <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-extrabold tracking-wide truncate">{route?.title ?? 'Evento'}</h1>
-            {route?.dates && <p className="text-xs text-gray-300/80">{route.dates}</p>}
+            {route?.dates && <p className="text-xs text-gray-300">{route.dates}</p>}
           </div>
           <div className="ml-auto text-[11px] text-gray-400">Auto-refresh 1 min</div>
         </div>
@@ -328,7 +328,7 @@ export default function PublicRouteRankingPage() {
           </div>
 
           {/* Tabla / Cards */}
-          <div className="overflow-hidden rounded-xl border border-white/10">
+          <div className="overflow-hidden rounded-xl border border-white">
             {/* Desktop header */}
             <div
               className="hidden sm:grid text-[11px] uppercase tracking-wide bg-white/5 text-gray-300"
@@ -365,7 +365,7 @@ export default function PublicRouteRankingPage() {
           </div>
           <div
             id="ranking-map"
-            className="w-full rounded-b-2xl overflow-hidden border-t border-white/10"
+            className="w-full rounded-b-2xl overflow-hidden border-t border-white"
             style={{
               height: '520px',
               background: 'radial-gradient(60% 70% at 50% 30%, rgba(59,130,246,.08), transparent 60%), #0b0f14',
@@ -405,7 +405,7 @@ function PodiumCard({ place, data, leaderFinishMs, size = 'md', metal = 'gold', 
       <div className="text-xs uppercase tracking-wide text-gray-300 flex justify-center items-center gap-1 mb-2">
         <span className="font-black">#{data.rank}</span> {medal && <span>{medal}</span>}
       </div>
-      <div className={`mx-auto rounded-full overflow-hidden ring-2 ring-white/30 ${s.avatar}`}>
+      <div className={`mx-auto rounded-full overflow-hidden ring-2 ring-white ${s.avatar}`}>
         <img src={data.avatar_url || AVATAR_FALLBACK} alt={firstTwo(data.full_name)} className="w-full h-full object-cover" />
       </div>
       <div className="mt-2 font-semibold truncate flex items-center justify-center gap-2">
@@ -442,7 +442,7 @@ function RowItemDesktop({ r, leaderFinishMs, isRally = false }) {
 
   return (
     <div
-      className="hidden sm:grid items-center px-3 py-3 bg-black/30 hover:bg-black/40 transition-colors"
+      className="hidden sm:grid items-center px-3 py-3 bg-black hover:bg-black transition-colors"
       style={{ gridTemplateColumns: isRally ? GRID_COLS_RALLY : GRID_COLS }}
     >
       <div className="text-base font-black tracking-tight">#{r.rank}</div>
@@ -482,7 +482,7 @@ function RowItemMobile({ r, leaderFinishMs, isRally = false }) {
   }
 
   return (
-    <div className="sm:hidden px-3 py-3 bg-black/30 hover:bg-black/40 transition-colors">
+    <div className="sm:hidden px-3 py-3 bg-black hover:bg-black transition-colors">
       {/* Top row: POS + brand + name + points */}
       <div className="flex items-center gap-3">
         <div className="pos-badge rounded-md px-2 py-1 text-xs font-black tabular-nums">#{r.rank}</div>

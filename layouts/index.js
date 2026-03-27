@@ -7,7 +7,7 @@ const Layouts = ({children}) => {
     const router = useRouter()
     let {pathname} = {...router}
     console.log({pathname});
-    if (['/404', '/500',].includes(pathname)) {
+    if (['4', '0',].includes(pathname)) {
         return <Centered>{children}</Centered>
     }
 

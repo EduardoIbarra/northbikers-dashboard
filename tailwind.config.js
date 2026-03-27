@@ -1,8 +1,12 @@
 const colors = require("tailwindcss/colors");
 
 module.exports = {
-    //purge: [],
-    purge: ["./**/*.js"],
+    mode: 'jit',
+    purge: [
+        "./pages/**/*.{js,ts,jsx,tsx}",
+        "./components/**/*.{js,ts,jsx,tsx}",
+        "./layouts/**/*.{js,ts,jsx,tsx}",
+    ],
     darkMode: "class", // or 'media' or 'class'
     theme: {
         typography: {
@@ -55,14 +59,17 @@ module.exports = {
             current: "currentColor",
             black: colors.black,
             white: colors.white,
-            gray: colors.coolGray,
+            gray: colors.gray,
+            neutral: colors.gray,
             red: colors.red,
             yellow: colors.amber,
+            primary: colors.amber,
             green: colors.emerald,
             blue: colors.blue,
             indigo: colors.indigo,
             purple: colors.violet,
             pink: colors.pink,
+            zinc: colors.coolGray,
         },
         spacing: {
             px: "1px",
@@ -142,6 +149,16 @@ module.exports = {
             cover: "cover",
             contain: "contain",
         },
+        backdropBlur: {
+            none: '0',
+            blur: '8px',
+            sm: '4px',
+            md: '12px',
+            lg: '16px',
+            xl: '24px',
+            '2xl': '40px',
+            '3xl': '64px',
+        },
         borderColor: (theme) => ({
             ...theme("colors"),
             DEFAULT: theme("colors.gray.200", "currentColor"),
@@ -156,6 +173,9 @@ module.exports = {
             xl: "0.75rem",
             "2xl": "1rem",
             "3xl": "1.5rem",
+            "4xl": "2rem",
+            "5xl": "3rem",
+            "6xl": "4rem",
             full: "9999px",
         },
         borderWidth: {
@@ -797,6 +817,8 @@ module.exports = {
         animation: ["responsive"],
         appearance: ["responsive"],
         backgroundAttachment: ["responsive"],
+        backdropBlur: ["responsive"],
+        backdropFilter: ["responsive"],
         backgroundClip: ["responsive"],
         backgroundColor: [
             "responsive",

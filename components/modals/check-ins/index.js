@@ -87,14 +87,18 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                     const imgSource = `https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/${c?.checkpoint.picture}`
 
                     return (
-                        <div key={c.id} className={`relative p-2 bordered hover:bg-gray-100 cursor-pointer flex items-center ${selectedCheckIn?.id === c.id ? 'bg-gray-100' : ''}`} onClick={() => handleItemClick(c)}>
+                        <div key={c.id} className={`relative p-4 rounded-2xl border border-transparent hover:border-neutral-700 transition-all cursor-pointer flex items-center mb-2 ${selectedCheckIn?.id === c.id ? 'bg-neutral-800 border-neutral-700' : 'hover:bg-neutral-800'}`} onClick={() => handleItemClick(c)}>
                             {c?.checkpoint?.picture && <img src={c?.checkpoint?.picture?.includes('http') ? c?.checkpoint.picture : imgSource} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>}
                             {!c?.checkpoint?.picture && <img src='/icon.jpg' alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>}
-                            <div className='pr-8'>
-                                <b>{c.checkpoint.icon.includes('challenge') && <span className="challenge-indicator">[RETO]</span>}</b>
-                                <b>{c.checkpoint.name}</b>
-                                <p>{c.checkpoint.description}</p>
-                                <p><b>{c.points ?? 0}</b> pts. | A <b>{c.distance.toFixed(2)}km</b> de Distancia</p>
+                            <div className='pr-10'>
+                                {c.checkpoint.icon.includes('challenge') && (
+                                    <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest block mb-1">[RETO]</span>
+                                )}
+                                <span className="font-bold text-white uppercase tracking-tight block">{c.checkpoint.name}</span>
+                                <p className="text-xs text-neutral-500 line-clamp-1">{c.checkpoint.description}</p>
+                                <p className="text-[10px] font-bold text-neutral-400 mt-1 uppercase tracking-widest">
+                                    <span className="text-yellow-500">{c.points ?? 0}</span> pts | <span className="text-yellow-500">{c.distance.toFixed(2)}km</span> Distancia
+                                </p>
                             </div>
 
                             {c?.is_valid ? (
@@ -110,10 +114,9 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
 
         if (!isLoading && !checkins?.length) {
             return (
-                <div className="">
-                    <div className="mt-10 p-10 text-center">
-                        <h6>No se encontraron checkins</h6>
-                    </div>
+                <div className="flex flex-col items-center justify-center py-20 bg-neutral-900 rounded-2xl border border-neutral-800 border-dashed">
+                    <span className="text-4xl mb-4">📍</span>
+                    <h6 className="text-sm font-bold text-neutral-500 uppercase tracking-widest">No se encontraron checkins</h6>
                 </div>
             )
         }
@@ -135,15 +138,18 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
             }}
             className="z-[60]"
         >
-            <div className='flex'>
-                <div className='flex m-3 bg-gray-50 p-2 rounded items-center'>
-                    <img src="/check-in.png" alt=""/> Checkpoint
+            <div className='flex gap-4 mb-6'>
+                <div className='flex flex-1 items-center px-4 py-3 bg-neutral-800 border border-neutral-800 rounded-2xl'>
+                    <img src="/check-in.png" alt="" className="w-5 h-5 mr-3"/>
+                    <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Checkpoint</span>
                 </div>
-                <div className='flex m-3 bg-gray-50 p-2 rounded items-center'>
-                    <img src="/pin.png" alt=""/> CheckIn Original
+                <div className='flex flex-1 items-center px-4 py-3 bg-neutral-800 border border-neutral-800 rounded-2xl'>
+                    <img src="/pin.png" alt="" className="w-5 h-5 mr-3"/>
+                    <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">CheckIn Original</span>
                 </div>
-                <div className='flex m-3 bg-gray-50 p-2 rounded items-center'>
-                    <img src="/pin-black.png" alt=""/> Checkin Actualizado
+                <div className='flex flex-1 items-center px-4 py-3 bg-neutral-800 border border-neutral-800 rounded-2xl'>
+                    <img src="/pin-black.png" alt="" className="w-5 h-5 mr-3"/>
+                    <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Checkin Actualizado</span>
                 </div>
             </div>
 
@@ -151,22 +157,24 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                 <div className='w-4/12   overflow-auto '>
                     {renderContent()}
                 </div>
-                <div className='w-full flex flex-col overflow-auto'>
-                    {selectedCheckIn && <label className='pl-2 text-lg'>Fechas</label>}
-                    {selectedCheckIn && <div className='p-2 mb-2 flex'>
-                        <p className='mr-2'>
-                            <b>Original</b>: <span className={'capitalize'}>{moment(selectedCheckIn.id).format('dddd DD MMMM,  h:mm:ss A')}</span>
-                        </p>
-                        |&nbsp;&nbsp;
-                        <p className='mr-2'>
-                            <b>Creación</b>: <span className={'capitalize'}>{moment(selectedCheckIn.created_at).format('dddd DD MMMM,  h:mm:ss A')}</span>
-                        </p>
-                        |&nbsp;&nbsp;
-                        <p className='mr-2'>
-                            <b>Actualización</b>: <span className={'capitalize'}>{moment(selectedCheckIn.updated_at).format('dddd DD MMMM,  h:mm:ss A')}</span>
-                        </p>
-                    </div>
-                    }
+                <div className='w-full flex flex-col overflow-auto bg-neutral-900 rounded-[2rem] border border-neutral-800 p-6'>
+                    {selectedCheckIn && <div className='text-[10px] uppercase font-bold tracking-widest text-yellow-500 mb-4 ml-1'>Registro de Fechas</div>}
+                    {selectedCheckIn && (
+                        <div className='grid grid-cols-3 gap-6 mb-8 px-4'>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-1">Original</span>
+                                <span className="text-xs font-bold text-neutral-300 capitalize">{moment(selectedCheckIn.id).format('dddd DD MMM, h:mm A')}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-1">Creación</span>
+                                <span className="text-xs font-bold text-neutral-300 capitalize">{moment(selectedCheckIn.created_at).format('dddd DD MMM, h:mm A')}</span>
+                            </div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-1">Actualización</span>
+                                <span className="text-xs font-bold text-neutral-300 capitalize">{moment(selectedCheckIn.updated_at).format('dddd DD MMM, h:mm A')}</span>
+                            </div>
+                        </div>
+                    )}
                     <div className='flex h-vp-60'>
                         <div className='w-6/12  overflow-auto'>
                             <Map width='100%' markers={markers}/>

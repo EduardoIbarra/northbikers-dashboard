@@ -216,7 +216,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             emergencyContactName: user.latestEventProfile?.emergencyContactName,
             emergencyContactPhone: user.latestEventProfile?.emergencyContactPhone,
             emergencyContactRelation: user.latestEventProfile?.emergencyContactRelation,
-            avatar_url: user.avatar_url !== "https://cdn1.iconfinder.com/data/icons/avatars-55/100/avatar_profile_user_biker_tanktop_bald_shiny-512.png"
+            avatar_url: user.avatar_url !== "https://cdn1.iconfinder.com/data/icons/avatars-550/avatar_profile_user_biker_tanktop_bald_shiny-512.png"
                 ? user.avatar_url
                 : formData.avatar_url
         });
@@ -275,15 +275,15 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
         >
             <div className="space-y-6 pb-2">
                 {/* Header Information */}
-                <div className="flex items-center justify-between bg-white/[0.03] p-5 rounded-2xl border border-white/10 shadow-inner">
+                <div className="flex items-center justify-between bg-neutral-800 p-6 rounded-[2rem] border border-neutral-800 shadow-inner">
                     <div className="flex flex-col">
-                        <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-blue-400/80 mb-1">Ruta del Evento</span>
+                        <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-yellow-500 mb-1">Ruta del Evento</span>
                         <span className="text-xl font-black text-white uppercase tracking-tight leading-none">{currentRoute.title}</span>
                     </div>
                     {formData?.participant_number > 0 && (
                         <div className="flex flex-col items-end">
-                            <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-gray-500 mb-1">Dorsal</span>
-                            <span className="text-3xl font-mono font-black text-blue-500 leading-none">#{formData?.participant_number}</span>
+                            <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-neutral-500 mb-1">Dorsal</span>
+                            <span className="text-3xl font-mono font-black text-yellow-500 leading-none">#{formData?.participant_number}</span>
                         </div>
                     )}
                 </div>
@@ -293,7 +293,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                         <Alert
                             onClose={() => setShowAlert(false)}
                             size="sm"
-                            color="bg-red-500/10 text-red-400 border border-red-500/20"
+                            color="bg-red-500 text-red-400 border border-red-500"
                             icon={<FiAlertCircle className="mr-2 h-4 w-4" />}>
                             Este usuario ya cuenta con un registro activo para esta ruta.
                         </Alert>
@@ -308,11 +308,11 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                                 label={'Usuario en Sistema'} 
                                 disabled 
                                 value={selectedUser?.name || 'Seleccione un perfil...'} 
-                                className="bg-white/5 border-white/10"
+                                className="bg-neutral-800 border-neutral-800 rounded-2xl"
                             />
                         </div>
                         <Button 
-                            className='h-[42px] px-8 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/10 transition-all flex items-center space-x-2' 
+                            className='h-[42px] px-8 bg-neutral-800 hover:bg-neutral-700 text-white rounded-2xl border border-neutral-800 transition-all flex items-center space-x-2' 
                             onClick={handleToggleModal}
                         >
                             <AiOutlineSearch size={18} />
@@ -335,7 +335,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                                 { id: 'DIRT', label: 'Terracería', title: 'Terracería' },
                                 { id: 'STREET', label: 'Carretera', title: 'Carretera' },
                             ]}
-                            className="bg-white/5 border-white/10 rounded-xl"
+                            className="bg-neutral-800 border-neutral-800 rounded-2xl"
                             onChange={(e) => saveFormData('category', e.id)}
                         />
                     </div>
@@ -349,7 +349,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                                 { id: 'Pareja', label: 'Pareja', title: 'Pareja' },
                                 { id: 'Equipo', label: 'Equipo', title: 'Equipo' },
                             ]}
-                            className="bg-white/5 border-white/10 rounded-xl"
+                            className="bg-neutral-800 border-neutral-800 rounded-2xl"
                             onChange={(e) => {
                                 saveFormData('mode', e.id);
                                 saveFormData('is_couple', e.id === 'Pareja');
@@ -360,9 +360,9 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 </div>
 
                 {/* Personal & Jersey Details */}
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5">
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-blue-400/60 mb-6 flex items-center">
-                        <span className="w-1 h-3 bg-blue-500/50 rounded-full mr-3"></span>
+                <div className="p-8 rounded-[2rem] bg-neutral-800 border border-neutral-800">
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-yellow-500 mb-6 flex items-center">
+                        <span className="w-1 h-3 bg-yellow-500 rounded-full mr-3"></span>
                         DETALLES DEL PILOTO
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
@@ -376,9 +376,9 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 </div>
 
                 {/* Emergency Contact */}
-                <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/5">
-                    <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-red-400/60 mb-6 flex items-center">
-                        <span className="w-1 h-3 bg-red-500/50 rounded-full mr-3"></span>
+                <div className="p-8 rounded-[2rem] bg-neutral-800 border border-neutral-800">
+                    <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-red-500 mb-6 flex items-center">
+                        <span className="w-1 h-3 bg-red-500 rounded-full mr-3"></span>
                         CONTACTO DE EMERGENCIA
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -392,37 +392,37 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
 
                 {/* Assets & Verification */}
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div className="md:col-span-3 p-5 rounded-2xl bg-white/[0.02] border border-white/5 flex items-center space-x-4">
+                    <div className="md:col-span-3 p-6 rounded-[2rem] bg-neutral-800 border border-neutral-800 flex items-center space-x-5">
                         <div className="relative group">
-                            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white/10 bg-black/40 flex items-center justify-center">
+                            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-neutral-700 bg-neutral-900 flex items-center justify-center">
                                 {formData?.avatar_url ? (
                                     <img src={formData.avatar_url} className="w-full h-full object-cover" alt="Preview" />
                                 ) : (
-                                    <span className="text-gray-600 text-[10px] font-bold">FOTO</span>
+                                    <span className="text-neutral-600 text-[10px] font-bold">FOTO</span>
                                 )}
                             </div>
                         </div>
                         <div className="flex-1">
-                            <span className="text-[10px] uppercase font-bold tracking-widest text-gray-500 block mb-2">Fotografía</span>
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-500 block mb-2">Fotografía</span>
                             <input
                                 type="file"
                                 accept="image/*"
                                 onChange={handleFileChange}
-                                className="block w-full text-[10px] text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-white/10 file:text-white hover:file:bg-white/20 transition-all cursor-pointer"
+                                className="block w-full text-[10px] text-neutral-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:font-black file:uppercase file:bg-neutral-800 file:text-neutral-300 hover:file:bg-neutral-700 transition-all cursor-pointer"
                             />
                         </div>
                     </div>
-                    <div className="md:col-span-2 p-5 rounded-2xl bg-blue-500/5 border border-blue-500/20 flex flex-col justify-center">
+                    <div className="md:col-span-2 p-6 rounded-[2rem] bg-yellow-500/5 border border-yellow-500 flex flex-col justify-center">
                         <label className="flex items-start space-x-3 cursor-pointer group">
                             <input 
                                 type='checkbox' 
-                                className="mt-1 form-checkbox h-5 w-5 text-blue-500 rounded border-white/10 bg-black/40 focus:ring-0 transition-all" 
+                                className="mt-1 form-checkbox h-5 w-5 text-yellow-500 rounded-lg border-neutral-800 bg-neutral-900 focus:ring-0 transition-all" 
                                 checked={termsAgreed} 
                                 onChange={() => setTermsAgreed(!termsAgreed)} 
                             />
                             <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-gray-200 group-hover:text-white transition-colors uppercase tracking-widest">Acepto el Reglamento</span>
-                                <span className="text-[9px] text-gray-500 leading-tight mt-1">Confirmo que el piloto acepta los términos y condiciones.</span>
+                                <span className="text-[10px] font-black text-neutral-300 group-hover:text-yellow-500 transition-colors uppercase tracking-widest">Acepto el Reglamento</span>
+                                <span className="text-[9px] text-neutral-500 leading-tight mt-1">Confirmo que el piloto acepta los términos y condiciones.</span>
                             </div>
                         </label>
                     </div>

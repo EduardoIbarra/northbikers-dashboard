@@ -42,10 +42,13 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
         user.latestEventProfile = latestEventProfile;
 
         return (
-            <div className='mt-1 p-1 rounded hover:bg-gray-100 cursor-pointer' key={id} onClick={() => {
+            <div className='mt-2 p-4 rounded-2xl hover:bg-neutral-800 border border-transparent hover:border-neutral-700 transition-all cursor-pointer group' key={id} onClick={() => {
                 onSelect(user)
             }}>
-                <p>{name}, {email}</p>
+                <div className="flex flex-col">
+                    <span className="text-sm font-bold text-white group-hover:text-yellow-500 transition-colors uppercase">{name}</span>
+                    <span className="text-xs text-neutral-500 font-medium">{email}</span>
+                </div>
             </div>
         )
     }
@@ -74,22 +77,33 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
                 label: 'Cerrar',
             }}
         >
-            <div>
-                <TextInput placeholder='Email' onChange={setQuery} value={query}/>
+            <div className="space-y-6">
+                <TextInput 
+                    placeholder='Email del perfil' 
+                    onChange={setQuery} 
+                    value={query}
+                    className="bg-neutral-800 border-neutral-800 rounded-2xl"
+                />
                 {users?.length && users !== null ? (
-                    <>
-                        <p>Resultados</p>
-                        <div className='overflow-auto max-h-60 h-auto'>
+                    <div className="space-y-4">
+                        <div className="text-[10px] uppercase font-bold tracking-[0.2em] text-yellow-500 ml-1">
+                            Resultados encontrados
+                        </div>
+                        <div className='overflow-auto max-h-80 h-auto pr-2 custom-scrollbar'>
                             {users.map((u) => {
                                 return (
                                     Item({...u})
                                 )
                             })}
                         </div>
-                    </>
+                    </div>
                 ) : null}
 
-                {(users !== null && !users?.length && query) && <h5>Usuario no encontrado</h5>}
+                {(users !== null && !users?.length && query) && (
+                    <div className="py-8 text-center bg-neutral-800 rounded-2xl border border-neutral-800 border-dashed">
+                        <h5 className="text-sm font-bold text-neutral-500 uppercase tracking-widest">Usuario no encontrado</h5>
+                    </div>
+                )}
             </div>
         </Modal>
     )

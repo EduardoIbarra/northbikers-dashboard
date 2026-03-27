@@ -100,19 +100,20 @@ body {
 /* Dark Background */
 [data-background="dark"] {
   color: #fff;
+  background-color: #0a0a0a;
 
   code, pre {
-    background-color: #1f2937; /* bg-gray-800 */
+    background-color: #1a1a1a;
   }
 }
 
 .link {
-  color: #3b82f6; /* text-blue-500 */
+  color: #fbbf24; /* text-yellow-400 */
 }
 
 /* Rings */
-.ring-red {
-  box-shadow: 0 0 0 3px #fca5a5; /* colors.red.300 */
+.ring-yellow {
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.3);
 }
 
 .ring-green {
@@ -217,12 +218,15 @@ body {
 
 .premium-card {
   @extend .glass;
-  border-radius: 1rem;
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 2rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   &:hover {
-    background: rgba(255, 255, 255, 0.08);
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(251, 191, 36, 0.2);
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -244,9 +248,9 @@ body {
 
 .status-paid {
   @extend .status-pill;
-  background-color: rgba(16, 185, 129, 0.1);
-  color: rgb(16, 185, 129);
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  background-color: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.2);
 }
 
 .status-unpaid {

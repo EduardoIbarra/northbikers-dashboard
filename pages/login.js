@@ -70,16 +70,39 @@ const LoginPage = () => {
     return (
         <Layout>
             <CenteredForm
-                title="Login"
-                subtitle="Ingresa correo y contraseña para ingresar">
-                <div className="flex flex-col">
-                    <TextInput label={'Email'} type='email' value={data?.email} onChange={(e) => handleChange('email', e)}/>
-                    <TextInput label={'Contraseña'} type='password' value={data?.password} onChange={(e) => handleChange('password', e)}/>
-                    <br/>
+                title="Acceso Administrativo"
+                subtitle="NorthBikers Dashboard">
+                <div className="flex flex-col items-center mb-10">
+                    <img 
+                        src="https://northbikers-mrx.web.app/assets/logo.png" 
+                        alt="NorthBikers" 
+                        style={{ height: '96px', width: 'auto' }}
+                        className="object-contain mb-8"
+                    />
                 </div>
-                <div className='text-right'>
-                    <Button className='w-28' disabled={isDisabled} onClick={handleSubmit}>
-                        {isLoading ? <Spinner size={16}/> : 'Login'}
+                <div className="flex flex-col space-y-4" data-background="dark">
+                    <TextInput 
+                        label={'Correo Electrónico'} 
+                        type='email' 
+                        value={data?.email} 
+                        onChange={(e) => handleChange('email', e)}
+                        placeholder="ejemplo@correo.com"
+                    />
+                    <TextInput 
+                        label={'Contraseña'} 
+                        type='password' 
+                        value={data?.password} 
+                        onChange={(e) => handleChange('password', e)}
+                        placeholder="••••••••"
+                    />
+                </div>
+                <div className='mt-10'>
+                    <Button 
+                        className='w-full py-4 rounded-3xl bg-yellow-500 hover:bg-yellow-400 text-black font-black text-lg transition-all transform hover:scale-[1.02] shadow-lg shadow-yellow-500 uppercase tracking-widest' 
+                        disabled={isDisabled} 
+                        onClick={handleSubmit}
+                    >
+                        {isLoading ? <Spinner size={24}/> : 'Iniciar Sesión'}
                     </Button>
                 </div>
             </CenteredForm>

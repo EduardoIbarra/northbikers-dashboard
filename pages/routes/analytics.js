@@ -189,7 +189,7 @@ export default function RouteAnalytics() {
 
 function KPI({ label, value, small }) {
   return (
-    <div className="rounded-xl p-4 border border-yellow-500/30" style={{ background: 'linear-gradient(180deg,#0f0f0f,#0a0a0a)' }}>
+    <div className="rounded-xl p-4 border border-yellow-500" style={{ background: 'linear-gradient(180deg,#0f0f0f,#0a0a0a)' }}>
       <div className="text-xs uppercase tracking-wide text-yellow-400">{label}</div>
       <div className={`font-semibold ${small ? 'text-sm' : 'text-2xl'} text-white mt-1`}>{value ?? '-'}</div>
     </div>

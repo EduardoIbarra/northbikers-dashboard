@@ -13,9 +13,9 @@ const Logo = () => {
       <Link href="/" className="flex flex-row items-center justify-start space-x-2">
         {/* Si colapsas el sidebar en desktop puedes alternar logotipo/icono */}
         {isOpen ? (
-          <Image src="/icon.jpg" height={30} width={30} alt="Icon" />
+          <Image src="https://northbikers-mrx.web.app/assets/logo.png" height={30} width={30} alt="Icon" className="object-contain" />
         ) : (
-          <Image src="/logo_nb_white.png" height={80} width={160} alt="Logo" />
+          <img src="https://northbikers-mrx.web.app/assets/logo.png" className="h-12 w-auto object-contain" alt="Logo" />
         )}
       </Link>
 

@@ -87,14 +87,16 @@
 [data-background="light"] {
   .dropdown {
       .dropdown-title {
-        @apply bg-white text-gray-900;
+        background-color: #ffffff;
+        color: #111827;
       }
     .dropdown-content {
-      @apply bg-white;
+      background-color: #ffffff;
       .dropdown-item {
-        @apply bg-white text-gray-900;
+        background-color: #ffffff;
+        color: #111827;
         &:hover {
-          @apply bg-gray-50;
+          background-color: #f9fafb;
         }
       }
     }
@@ -104,14 +106,18 @@
 [data-background="dark"] {
   .dropdown {
     .dropdown-title {
-      @apply bg-gray-800 text-white;
+      background-color: #1f2937;
+      color: #ffffff;
     }
     .dropdown-content {
-      @apply bg-gray-800 text-white;
+      background-color: #1f2937;
+      color: #ffffff;
       .dropdown-item {
-        @apply bg-gray-800 text-white;
+        background-color: #1f2937;
+        color: #ffffff;
         &:hover {
-          @apply bg-gray-700 text-white;
+          background-color: #374151;
+          color: #ffffff;
         }
       }
     }

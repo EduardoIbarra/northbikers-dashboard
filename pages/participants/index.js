@@ -247,15 +247,15 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
             {isPrivateView && (loggedUser?.id === 'bd72426c-f32c-41bb-a874-d118474a3f58' || loggedUser?.id === 'dafe8d23-6b92-4d3e-8851-95bd7fb998a2') && (
                 <div className="flex flex-row items-center justify-between mb-8 pt-4">
                     <div className="flex flex-col">
-                        <div className="text-xs uppercase font-semibold tracking-wider text-blue-400 mb-1">
+                        <div className="text-xs uppercase font-bold tracking-widest text-yellow-500 mb-2">
                             DETALLES DE EVENTO
                         </div>
-                        <h1 className="text-4xl font-extrabold premium-gradient-text tracking-tight">
+                        <h1 className="text-5xl font-black text-white tracking-tighter">
                             Participantes
                         </h1>
                     </div>
                     <Button
-                        className="btn btn-default btn-rounded bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 shadow-lg transition-all"
+                        className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-yellow-500 hover:scale-[1.02] active:scale-[0.98]"
                         onClick={() => {
                             getData(false);
                             setIsOpen(true);
@@ -281,7 +281,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                     <div className="md:col-span-3">
                         <Select
                             label="Categoría"
-                            className='bg-gray-800 border-gray-700 text-gray-200 rounded-xl'
+                            className='bg-neutral-800 border-neutral-800 text-neutral-200 rounded-2xl'
                             placeholder='Todas las categorías'
                             showEmpty
                             items={CATEGORIES}
@@ -291,7 +291,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                     <div className="md:col-span-3">
                         <Select
                             label="Ordenar Por"
-                            className='bg-gray-800 border-gray-700 text-gray-200 rounded-xl'
+                            className='bg-neutral-800 border-neutral-800 text-neutral-200 rounded-2xl'
                             placeholder='Seleccionar'
                             items={[
                                 { id: 'points', title: 'Puntos' },
@@ -301,15 +301,15 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                             onChange={(e) => setOrder(e?.id)}
                         />
                     </div>
-                    <div className="md:col-span-2 flex items-center justify-center bg-gray-800/50 rounded-xl p-3 border border-white/5">
+                    <div className="md:col-span-2 flex items-center justify-center bg-neutral-800 rounded-2xl p-4 border border-neutral-800">
                         <label className="flex items-center space-x-3 cursor-pointer group">
                             <input
                                 type="checkbox"
-                                className="form-checkbox h-5 w-5 text-blue-500 rounded border-gray-600 bg-gray-700 focus:ring-0 focus:ring-offset-0 transition-all"
+                                className="form-checkbox h-5 w-5 text-yellow-500 rounded-lg border-neutral-700 bg-neutral-900 focus:ring-0 focus:ring-offset-0 transition-all"
                                 checked={isPollingEnabled}
                                 onChange={togglePolling}
                             />
-                            <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                            <span className="text-xs font-bold uppercase tracking-widest text-neutral-400 group-hover:text-white transition-colors">
                                 Real-time
                             </span>
                         </label>

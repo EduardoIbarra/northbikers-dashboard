@@ -12,15 +12,17 @@ const Item = ({ url, icon, title, badge, items }) => {
         return (
             <Link
                 href={url}
-                className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                    active ? 'bg-gray-700 text-gray-100' : 'text-gray-300 hover:bg-gray-700 hover:text-gray-100'
+                className={`flex items-center px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all duration-300 ${
+                    active 
+                        ? 'bg-yellow-500 text-yellow-500 border-l-4 border-yellow-500' 
+                        : 'text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200 border-l-4 border-transparent'
                 }`}
             >
-                {icon && <span className="mr-3 text-lg">{icon}</span>}
+                {icon && <span className={`mr-4 text-xl transition-colors ${active ? 'text-yellow-500' : 'text-neutral-600 group-hover:text-neutral-400'}`}>{icon}</span>}
                 <span className="flex-grow">{title}</span>
                 {badge && (
                     <span
-                        className={`ml-2 text-xs font-semibold px-2 py-1 rounded-full ${badge.color}`}
+                        className={`ml-2 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter ${badge.color}`}
                     >
                         {badge.text}
                     </span>
@@ -32,23 +34,25 @@ const Item = ({ url, icon, title, badge, items }) => {
     return (
         <button
             onClick={() => setHidden(!hidden)}
-            className={`flex items-center w-full px-4 py-2 text-sm font-medium rounded-md transition-colors duration-200 ${
-                active ? 'bg-gray-700 text-gray-100' : 'text-gray-300 hover:bg-gray-700 hover:text-gray-100'
+            className={`flex items-center w-full px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all duration-300 ${
+                active 
+                    ? 'bg-yellow-500 text-yellow-500 border-l-4 border-yellow-500' 
+                    : 'text-neutral-500 hover:bg-neutral-800 hover:text-neutral-200 border-l-4 border-transparent'
             }`}
         >
-            {icon && <span className="mr-3 text-lg">{icon}</span>}
-            <span className="flex-grow">{title}</span>
+            {icon && <span className={`mr-4 text-xl transition-colors ${active ? 'text-yellow-500' : 'text-neutral-600'}`}>{icon}</span>}
+            <span className="flex-grow text-left">{title}</span>
             {badge && (
                 <span
-                    className={`ml-2 text-xs font-semibold px-2 py-1 rounded-full ${badge.color}`}
+                    className={`ml-2 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter ${badge.color}`}
                 >
                     {badge.text}
                 </span>
             )}
             <FiChevronRight
-                className={`ml-auto transform transition-transform duration-200 ${
+                className={`ml-auto transform transition-transform duration-300 ${
                     hidden ? 'rotate-0' : 'rotate-90'
-                }`}
+                } ${active ? 'text-yellow-500' : 'text-neutral-600'}`}
             />
         </button>
     );

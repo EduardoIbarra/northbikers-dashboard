@@ -157,34 +157,34 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
         return (
             <tr onClick={() => {
                 if (isPrivateView) setSelectedUser(profile);
-            }} className='group cursor-pointer hover:bg-white/5 border-b border-white/5 transition-all duration-200'>
+            }} className='group cursor-pointer hover:bg-neutral-800 border-b border-white/5 transition-all duration-200'>
                 {isPrivateView ? (
                     <td className="py-4 px-4">
                         <button
-                            className="p-2 transition-all hover:bg-blue-500/20 hover:text-blue-400 rounded-lg text-gray-400"
+                            className="p-3 transition-all hover:bg-yellow-500 hover:text-yellow-500 rounded-xl text-neutral-500"
                             onClick={(e) => {
                                 onEdit(row);
                                 e.stopPropagation();
                                 e.preventDefault();
                             }}
                         >
-                            <AiFillEdit size={18} />
+                            <AiFillEdit size={20} />
                         </button>
                     </td>
                 ) : null}
                 <td className="py-4 px-4 font-bold text-gray-400">#{position}</td>
                 <td className="py-4 px-4">
-                    <span className="text-xl font-bold premium-gradient-text">{points ?? 0}</span>
+                    <span className="text-xl font-black text-yellow-500">{points ?? 0}</span>
                 </td>
                 <td className="py-4 px-4">
-                    <span className="bg-gray-800 border border-gray-700 text-gray-300 font-mono px-2 py-1 rounded text-xs">
+                    <span className="bg-neutral-800 border border-neutral-700 text-neutral-300 font-mono px-3 py-1 rounded-lg text-xs">
                         {participant_number}
                     </span>
                 </td>
                 <td className="py-4 px-4">
                     <div className="flex flex-col">
-                        <span className="font-bold text-white group-hover:text-blue-300 transition-colors uppercase tracking-tight">{name}</span>
-                        <span className="text-xs text-gray-500">{email}</span>
+                        <span className="font-bold text-white group-hover:text-yellow-400 transition-colors uppercase tracking-tight">{name}</span>
+                        <span className="text-xs text-neutral-500 font-medium">{email}</span>
                     </div>
                 </td>
                 <td className="py-4 px-4">
@@ -198,18 +198,18 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                 <td className="py-4 px-4">
                     <div className="flex items-center space-x-2">
                         <div className="flex flex-col items-center">
-                            <span className="text-xs text-gray-500 uppercase font-semibold">Checkins</span>
-                            <span className="font-bold text-gray-200">{regular_checkins_number}</span>
+                            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Checkins</span>
+                            <span className="font-black text-neutral-200">{regular_checkins_number}</span>
                         </div>
-                        <div className="w-[1px] h-6 bg-white/10 mx-2"></div>
+                        <div className="w-[1px] h-6 bg-neutral-800 mx-3"></div>
                         <div className="flex flex-col items-center">
-                            <span className="text-xs text-gray-500 uppercase font-semibold">Retos</span>
-                            <span className="font-bold text-blue-400">{challenge_checkins_number}</span>
+                            <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Retos</span>
+                            <span className="font-black text-yellow-500">{challenge_checkins_number}</span>
                         </div>
                     </div>
                 </td>
                 <td className="py-4 px-4">
-                    <span className="text-xs px-2 py-1 bg-white/5 rounded border border-white/10 text-gray-400 truncate max-w-[100px] inline-block">
+                    <span className="text-[10px] px-3 py-1 bg-neutral-800 rounded-lg border border-neutral-800 text-neutral-400 uppercase font-bold tracking-widest truncate max-w-[120px] inline-block">
                         {title}
                     </span>
                 </td>
@@ -225,12 +225,12 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                                 e.stopPropagation();
                                 window.open(avatar_url, "_blank");
                             }}
-                            className="text-2xs font-bold uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors"
+                            className="text-[10px] font-black uppercase tracking-widest text-yellow-500 hover:text-yellow-400 transition-colors"
                         >
                             Ver Foto
                         </button>
                     ) : (
-                        <span className="text-2xs text-gray-600 uppercase">Sin Foto</span>
+                        <span className="text-[10px] text-neutral-600 uppercase font-bold tracking-widest">Sin Foto</span>
                     )}
                 </td>
             </tr>
@@ -266,36 +266,36 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
             )}
             {!isLoading && data?.length ? (
                 <div className="flex flex-col">
-                    <div className="flex flex-row items-center justify-between p-6 border-b border-white/5 bg-white/5">
+                    <div className="flex flex-row items-center justify-between p-6 border-b border-white/5 bg-neutral-900 rounded-t-[2.5rem]">
                         <div className="flex space-x-3">
                             <Button
                                 onClick={downloadCSV}
-                                className="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all"
+                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
                             >
                                 CSV Maestro
                             </Button>
                             <Button
                                 onClick={downloadParticipantJerseys}
-                                className="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all"
+                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
                             >
                                 Jerseys Pilotos
                             </Button>
                             <Button
                                 onClick={downloadCoupleJerseys}
-                                className="bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-700 px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg transition-all"
+                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
                             >
                                 Jerseys Parejas
                             </Button>
                         </div>
-                        <div className="text-xs text-gray-500 font-medium">
-                            Mostrando <span className="text-gray-200">{data.length}</span> participantes
+                        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                            Mostrando <span className="text-yellow-500">{data.length}</span> participantes
                         </div>
                     </div>
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-black/20 text-gray-500 uppercase text-[10px] font-bold tracking-[0.2em]">
+                            <tr className="bg-black text-neutral-500 uppercase text-[10px] font-black tracking-[0.25em]">
                                 {fields.map(({ name }) => (
-                                    <th key={name} className="py-4 px-4 border-b border-white/5">{name}</th>
+                                    <th key={name} className="py-5 px-4 border-b border-white/5">{name}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -309,14 +309,14 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
             ) : null}
 
             {!data?.length && !isLoading && (
-                <div className="flex flex-col items-center justify-center py-20 px-10 text-center">
-                    <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-6 border border-gray-700">
-                        <span className="text-4xl">🔍</span>
+                <div className="flex flex-col items-center justify-center py-24 px-10 text-center bg-neutral-900 rounded-[2.5rem] border border-neutral-800">
+                    <div className="w-24 h-24 bg-neutral-800 rounded-full flex items-center justify-center mb-8 border border-neutral-700 shadow-xl">
+                        <span className="text-5xl">🔍</span>
                     </div>
                     <h6 className="text-xl font-bold text-white mb-2">
                         {isFiltered ? 'Sin coincidencias' : 'Lista vacía'}
                     </h6>
-                    <p className="text-gray-500 max-w-xs">
+                    <p className="text-neutral-500 max-w-xs">
                         {isFiltered
                             ? 'No encontramos participantes que coincidan con tus filtros. Intenta ajustar la búsqueda.'
                             : 'Aún no hay usuarios registrados en esta ruta.'}

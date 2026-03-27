@@ -413,7 +413,7 @@ export default function RoutePurchasesPage() {
 
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
-                      <thead className="bg-gray-700/50">
+                      <thead className="bg-gray-700">
                         <tr>
                           <th className="text-left px-4 py-2">Nombre</th>
                           <th className="text-left px-4 py-2">Referrer</th>
@@ -484,7 +484,7 @@ export default function RoutePurchasesPage() {
                   <div className="px-4 py-3 border-b border-gray-700 font-semibold">Resumen por producto</div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-sm">
-                      <thead className="bg-gray-700/50">
+                      <thead className="bg-gray-700">
                         <tr>
                           <th className="text-left px-4 py-2">Producto</th>
                           <th className="text-right px-4 py-2">Cantidad</th>
@@ -530,7 +530,7 @@ export default function RoutePurchasesPage() {
 
                         <div className="overflow-x-auto">
                           <table className="min-w-full text-sm">
-                            <thead className="bg-gray-700/50">
+                            <thead className="bg-gray-700">
                               <tr>
                                 <th className="text-left px-4 py-2">Fecha</th>
                                 <th className="text-left px-4 py-2">Producto</th>

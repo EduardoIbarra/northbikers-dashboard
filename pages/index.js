@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { getLoggedUser, getSupabase } from '../utils/supabase';
+import { getSupabase } from '../utils/supabase';
+import { getLoggedUser } from '../utils';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Link from 'next/link';
