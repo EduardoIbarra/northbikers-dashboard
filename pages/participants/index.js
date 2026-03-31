@@ -224,13 +224,9 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                     .from('pictures')
                     .download(item.photo_url);
                 zip.file(item.photo_url, data, { base64: false });
-
-                interval = setInterval(() => {
-                    setCurrentCount(i + 1);
-                }, 5000);
+                setCurrentCount(i + 1);
             }
 
-            clearInterval(interval);
             const content = await zip.generateAsync({ type: "blob" });
             saveAs(content, "rally_images.zip");
 

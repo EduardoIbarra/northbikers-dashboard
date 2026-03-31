@@ -92,7 +92,7 @@ const Home = () => {
     };
 
     fetchDashboardData();
-  }, [loggedUser, supabase]);
+  }, [loggedUser]);
 
   // Return null while checking user
   if (loggedUser === null) {
