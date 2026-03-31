@@ -608,7 +608,12 @@ const RouteBuilder = () => {
                                                     src={routeAttributes.banner}
                                                     alt="Banner actual"
                                                     className="max-h-48 object-contain rounded border border-gray-600"
-                                                    onError={(e) => { e.target.src = "/placeholder-image.jpg"; }} // fallback
+                                                    onError={(e) => { 
+                                                        if (!e.target.dataset.error) {
+                                                            e.target.dataset.error = "true";
+                                                            e.target.src = "/logo_nb_white.png"; 
+                                                        }
+                                                    }} // fallback
                                                 />
                                             </div>
                                         )}
@@ -636,7 +641,12 @@ const RouteBuilder = () => {
                                                     src={routeAttributes.banner_h}
                                                     alt="Banner horizontal actual"
                                                     className="max-h-48 object-contain rounded border border-gray-600"
-                                                    onError={(e) => { e.target.src = "/placeholder-image.jpg"; }}
+                                                    onError={(e) => { 
+                                                        if (!e.target.dataset.error) {
+                                                            e.target.dataset.error = "true";
+                                                            e.target.src = "/logo_nb_white.png"; 
+                                                        }
+                                                    }}
                                                 />
                                             </div>
                                         )}
