@@ -16,6 +16,7 @@ export const CATEGORIES = [
     { id: "DUAL_SPORT", title: 'Dual Purpose' },
     { id: 'dirt', title: 'Dirt' },
     { id: 'street', title: 'Street' },
+    { id: 'sport', title: 'Sport' },
     { id: 'female', title: 'Female' },
     { id: 'couple', title: 'Couple' },
     { id: 'team', title: 'Team' },

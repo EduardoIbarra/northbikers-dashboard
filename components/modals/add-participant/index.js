@@ -334,6 +334,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                                 { id: 'DUAL_SPORT', label: 'Doble propósito', title: 'Doble propósito' },
                                 { id: 'DIRT', label: 'Terracería', title: 'Terracería' },
                                 { id: 'STREET', label: 'Carretera', title: 'Carretera' },
+                                { id: 'SPORT', label: 'Sport', title: 'Sport' },
                             ]}
                             className="bg-neutral-800 border-neutral-800 rounded-2xl"
                             onChange={(e) => saveFormData('category', e.id)}
