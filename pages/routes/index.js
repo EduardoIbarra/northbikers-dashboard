@@ -4,6 +4,7 @@ import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { CurrentRoute, Routes } from "../../store/atoms/global";
 import { useEffect, useState, useCallback } from "react";
 import { getSupabase } from "../../utils/supabase";
+import { getLoggedUser } from "../../utils";
 import { toast, ToastContainer } from 'react-toastify';
 // import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -51,8 +52,10 @@ const RouteBuilder = () => {
         title: '',
         description: '',
         picture: '',
-        checkpoints: [] // array of event_checkpoint_ids
+        checkpoints: [], // array of event_checkpoint_ids
+        id: null // Added for editing
     });
+    const [loggedUser, setLoggedUser] = useState(null);
     const [bannerFile, setBannerFile] = useState(null);
     const [bannerHFile, setBannerHFile] = useState(null);
     const supabase = getSupabase();
@@ -100,6 +103,11 @@ const RouteBuilder = () => {
 
     useEffect(() => {
         preloadRouteData();
+        const fetchUser = async () => {
+            const user = await getLoggedUser();
+            setLoggedUser(user);
+        };
+        fetchUser();
     }, [currentRoute]);
 
     // Handle field updates
@@ -352,26 +360,52 @@ const RouteBuilder = () => {
         }
 
         try {
-            // 1. Insert into picks table
-            const { data: pickData, error: pickError } = await supabase
-                .from('picks')
-                .insert({
-                    route_id: currentRoute.id,
-                    title: newPick.title,
-                    description: newPick.description,
-                    picture: newPick.picture
-                })
-                .select('id')
-                .single();
+            let pickId = newPick.id;
 
-            if (pickError) {
-                toast.error("Error al crear el Pick: " + pickError.message);
-                return;
+            // 1. Upsert into picks table
+            const pickDataToSave = {
+                route_id: currentRoute.id,
+                title: newPick.title,
+                description: newPick.description,
+                picture: newPick.picture,
+                profile_id: loggedUser?.id || null
+            };
+
+            if (pickId) {
+                // Update existing pick
+                const { error: updateError } = await supabase
+                    .from('picks')
+                    .update(pickDataToSave)
+                    .eq('id', pickId);
+
+                if (updateError) {
+                    toast.error("Error al actualizar el Pick: " + updateError.message);
+                    return;
+                }
+
+                // Delete existing checkpoints for this pick to refresh them
+                await supabase
+                    .from('pick_checkpoints')
+                    .delete()
+                    .eq('pick_id', pickId);
+            } else {
+                // Insert new pick
+                const { data: pickData, error: pickError } = await supabase
+                    .from('picks')
+                    .insert(pickDataToSave)
+                    .select('id')
+                    .single();
+
+                if (pickError) {
+                    toast.error("Error al crear el Pick: " + pickError.message);
+                    return;
+                }
+                pickId = pickData.id;
             }
 
             // 2. Insert into pick_checkpoints table
             const pickCheckpoints = newPick.checkpoints.map((event_checkpoint_id, index) => ({
-                pick_id: pickData.id,
+                pick_id: pickId,
                 event_checkpoint_id: event_checkpoint_id,
                 order: index
             }));
@@ -385,13 +419,35 @@ const RouteBuilder = () => {
                 return;
             }
 
-            toast.success("Pick creado exitosamente.");
-            setNewPick({ title: '', description: '', picture: '', checkpoints: [] });
+            toast.success(newPick.id ? "Pick actualizado exitosamente." : "Pick creado exitosamente.");
+            setNewPick({ title: '', description: '', picture: '', checkpoints: [], id: null });
             fetchPicks();
         } catch (e) {
             toast.error("Error inesperado al guardar Pick");
             console.error(e);
         }
+    };
+
+    const handleEditPick = (pick) => {
+        // Extract checkpoint IDs and sort them by 'order'
+        const sortedCheckpoints = [...pick.pick_checkpoints]
+            .sort((a, b) => a.order - b.order)
+            .map(pc => pc.event_checkpoint_id);
+
+        setNewPick({
+            id: pick.id,
+            title: pick.title,
+            description: pick.description,
+            picture: pick.picture,
+            checkpoints: sortedCheckpoints
+        });
+        
+        // Scroll to form
+        window.scrollTo({ top: document.querySelector('.route-builder').offsetTop + 800, behavior: 'smooth' });
+    };
+
+    const handleCancelEdit = () => {
+        setNewPick({ title: '', description: '', picture: '', checkpoints: [], id: null });
     };
 
     const handleDeletePick = async (pickId) => {
@@ -412,6 +468,18 @@ const RouteBuilder = () => {
         } catch (e) {
             toast.error("Error inesperado al eliminar Pick");
         }
+    };
+
+    const moveSelectedCheckpoint = (index, direction) => {
+        const newSelected = [...newPick.checkpoints];
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= newSelected.length) return;
+        
+        const temp = newSelected[index];
+        newSelected[index] = newSelected[targetIndex];
+        newSelected[targetIndex] = temp;
+        
+        setNewPick(prev => ({ ...prev, checkpoints: newSelected }));
     };
 
     const handlePickImageUpload = async (e) => {
@@ -739,10 +807,10 @@ const RouteBuilder = () => {
                                                     src={routeAttributes.banner}
                                                     alt="Banner actual"
                                                     className="max-h-48 object-contain rounded border border-gray-600"
-                                                    onError={(e) => { 
+                                                    onError={(e) => {
                                                         if (!e.target.dataset.error) {
                                                             e.target.dataset.error = "true";
-                                                            e.target.src = "/logo_nb_white.png"; 
+                                                            e.target.src = "/logo_nb_white.png";
                                                         }
                                                     }} // fallback
                                                 />
@@ -772,10 +840,10 @@ const RouteBuilder = () => {
                                                     src={routeAttributes.banner_h}
                                                     alt="Banner horizontal actual"
                                                     className="max-h-48 object-contain rounded border border-gray-600"
-                                                    onError={(e) => { 
+                                                    onError={(e) => {
                                                         if (!e.target.dataset.error) {
                                                             e.target.dataset.error = "true";
-                                                            e.target.src = "/logo_nb_white.png"; 
+                                                            e.target.src = "/logo_nb_white.png";
                                                         }
                                                     }}
                                                 />
@@ -1113,15 +1181,17 @@ const RouteBuilder = () => {
                                     </div>
                                     <div className="mt-12 bg-gray-800 p-6 rounded-lg border border-gray-700">
                                         <h2 className="text-2xl font-bold mb-6 text-blue-400">Picks de la Ruta</h2>
-                                        
+
                                         {/* Create New Pick Form */}
                                         <div className="mb-8 bg-gray-900 p-4 rounded-lg border border-gray-600">
-                                            <h3 className="text-lg font-semibold mb-4">Crear Nuevo Pick</h3>
+                                            <h3 className="text-lg font-semibold mb-4">
+                                                {newPick.id ? 'Editar Pick' : 'Crear Nuevo Pick'}
+                                            </h3>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-400 mb-1">Título</label>
-                                                    <input 
-                                                        type="text" 
+                                                    <input
+                                                        type="text"
                                                         className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white"
                                                         value={newPick.title}
                                                         onChange={(e) => setNewPick(prev => ({ ...prev, title: e.target.value }))}
@@ -1130,8 +1200,8 @@ const RouteBuilder = () => {
                                                 </div>
                                                 <div>
                                                     <label className="block text-sm font-medium text-gray-400 mb-1">Imagen</label>
-                                                    <input 
-                                                        type="file" 
+                                                    <input
+                                                        type="file"
                                                         accept="image/*"
                                                         className="w-full bg-gray-800 border border-gray-600 rounded p-1 text-sm"
                                                         onChange={handlePickImageUpload}
@@ -1141,7 +1211,7 @@ const RouteBuilder = () => {
                                             </div>
                                             <div className="mb-4">
                                                 <label className="block text-sm font-medium text-gray-400 mb-1">Descripción</label>
-                                                <textarea 
+                                                <textarea
                                                     className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white h-20"
                                                     value={newPick.description}
                                                     onChange={(e) => setNewPick(prev => ({ ...prev, description: e.target.value }))}
@@ -1153,7 +1223,7 @@ const RouteBuilder = () => {
                                                 <div className="max-h-48 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2 bg-gray-800 p-3 rounded">
                                                     {checkpoints.map(cp => (
                                                         <label key={cp.id} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-700 p-1 rounded">
-                                                            <input 
+                                                            <input
                                                                 type="checkbox"
                                                                 className="rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-gray-900"
                                                                 checked={newPick.checkpoints.includes(cp.id)}
@@ -1170,12 +1240,58 @@ const RouteBuilder = () => {
                                                     ))}
                                                 </div>
                                             </div>
+                                            
+                                            {/* Sortable Selected Checkpoints */}
+                                            {newPick.checkpoints.length > 0 && (
+                                                <div className="mb-4">
+                                                    <label className="block text-sm font-medium text-gray-400 mb-2">Orden de los Checkpoints (Arrastra no implementado, usa flechas)</label>
+                                                    <div className="space-y-2 bg-gray-800 p-3 rounded border border-gray-700">
+                                                        {newPick.checkpoints.map((id, index) => {
+                                                            const cp = checkpoints.find(c => c.id === id);
+                                                            return (
+                                                                <div key={id} className="flex items-center justify-between bg-gray-700 p-2 rounded">
+                                                                    <span className="text-sm text-white truncate flex-1">
+                                                                        {index + 1}. {cp?.checkpoints?.name || id}
+                                                                    </span>
+                                                                    <div className="flex space-x-1">
+                                                                        <button 
+                                                                            onClick={() => moveSelectedCheckpoint(index, -1)}
+                                                                            disabled={index === 0}
+                                                                            className="p-1 hover:bg-gray-600 disabled:opacity-30 rounded text-blue-400"
+                                                                            title="Subir"
+                                                                        >
+                                                                            ↑
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={() => moveSelectedCheckpoint(index, 1)}
+                                                                            disabled={index === newPick.checkpoints.length - 1}
+                                                                            className="p-1 hover:bg-gray-600 disabled:opacity-30 rounded text-blue-400"
+                                                                            title="Bajar"
+                                                                        >
+                                                                            ↓
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <button 
                                                 onClick={handleSaveNewPick}
                                                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition duration-200"
                                             >
-                                                Guardar Pick
+                                                {newPick.id ? 'Actualizar Pick' : 'Guardar Pick'}
                                             </button>
+                                            {newPick.id && (
+                                                <button 
+                                                    onClick={handleCancelEdit}
+                                                    className="ml-4 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded transition duration-200"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            )}
                                         </div>
 
                                         {/* List of Existing Picks */}
@@ -1199,12 +1315,20 @@ const RouteBuilder = () => {
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            <button 
-                                                                onClick={() => handleDeletePick(pick.id)}
-                                                                className="text-red-400 hover:text-red-300 text-sm font-medium border border-red-900 px-3 py-1 rounded hover:bg-red-900/20 transition"
-                                                            >
-                                                                Eliminar
-                                                            </button>
+                                                            <div className="flex gap-2">
+                                                                <button 
+                                                                    onClick={() => handleEditPick(pick)}
+                                                                    className="text-blue-400 hover:text-blue-300 text-sm font-medium border border-blue-900 px-3 py-1 rounded hover:bg-blue-900/20 transition"
+                                                                >
+                                                                    Editar
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => handleDeletePick(pick.id)}
+                                                                    className="text-red-400 hover:text-red-300 text-sm font-medium border border-red-900 px-3 py-1 rounded hover:bg-red-900/20 transition"
+                                                                >
+                                                                    Eliminar
+                                                                </button>
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
