@@ -46,6 +46,13 @@ const RouteBuilder = () => {
         start_timestamp: "",
         end_timestamp: "",
     });
+    const [picks, setPicks] = useState([]);
+    const [newPick, setNewPick] = useState({
+        title: '',
+        description: '',
+        picture: '',
+        checkpoints: [] // array of event_checkpoint_ids
+    });
     const [bannerFile, setBannerFile] = useState(null);
     const [bannerHFile, setBannerHFile] = useState(null);
     const supabase = getSupabase();
@@ -190,7 +197,6 @@ const RouteBuilder = () => {
         }
     };
 
-    // Fetch routes and checkpoints
     const getCheckpoints = useCallback(async () => {
         if (currentRoute?.id) {
             try {
@@ -209,10 +215,39 @@ const RouteBuilder = () => {
         }
     }, [currentRoute]);
 
+    const fetchPicks = useCallback(async () => {
+        if (!currentRoute?.id) return;
+        try {
+            const { data, error } = await supabase
+                .from('picks')
+                .select(`
+                    id, 
+                    title, 
+                    description, 
+                    picture, 
+                    pick_checkpoints (
+                        event_checkpoint_id,
+                        order
+                    )
+                `)
+                .eq('route_id', currentRoute.id)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("Error fetching picks:", error);
+            } else {
+                setPicks(data || []);
+            }
+        } catch (e) {
+            console.error("Unexpected error fetching picks:", e);
+        }
+    }, [currentRoute, supabase]);
+
     useEffect(() => {
         getCheckpoints();
         fetchCategories();
-    }, [currentRoute, getCheckpoints]);
+        fetchPicks();
+    }, [currentRoute, getCheckpoints, fetchPicks]);
 
     const handleSaveCheckpoint = async (checkpoint) => {
         try {
@@ -307,6 +342,102 @@ const RouteBuilder = () => {
             getCheckpoints(); // Refresh the checkpoints after adding a new one
         } catch (e) {
             toast.error("Error creating new checkpoint and associating it with the route", e);
+        }
+    };
+
+    const handleSaveNewPick = async () => {
+        if (!newPick.title || newPick.checkpoints.length < 2) {
+            toast.error("El Pick debe tener un título y al menos 2 checkpoints.");
+            return;
+        }
+
+        try {
+            // 1. Insert into picks table
+            const { data: pickData, error: pickError } = await supabase
+                .from('picks')
+                .insert({
+                    route_id: currentRoute.id,
+                    title: newPick.title,
+                    description: newPick.description,
+                    picture: newPick.picture
+                })
+                .select('id')
+                .single();
+
+            if (pickError) {
+                toast.error("Error al crear el Pick: " + pickError.message);
+                return;
+            }
+
+            // 2. Insert into pick_checkpoints table
+            const pickCheckpoints = newPick.checkpoints.map((event_checkpoint_id, index) => ({
+                pick_id: pickData.id,
+                event_checkpoint_id: event_checkpoint_id,
+                order: index
+            }));
+
+            const { error: junctionError } = await supabase
+                .from('pick_checkpoints')
+                .insert(pickCheckpoints);
+
+            if (junctionError) {
+                toast.error("Error al asociar checkpoints: " + junctionError.message);
+                return;
+            }
+
+            toast.success("Pick creado exitosamente.");
+            setNewPick({ title: '', description: '', picture: '', checkpoints: [] });
+            fetchPicks();
+        } catch (e) {
+            toast.error("Error inesperado al guardar Pick");
+            console.error(e);
+        }
+    };
+
+    const handleDeletePick = async (pickId) => {
+        if (!confirm("¿Estás seguro de eliminar este Pick?")) return;
+
+        try {
+            const { error } = await supabase
+                .from('picks')
+                .delete()
+                .eq('id', pickId);
+
+            if (error) {
+                toast.error("Error al eliminar Pick: " + error.message);
+            } else {
+                toast.success("Pick eliminado.");
+                fetchPicks();
+            }
+        } catch (e) {
+            toast.error("Error inesperado al eliminar Pick");
+        }
+    };
+
+    const handlePickImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const fileName = `picks/${currentRoute.id}/${Date.now()}.${fileExt}`;
+
+        try {
+            const { error: uploadError } = await supabase.storage
+                .from('pictures')
+                .upload(fileName, file);
+
+            if (uploadError) {
+                toast.error("Error al subir imagen: " + uploadError.message);
+                return;
+            }
+
+            const projectRef = 'aezxnubglexywadbjpgo';
+            const publicUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/pictures/${fileName}`;
+
+            setNewPick(prev => ({ ...prev, picture: publicUrl }));
+            toast.success("Imagen de Pick subida.");
+        } catch (e) {
+            toast.error("Error inesperado al subir imagen");
         }
     };
 
@@ -979,6 +1110,106 @@ const RouteBuilder = () => {
                                                 ))}
                                             </tbody>
                                         </table>
+                                    </div>
+                                    <div className="mt-12 bg-gray-800 p-6 rounded-lg border border-gray-700">
+                                        <h2 className="text-2xl font-bold mb-6 text-blue-400">Picks de la Ruta</h2>
+                                        
+                                        {/* Create New Pick Form */}
+                                        <div className="mb-8 bg-gray-900 p-4 rounded-lg border border-gray-600">
+                                            <h3 className="text-lg font-semibold mb-4">Crear Nuevo Pick</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-400 mb-1">Título</label>
+                                                    <input 
+                                                        type="text" 
+                                                        className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white"
+                                                        value={newPick.title}
+                                                        onChange={(e) => setNewPick(prev => ({ ...prev, title: e.target.value }))}
+                                                        placeholder="Ej: Los Mejores Miradores"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-400 mb-1">Imagen</label>
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*"
+                                                        className="w-full bg-gray-800 border border-gray-600 rounded p-1 text-sm"
+                                                        onChange={handlePickImageUpload}
+                                                    />
+                                                    {newPick.picture && <p className="text-xs text-green-400 mt-1">Imagen lista ✓</p>}
+                                                </div>
+                                            </div>
+                                            <div className="mb-4">
+                                                <label className="block text-sm font-medium text-gray-400 mb-1">Descripción</label>
+                                                <textarea 
+                                                    className="w-full bg-gray-800 border border-gray-600 rounded p-2 text-white h-20"
+                                                    value={newPick.description}
+                                                    onChange={(e) => setNewPick(prev => ({ ...prev, description: e.target.value }))}
+                                                    placeholder="Breve descripción del pick..."
+                                                />
+                                            </div>
+                                            <div className="mb-4">
+                                                <label className="block text-sm font-medium text-gray-400 mb-2">Seleccionar Checkpoints (Mínimo 2)</label>
+                                                <div className="max-h-48 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2 bg-gray-800 p-3 rounded">
+                                                    {checkpoints.map(cp => (
+                                                        <label key={cp.id} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-700 p-1 rounded">
+                                                            <input 
+                                                                type="checkbox"
+                                                                className="rounded border-gray-600 text-blue-500 focus:ring-blue-500 bg-gray-900"
+                                                                checked={newPick.checkpoints.includes(cp.id)}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setNewPick(prev => ({ ...prev, checkpoints: [...prev.checkpoints, cp.id] }));
+                                                                    } else {
+                                                                        setNewPick(prev => ({ ...prev, checkpoints: prev.checkpoints.filter(id => id !== cp.id) }));
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <span className="truncate">{cp.checkpoints.name}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={handleSaveNewPick}
+                                                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded transition duration-200"
+                                            >
+                                                Guardar Pick
+                                            </button>
+                                        </div>
+
+                                        {/* List of Existing Picks */}
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold mb-4">Picks Existentes</h3>
+                                            {picks.length === 0 ? (
+                                                <p className="text-gray-500 italic text-center py-4">No hay picks creados para esta ruta.</p>
+                                            ) : (
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    {picks.map(pick => (
+                                                        <div key={pick.id} className="bg-gray-900 p-4 rounded-lg border border-gray-600 flex flex-col md:flex-row gap-4 items-start md:items-center">
+                                                            {pick.picture && (
+                                                                <img src={pick.picture} alt={pick.title} className="w-24 h-24 object-cover rounded shadow-md" />
+                                                            )}
+                                                            <div className="flex-1">
+                                                                <h4 className="font-bold text-lg text-white">{pick.title}</h4>
+                                                                <p className="text-gray-400 text-sm mb-1">{pick.description}</p>
+                                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                                    <span className="text-xs bg-blue-900 text-blue-200 px-2 py-1 rounded">
+                                                                        {pick.pick_checkpoints?.length || 0} Checkpoints
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <button 
+                                                                onClick={() => handleDeletePick(pick.id)}
+                                                                className="text-red-400 hover:text-red-300 text-sm font-medium border border-red-900 px-3 py-1 rounded hover:bg-red-900/20 transition"
+                                                            >
+                                                                Eliminar
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div></div>
