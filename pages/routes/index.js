@@ -28,7 +28,7 @@ const RouteBuilder = () => {
         lng: '',
         description: '',
         points: 0,
-        challenge: false,
+        is_challenge: false,
         terrain: 'pavement',
         weakSignal: false,
         picture: '',
@@ -210,7 +210,7 @@ const RouteBuilder = () => {
             try {
                 const { data, error } = await supabase
                     .from('event_checkpoints')
-                    .select('id, checkpoint_id, checkpoints(name, lat, lng, description, points, icon, terrain, weakSignal, picture, category_id)')
+                    .select('id, checkpoint_id, checkpoints(name, lat, lng, description, points, icon, terrain, weakSignal, picture, category_id, is_challenge)')
                     .eq('event_id', currentRoute.id);
 
                 if (data) {
@@ -269,12 +269,12 @@ const RouteBuilder = () => {
                     lng: updatedCheckpoint.lng,
                     description: updatedCheckpoint.description,
                     points: updatedCheckpoint.points,
-                    icon: updatedCheckpoint.challenge
+                    icon: updatedCheckpoint.is_challenge
                         ? "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/challenges.png"
                         : "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/road.png",
                     terrain: updatedCheckpoint.terrain,
                     weakSignal: updatedCheckpoint.weakSignal,
-                    is_challenge: updatedCheckpoint.challenge,
+                    is_challenge: updatedCheckpoint.is_challenge,
                     category_id: updatedCheckpoint.category_id
                         ? Number(updatedCheckpoint.category_id)
                         : null, // ✅ Correct field
@@ -302,11 +302,12 @@ const RouteBuilder = () => {
                     lng: newCheckpoint.lng,
                     description: newCheckpoint.description,
                     points: newCheckpoint.points,
-                    icon: newCheckpoint.challenge
+                    icon: newCheckpoint.is_challenge
                         ? "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/challenges.png"
                         : "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/road.png",
                     terrain: newCheckpoint.terrain,
                     weakSignal: newCheckpoint.weakSignal,
+                    is_challenge: newCheckpoint.is_challenge,
                     category_id: newCheckpoint.category_id ? Number(newCheckpoint.category_id) : null,
                 })
                 .select('id');  // Select the ID of the newly inserted checkpoint
@@ -940,9 +941,9 @@ const RouteBuilder = () => {
                                                     <td>
                                                         <input
                                                             type="checkbox"
-                                                            checked={newCheckpoint.challenge}
+                                                            checked={newCheckpoint.is_challenge}
                                                             onChange={(e) =>
-                                                                setNewCheckpoint({ ...newCheckpoint, challenge: e.target.checked })
+                                                                setNewCheckpoint({ ...newCheckpoint, is_challenge: e.target.checked })
                                                             }
                                                         />
                                                     </td>
@@ -1076,11 +1077,11 @@ const RouteBuilder = () => {
                                                         <td>
                                                             <input
                                                                 type="checkbox"
-                                                                checked={cp.checkpoints.icon === 'https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/challenges.png'} // Ensuring it's a boolean
+                                                                checked={cp.checkpoints.is_challenge} // Ensuring it's a boolean
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
                                                                         prev.map((item, i) =>
-                                                                            i === index ? { ...item, checkpoints: { ...item.checkpoints, challenge: e.target.checked } } : item
+                                                                            i === index ? { ...item, checkpoints: { ...item.checkpoints, is_challenge: e.target.checked } } : item
                                                                         )
                                                                     )
                                                                 }
