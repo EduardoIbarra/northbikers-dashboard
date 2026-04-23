@@ -64,15 +64,45 @@ const Navbar = () => {
         const ids = profile.route_access.split(",").map(id => parseInt(id.trim(), 10));
         query = query.in("id", ids);
       }
-      const { data, error } = await query
-        .order('featured', { ascending: true })
-        .order('title', { ascending: true });
+      const { data, error } = await query;
       if (error) throw error;
 
       if (Array.isArray(data) && data.length) {
-        const arr = [...data].reverse();
-        setRoutes(arr);
-        setCurrentRoute(arr[0]);
+        const now = new Date();
+        
+        // Group and sort
+        const upcoming = data.filter(r => !r.start_timestamp || new Date(r.start_timestamp) > now)
+          .sort((a, b) => a.title.localeCompare(b.title));
+        
+        const past = data.filter(r => r.start_timestamp && new Date(r.start_timestamp) <= now)
+          .sort((a, b) => a.title.localeCompare(b.title));
+
+        const finalRoutes = [];
+        if (upcoming.length > 0) {
+          finalRoutes.push(...upcoming);
+        }
+        
+        if (upcoming.length > 0 && past.length > 0) {
+          finalRoutes.push({ id: 'sep-past', title: '────────── Past Routes ──────────', disabled: true });
+        }
+
+        if (past.length > 0) {
+          finalRoutes.push(...past);
+        }
+
+        setRoutes(finalRoutes);
+
+        // Persistence: Check localStorage
+        const savedId = typeof window !== 'undefined' ? localStorage.getItem('selected_route_id') : null;
+        const savedRoute = finalRoutes.find(r => r.id == savedId && !r.disabled);
+
+        if (savedRoute) {
+          setCurrentRoute(savedRoute);
+        } else {
+          // Default to first valid route
+          const firstValid = finalRoutes.find(r => !r.disabled);
+          if (firstValid) setCurrentRoute(firstValid);
+        }
       } else {
         setRoutes([]);
       }
@@ -114,7 +144,10 @@ const Navbar = () => {
             selected={currentRoute?.id}
             items={routes}
             inline
-            onChange={setCurrentRoute}
+            onChange={(val) => {
+              setCurrentRoute(val);
+              if (val?.id) localStorage.setItem('selected_route_id', val.id);
+            }}
             className="text-gray-900 focus:ring focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
@@ -156,6 +189,7 @@ const Navbar = () => {
               inline={false}
               onChange={(val) => {
                 setCurrentRoute(val);
+                if (val?.id) localStorage.setItem('selected_route_id', val.id);
                 // opcional: cerrar al seleccionar
                 // setMobileOpen(false);
               }}

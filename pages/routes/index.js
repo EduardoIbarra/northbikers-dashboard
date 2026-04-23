@@ -46,6 +46,7 @@ const RouteBuilder = () => {
         venue_iframe: "",
         start_timestamp: "",
         end_timestamp: "",
+        instructions: "",
     });
     const [picks, setPicks] = useState([]);
     const [newPick, setNewPick] = useState({
@@ -70,7 +71,7 @@ const RouteBuilder = () => {
                 .select(
                     "title, venue, dates, description, long_description, en_long_description, " +
                     "venue_link, whatsapp_group_url, venue_iframe, start_timestamp, end_timestamp, " +
-                    "banner, banner_h"   // ← added
+                    "banner, banner_h, instructions"   // ← added
                 )
                 .eq("id", currentRoute.id)
                 .single();
@@ -95,6 +96,7 @@ const RouteBuilder = () => {
                 end_timestamp: data.end_timestamp || "",
                 banner: data.banner || "",
                 banner_h: data.banner_h || "",
+                instructions: data.instructions || "",
             });
         } catch (e) {
             toast.error("Unexpected error loading route data:", e);
@@ -129,6 +131,47 @@ const RouteBuilder = () => {
             }
         } catch (e) {
             toast.error(`Unexpected error saving ${key}:`, e);
+        }
+    };
+
+    const handleInstructionsUpload = async (file) => {
+        if (!file || !currentRoute?.id) return;
+
+        const fileExt = file.name.split('.').pop().toLowerCase();
+        const fileName = `instructions/${currentRoute.id}/${Date.now()}.${fileExt}`;
+
+        try {
+            const { error: uploadError } = await supabase.storage
+                .from('pictures')
+                .upload(fileName, file, {
+                    cacheControl: '3600',
+                    upsert: false,
+                });
+
+            if (uploadError) {
+                toast.error(`Error al subir PDF: ${uploadError.message}`);
+                return;
+            }
+
+            const projectRef = 'aezxnubglexywadbjpgo';
+            const publicUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/pictures/${fileName}`;
+
+            const { error: updateError } = await supabase
+                .from('routes')
+                .update({ instructions: publicUrl })
+                .eq('id', currentRoute.id);
+
+            if (updateError) {
+                toast.error(`Error al guardar instrucciones: ${updateError.message}`);
+                return;
+            }
+
+            toast.success(`Archivo PDF subido y guardado exitosamente`);
+            setRouteAttributes(prev => ({ ...prev, instructions: publicUrl }));
+
+        } catch (err) {
+            toast.error("Error inesperado al subir instrucciones");
+            console.error(err);
         }
     };
 
@@ -848,6 +891,40 @@ const RouteBuilder = () => {
                                                         }
                                                     }}
                                                 />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Instrucciones PDF */}
+                                    <div className="mb-6">
+                                        <label className="block font-bold text-gray-100 mb-1">Instrucciones (PDF)</label>
+                                        <input
+                                            type="file"
+                                            accept="application/pdf"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    handleInstructionsUpload(file);
+                                                }
+                                            }}
+                                            className="bg-gray-700 text-gray-300 border border-gray-600 p-2 rounded w-full"
+                                        />
+                                        {routeAttributes.instructions && (
+                                            <div className="mt-3 bg-gray-900/50 p-3 rounded border border-gray-700 flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" className="w-8 h-8" alt="PDF icon" />
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-200">Rider's Guide / PDF de Instrucciones</p>
+                                                        <a 
+                                                            href={routeAttributes.instructions} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer" 
+                                                            className="text-xs text-blue-400 hover:underline"
+                                                        >
+                                                            Ver archivo actual
+                                                        </a>
+                                                    </div>
+                                                </div>
                                             </div>
                                         )}
                                     </div>

@@ -24,6 +24,7 @@ export const Select = (
                         key={i.id}
                         value={i.id}
                         selected={selected === i.id}
+                        disabled={i.disabled}
                     >{i.title}</option>
                 )
             })}
