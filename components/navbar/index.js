@@ -71,11 +71,15 @@ const Navbar = () => {
         const now = new Date();
         
         // Group and sort
-        const upcoming = data.filter(r => !r.start_timestamp || new Date(r.start_timestamp) > now)
-          .sort((a, b) => a.title.localeCompare(b.title));
+        const upcoming = data.filter(r => {
+          const compareDate = r.end_timestamp || r.start_timestamp;
+          return !compareDate || new Date(compareDate) > now;
+        }).sort((a, b) => a.title.localeCompare(b.title));
         
-        const past = data.filter(r => r.start_timestamp && new Date(r.start_timestamp) <= now)
-          .sort((a, b) => a.title.localeCompare(b.title));
+        const past = data.filter(r => {
+          const compareDate = r.end_timestamp || r.start_timestamp;
+          return compareDate && new Date(compareDate) <= now;
+        }).sort((a, b) => a.title.localeCompare(b.title));
 
         const finalRoutes = [];
         if (upcoming.length > 0) {
