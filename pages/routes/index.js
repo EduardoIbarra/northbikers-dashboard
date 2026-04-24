@@ -47,6 +47,8 @@ const RouteBuilder = () => {
         start_timestamp: "",
         end_timestamp: "",
         instructions: "",
+        amount: 0,
+        slug: "",
     });
     const [picks, setPicks] = useState([]);
     const [newPick, setNewPick] = useState({
@@ -61,6 +63,84 @@ const RouteBuilder = () => {
     const [bannerHFile, setBannerHFile] = useState(null);
     const supabase = getSupabase();
 
+    // Link Generator State
+    const [referralCode, setReferralCode] = useState("");
+    const [includeCoupon, setIncludeCoupon] = useState(false);
+    const [desiredPrice, setDesiredPrice] = useState("");
+    const [generatedLinks, setGeneratedLinks] = useState(null);
+    const [existingCoupons, setExistingCoupons] = useState([]);
+
+    const fetchCoupons = useCallback(async () => {
+        if (!currentRoute?.id) return;
+
+        const { data, error } = await supabase
+            .from("coupons")
+            .select("*")
+            .eq("route_id", currentRoute.id)
+            .order("created_at", { ascending: false });
+
+        if (!error && data) {
+            setExistingCoupons(data);
+        }
+    }, [supabase, currentRoute?.id]);
+
+    const handleGenerateLinks = async () => {
+        if (!referralCode) {
+            toast.error("Por favor ingresa un código.");
+            return;
+        }
+
+        // URL valid characters only (no spaces, no symbols except - and _)
+        const cleanCode = referralCode.replace(/[^a-zA-Z0-9-_]/g, "");
+        if (cleanCode !== referralCode) {
+            toast.warning(`El código fue limpiado: ${cleanCode}`);
+            setReferralCode(cleanCode);
+        }
+
+        let links = {
+            referral: `https://www.northbikers.com/${routeAttributes.slug}?ref=${cleanCode}`
+        };
+
+        if (includeCoupon && desiredPrice) {
+            const originalPrice = routeAttributes.amount;
+            if (originalPrice > 0) {
+                const discountAmount = originalPrice - desiredPrice;
+                let discountPercent = (discountAmount / originalPrice) * 100;
+                discountPercent = Math.round(discountPercent * 100) / 100; // 2 decimals
+
+                const expiresAt = new Date();
+                expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
+                const { error } = await supabase
+                    .from("coupons")
+                    .insert({
+                        code: cleanCode,
+                        discount_percentage: discountPercent,
+                        route_id: currentRoute.id,
+                        max_uses: 1500,
+                        current_uses: 0,
+                        expires_at: expiresAt.toISOString(),
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    });
+
+                if (error) {
+                    toast.error("Error al crear el cupón: " + error.message);
+                    return;
+                }
+                
+                toast.success(`Cupón "${cleanCode}" creado con ${discountPercent}% de descuento.`);
+                links.coupon = `https://www.northbikers.com/${routeAttributes.slug}?ref=${cleanCode}&coupon_code=${cleanCode}`;
+                fetchCoupons();
+            } else {
+                toast.error("El precio base de la ruta no está definido.");
+                return;
+            }
+        }
+
+        setGeneratedLinks(links);
+    };
+
     // Preload route data
     const preloadRouteData = async () => {
         if (!currentRoute?.id) return;
@@ -71,7 +151,7 @@ const RouteBuilder = () => {
                 .select(
                     "title, venue, dates, description, long_description, en_long_description, " +
                     "venue_link, whatsapp_group_url, venue_iframe, start_timestamp, end_timestamp, " +
-                    "banner, banner_h, instructions"   // ← added
+                    "banner, banner_h, instructions, amount, slug"   // ← added
                 )
                 .eq("id", currentRoute.id)
                 .single();
@@ -97,7 +177,11 @@ const RouteBuilder = () => {
                 banner: data.banner || "",
                 banner_h: data.banner_h || "",
                 instructions: data.instructions || "",
+                amount: data.amount || 0,
+                slug: data.slug || "",
             });
+            
+            fetchCoupons();
         } catch (e) {
             toast.error("Unexpected error loading route data:", e);
         }
@@ -659,6 +743,162 @@ const RouteBuilder = () => {
                                         Ver productos comprados
                                     </Link>
                                 </div>
+
+                                <div className="p-4 border-t border-gray-700 mt-8">
+                                    <h2 className="text-2xl font-bold mb-4">Generador de Referidos y Cupones</h2>
+                                    <div className="bg-gray-700/30 p-6 rounded-xl border border-gray-600">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block font-bold text-gray-100 mb-2">Código (Referido/Cupón)</label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Ej: BMWMotorradAngelopolis"
+                                                    value={referralCode}
+                                                    onChange={(e) => setReferralCode(e.target.value)}
+                                                    className="bg-gray-700 text-gray-100 border border-gray-600 p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col justify-end">
+                                                <label className="flex items-center space-x-3 cursor-pointer group mb-2">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="form-checkbox h-5 w-5 text-blue-500 rounded border-gray-600 bg-gray-700 focus:ring-0" 
+                                                        checked={includeCoupon}
+                                                        onChange={() => setIncludeCoupon(!includeCoupon)}
+                                                    />
+                                                    <span className="font-bold text-gray-100">Generar Cupón de Descuento</span>
+                                                </label>
+                                            </div>
+                                            {includeCoupon && (
+                                                <div>
+                                                    <label className="block font-bold text-gray-100 mb-2">Precio Final Deseado (Base: ${routeAttributes.amount})</label>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Ej: 2800"
+                                                        value={desiredPrice}
+                                                        onChange={(e) => setDesiredPrice(e.target.value)}
+                                                        className="bg-gray-700 text-gray-100 border border-gray-600 p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="flex items-end">
+                                                <button 
+                                                    onClick={handleGenerateLinks}
+                                                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded shadow-lg transition-all"
+                                                >
+                                                    Generar Links y Cupón
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {generatedLinks && (
+                                            <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                                                <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+                                                    <span className="text-xs font-bold text-gray-400 block mb-1 uppercase tracking-wider">Link de Referido</span>
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <code className="text-sm text-blue-400 break-all">{generatedLinks.referral}</code>
+                                                        <button 
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(generatedLinks.referral);
+                                                                toast.success("Link copiado!");
+                                                            }}
+                                                            className="bg-gray-700 text-gray-200 px-3 py-1 rounded text-xs hover:bg-gray-600 shrink-0"
+                                                        >
+                                                            Copiar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                {generatedLinks.coupon && (
+                                                    <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
+                                                        <span className="text-xs font-bold text-blue-400 block mb-1 uppercase tracking-wider">Link con Cupón Aplicado</span>
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <code className="text-sm text-blue-300 break-all">{generatedLinks.coupon}</code>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    navigator.clipboard.writeText(generatedLinks.coupon);
+                                                                    toast.success("Link con cupón copiado!");
+                                                                }}
+                                                                className="bg-gray-700 text-gray-200 px-3 py-1 rounded text-xs hover:bg-gray-600 shrink-0"
+                                                            >
+                                                                Copiar
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {existingCoupons.length > 0 && (
+                                        <div className="mt-12">
+                                            <h3 className="text-lg font-bold text-gray-100 mb-6 flex items-center gap-2">
+                                                <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span>
+                                                Cupones Existentes
+                                            </h3>
+                                            <div className="overflow-x-auto rounded-xl border border-gray-600 bg-gray-800/20">
+                                                <table className="w-full text-left">
+                                                    <thead>
+                                                        <tr className="bg-gray-800 text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-600">
+                                                            <th className="px-6 py-4">Código</th>
+                                                            <th className="px-6 py-4 text-center">Descuento</th>
+                                                            <th className="px-6 py-4">Uso</th>
+                                                            <th className="px-6 py-4 text-right">Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-700">
+                                                        {existingCoupons.slice(0, 15).map((coupon) => {
+                                                            const couponLink = `https://www.northbikers.com/${routeAttributes.slug}?ref=${coupon.code}&coupon_code=${coupon.code}`;
+                                                            const referralLink = `https://www.northbikers.com/${routeAttributes.slug}?ref=${coupon.code}`;
+                                                            
+                                                            return (
+                                                                <tr key={coupon.id} className="hover:bg-gray-700/30 transition-colors">
+                                                                    <td className="px-6 py-4 font-mono text-sm text-blue-400">{coupon.code}</td>
+                                                                    <td className="px-6 py-4 text-sm font-bold text-gray-200 text-center">{coupon.discount_percentage}%</td>
+                                                                    <td className="px-6 py-4">
+                                                                        <div className="flex flex-col">
+                                                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{coupon.current_uses} / {coupon.max_uses}</span>
+                                                                            <div className="w-24 h-1 bg-gray-700 rounded-full mt-1.5 overflow-hidden">
+                                                                                <div 
+                                                                                    className="h-full bg-blue-500 rounded-full" 
+                                                                                    style={{ width: `${Math.min((coupon.current_uses / coupon.max_uses) * 100, 100)}%` }}
+                                                                                ></div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-right">
+                                                                        <div className="flex items-center justify-end gap-2">
+                                                                            <button 
+                                                                                onClick={() => {
+                                                                                    navigator.clipboard.writeText(referralLink);
+                                                                                    toast.success("Link de referido copiado!");
+                                                                                }}
+                                                                                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all"
+                                                                                title="Copiar Link de Referido"
+                                                                            >
+                                                                                Ref
+                                                                            </button>
+                                                                            <button 
+                                                                                onClick={() => {
+                                                                                    navigator.clipboard.writeText(couponLink);
+                                                                                    toast.success("Link con cupón copiado!");
+                                                                                }}
+                                                                                className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 border border-blue-500/30 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all"
+                                                                                title="Copiar Link con Cupón"
+                                                                            >
+                                                                                Cupón
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
                                 <div className="p-4">
                                     <h2 className="text-2xl font-bold mb-4">Actualizar Atributos de la Ruta</h2>
@@ -1414,7 +1654,7 @@ const RouteBuilder = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div></div>
+                            </div>
                     </div>
                 </div>
             </div>

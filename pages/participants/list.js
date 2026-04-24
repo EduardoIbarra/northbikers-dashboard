@@ -22,16 +22,40 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
     }, []);
 
     const downloadCSV = () => {
-        const csvString = convertToCSV(data, getSelectValue);
+        const sortedData = [...data].sort((a, b) => {
+            const numA = parseInt(a.participant_number) || 0;
+            const numB = parseInt(b.participant_number) || 0;
+            return numA - numB;
+        });
+        const csvString = convertToCSV(sortedData, getSelectValue);
         const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", "participants_list.csv");
+        link.setAttribute("download", "participants_list_maestro.csv");
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    const downloadRankingCSV = () => {
+        const headers = ["Posición", "Puntos", "Número", "Participante", "Email", "Categoría", "Género", "# Checkins", "# Retos", "Ruta", "Status"];
+        const rows = data.map(row => [
+            row.position,
+            row.points ?? 0,
+            row.participant_number,
+            `"${row.profile?.name?.replace(/"/g, '""') || ""}"`,
+            `"${row.profile?.email?.replace(/"/g, '""') || ""}"`,
+            `"${getSelectValue(row.category, CATEGORIES)}"`,
+            `"${getSelectValue(row.gender, GENDERS)}"`,
+            row.regular_checkins_number ?? 0,
+            row.challenge_checkins_number ?? 0,
+            `"${row.route?.title?.replace(/"/g, '""') || ""}"`,
+            row.payment_status === 'paid' ? 'Pagado' : 'Pendiente'
+        ]);
+
+        downloadCSVFile("ranking_participantes.csv", headers, rows);
     };
 
     const downloadParticipantJerseys = async () => {
@@ -128,24 +152,44 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
     };
 
     const convertToCSV = (data, getSelectValue) => {
+        if (!data || !data.length) return "";
+
+        const sampleRow = data[0];
+        // 1. Identify all top-level primitive fields (database columns + computed numbers)
+        const keys = Object.keys(sampleRow).filter(key => 
+            typeof sampleRow[key] !== 'object' || sampleRow[key] === null
+        );
+
+        // 2. Define headers, including the raw fields and specific human-readable helpers
         const headers = [
-            "Posición", "Puntos", "Número", "Participante", "Categoría",
-            "Email", "Género", "# Checkins", "# Retos", "Ruta", "Pago"
+            ...keys,
+            "profile_name",
+            "profile_email",
+            "route_title",
+            "category_title",
+            "gender_title"
         ].join(',');
 
-        const rows = data.map(row => [
-            row.position,
-            row.points ?? 0,
-            row.participant_number,
-            `"${row.profile.name.replace(/"/g, '""')}"`,
-            getSelectValue(row.category, CATEGORIES),
-            row.profile.email,
-            getSelectValue(row.gender, GENDERS),
-            row.regular_checkins_number ?? 0,
-            row.challenge_checkins_number ?? 0,
-            `"${row.route.title.replace(/"/g, '""')}"`,
-            row.payment_status === 'paid' ? 'Paid' : 'Not Paid'
-        ].join(','));
+        // 3. Generate rows
+        const rows = data.map(row => {
+            const values = keys.map(key => {
+                let val = row[key];
+                if (val === null || val === undefined) return "";
+                if (typeof val === 'string') {
+                    return `"${val.replace(/"/g, '""')}"`;
+                }
+                return val;
+            });
+
+            // 4. Append human-readable info from nested objects or lookups
+            values.push(`"${row.profile?.name?.replace(/"/g, '""') || ""}"`);
+            values.push(`"${row.profile?.email?.replace(/"/g, '""') || ""}"`);
+            values.push(`"${row.route?.title?.replace(/"/g, '""') || ""}"`);
+            values.push(`"${getSelectValue(row.category, CATEGORIES)}"`);
+            values.push(`"${getSelectValue(row.gender, GENDERS)}"`);
+
+            return values.join(',');
+        });
 
         return [headers, ...rows].join('\n');
     };
@@ -273,6 +317,12 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                                 className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
                             >
                                 CSV Maestro
+                            </Button>
+                            <Button
+                                onClick={downloadRankingCSV}
+                                className="bg-neutral-800 hover:bg-yellow-500 hover:text-black text-neutral-300 border border-neutral-700 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
+                            >
+                                CSV Ranking
                             </Button>
                             <Button
                                 onClick={downloadParticipantJerseys}
