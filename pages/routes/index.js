@@ -411,6 +411,15 @@ const RouteBuilder = () => {
             if (error) {
                 toast.error("Error saving checkpoint:", error);
             } else {
+                // Log the modification
+                await supabase
+                    .from('checkpoint_logs')
+                    .insert({
+                        checkpoint_id: checkpoint.checkpoint_id,
+                        user_id: loggedUser?.id,
+                        summary: `Updated checkpoint: ${updatedCheckpoint.name}`
+                    });
+
                 toast.success("Cambios guardados exitosamente.");
             }
         } catch (e) {
@@ -459,6 +468,15 @@ const RouteBuilder = () => {
                 toast.error("Error inserting into event_checkpoints:", eventCheckpointError);
                 return;
             }
+
+            // Log the creation
+            await supabase
+                .from('checkpoint_logs')
+                .insert({
+                    checkpoint_id: newCheckpointId,
+                    user_id: loggedUser?.id,
+                    summary: `Created checkpoint: ${newCheckpoint.name}`
+                });
 
             toast.success("Nuevo checkpoint creado y asociado exitosamente.");
 
@@ -661,6 +679,15 @@ const RouteBuilder = () => {
             if (updateError) {
                 toast.error("Error updating checkpoint with image:", updateError);
             } else {
+                // Log the image update
+                await supabase
+                    .from('checkpoint_logs')
+                    .insert({
+                        checkpoint_id: checkpoint.checkpoint_id,
+                        user_id: loggedUser?.id,
+                        summary: `Updated image for checkpoint: ${checkpoint.checkpoints?.name || checkpoint.checkpoint_id}`
+                    });
+
                 toast.success("Imagen subida exitosamente.", {
                     position: "top-right", // Position the toast at the top-right corner
                     autoClose: 3000, // Automatically close after 3 seconds
