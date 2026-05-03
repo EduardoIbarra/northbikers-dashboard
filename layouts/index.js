@@ -1,11 +1,21 @@
+import { useEffect } from 'react'
 import {useRouter} from 'next/router'
 import Centered from './centered'
 import Empty from './empty'
 import Layout from './layout'
+import { getLoggedUser } from '../utils'
 
 const Layouts = ({children}) => {
     const router = useRouter()
     let {pathname} = {...router}
+    
+    useEffect(() => {
+        const user = getLoggedUser();
+        if (user?.isParticipantsOnly && pathname !== '/participants') {
+            router.push('/participants');
+        }
+    }, [pathname]);
+
     console.log({pathname});
     if (['4', '0',].includes(pathname)) {
         return <Centered>{children}</Centered>

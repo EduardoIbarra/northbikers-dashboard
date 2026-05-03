@@ -36,7 +36,10 @@ const LoginPage = () => {
                     if (user?.isAdmin) {
                         setLoggedUser(data[0])
                         router.push('/')
-                    }else{
+                    } else if (user?.isParticipantsOnly) {
+                        setLoggedUser(data[0])
+                        router.push('/participants')
+                    } else {
                         alert('No cuentas con los permisos para acceder');
                     }
 

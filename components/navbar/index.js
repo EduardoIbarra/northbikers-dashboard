@@ -35,6 +35,7 @@ const Navbar = () => {
   const currentRoute = useRecoilValue(CurrentRoute);
 
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [user, setUser] = useState(null);
 
   const router = useRouter();
   const supabase = useMemo(() => getSupabase(), []);
@@ -129,6 +130,7 @@ const Navbar = () => {
   useEffect(() => {
     const handle = () => setMobileOpen(false);
     router.events.on('routeChangeStart', handle);
+    setUser(getLoggedUser());
     return () => router.events.off('routeChangeStart', handle);
   }, [router.events]);
 
@@ -158,7 +160,7 @@ const Navbar = () => {
 
         {/* Derecha: Links + logout (desktop) */}
         <div className="hidden md:flex items-center gap-2">
-          <NavLink href="/routes">Rutas</NavLink>
+          {!user?.isParticipantsOnly && <NavLink href="/routes">Rutas</NavLink>}
           <NavLink href="/participants">Participantes</NavLink>
           <button
             onClick={logout}
@@ -201,7 +203,7 @@ const Navbar = () => {
             />
 
             <nav className="flex flex-col">
-              <NavLink href="/routes" onClick={() => setMobileOpen(false)}>Rutas</NavLink>
+              {!user?.isParticipantsOnly && <NavLink href="/routes" onClick={() => setMobileOpen(false)}>Rutas</NavLink>}
               <NavLink href="/participants" onClick={() => setMobileOpen(false)}>Participantes</NavLink>
               <button
                 onClick={logout}
