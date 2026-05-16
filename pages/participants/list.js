@@ -195,7 +195,8 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
     };
 
     const TableItem = memo((row) => {
-        const { profile, participant_number, position, category, points, route: { title }, gender, payment_status, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
+        const { profile, participant_number, position, category, points, route, gender, payment_status, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
+        const title = route?.title;
         const { name, email } = profile;
 
         return (
@@ -253,11 +254,6 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                     </div>
                 </td>
                 <td className="py-4 px-4">
-                    <span className="text-[10px] px-3 py-1 bg-neutral-800 rounded-lg border border-neutral-800 text-neutral-400 uppercase font-bold tracking-widest truncate max-w-[120px] inline-block">
-                        {title}
-                    </span>
-                </td>
-                <td className="py-4 px-4">
                     <span className={payment_status === 'paid' ? 'status-paid' : 'status-unpaid'}>
                         {payment_status === 'paid' ? 'Pagado' : 'Pendiente'}
                     </span>
@@ -290,7 +286,6 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
         { name: 'Categoría' },
         { name: 'Género' },
         { name: 'Progreso' },
-        { name: 'Ruta' },
         { name: 'Status' },
         { name: 'Foto' },
     ];

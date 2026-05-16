@@ -240,7 +240,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
     return (
         <div>
 
-            {isPrivateView && (loggedUser?.id === 'bd72426c-f32c-41bb-a874-d118474a3f58' || loggedUser?.id === 'dafe8d23-6b92-4d3e-8851-95bd7fb998a2') && (
+            {isPrivateView && loggedUser && (
                 <div className="flex flex-row items-center justify-between mb-8 pt-4">
                     <div className="flex flex-col">
                         <div className="text-xs uppercase font-bold tracking-widest text-yellow-500 mb-2">

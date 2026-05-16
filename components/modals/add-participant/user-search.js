@@ -20,9 +20,9 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
                     *,
                     event_profile!left(*)
                 `)
-                .ilike('email', `%${query}%`)
+                .or(`email.ilike.%${query}%,name.ilike.%${query}%`)
                 .order('created_at', { foreignTable: 'event_profile', ascending: false })
-                .limit(1);
+                .limit(10);
     
             if (error) throw error;
             
@@ -42,12 +42,20 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
         user.latestEventProfile = latestEventProfile;
 
         return (
-            <div className='mt-2 p-4 rounded-2xl hover:bg-neutral-800 border border-transparent hover:border-neutral-700 transition-all cursor-pointer group' key={id} onClick={() => {
+            <div className='mt-2 p-5 rounded-3xl bg-neutral-900 hover:bg-yellow-500 border border-white/5 hover:border-yellow-500 transition-all duration-300 cursor-pointer group flex items-center justify-between' key={id} onClick={() => {
                 onSelect(user)
             }}>
-                <div className="flex flex-col">
-                    <span className="text-sm font-bold text-white group-hover:text-yellow-500 transition-colors uppercase">{name}</span>
-                    <span className="text-xs text-neutral-500 font-medium">{email}</span>
+                <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-2xl bg-neutral-800 group-hover:bg-black/20 flex items-center justify-center text-lg font-black text-yellow-500 group-hover:text-black transition-colors">
+                        {name?.charAt(0).toUpperCase() || '?'}
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-black text-white group-hover:text-black transition-colors uppercase tracking-tight">{name || 'Sin nombre'}</span>
+                        <span className="text-[10px] text-neutral-500 group-hover:text-black/60 font-bold lowercase italic transition-colors">{email}</span>
+                    </div>
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 px-3 py-1 rounded-lg">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-black">Seleccionar</span>
                 </div>
             </div>
         )

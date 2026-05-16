@@ -22,6 +22,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
         payment_status: 'promo',  // Always set payment_status to 'promo'
         category: 'DUAL_SPORT',  // Default category
         mode: 'Individual',      // Default participation mode
+        gender: 'MALE',          // Default gender
     });
     const [selectedUser, setSelectedUser] = useState({});
     const [avatarFile, setAvatarFile] = useState(null); // State to hold the selected file
@@ -76,6 +77,7 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             payment_status: 'promo',
             category: 'DUAL_SPORT',
             mode: 'Individual',
+            gender: 'MALE',
         });
         setSelectedUser({});
         setAvatarFile(null);
@@ -110,7 +112,8 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             }
 
             // Step 2: If any of the existing profiles have participant_number > 0, show alert and do not save
-            const validProfile = existingProfiles.find(profile => profile.participant_number > 0);
+            // (But ignore if we are editing the same record)
+            const validProfile = existingProfiles.find(profile => profile.participant_number > 0 && profile.id !== formData.id);
             if (validProfile) {
                 setShowAlert(true);
                 setIsSaving(false);
@@ -132,24 +135,27 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 }
             }
 
-            // Step 4: Get the largest participant_number for the current route and assign +1
-            const { data: maxNumberData, error: maxNumberError } = await supabase
-                .from('event_profile')
-                .select('participant_number')
-                .eq('route_id', currentRoute.id)
-                .order('participant_number', { ascending: false })
-                .limit(1);
+            // Step 4: Get the largest participant_number for the current route and assign +1 (ONLY FOR NEW RECORDS)
+            let nextParticipantNumber = formData.participant_number;
+            if (!formData.id) {
+                const { data: maxNumberData, error: maxNumberError } = await supabase
+                    .from('event_profile')
+                    .select('participant_number')
+                    .eq('route_id', currentRoute.id)
+                    .order('participant_number', { ascending: false })
+                    .limit(1);
 
-            let nextParticipantNumber = 1;  // Default to 1 if no records exist
-            if (!maxNumberError && maxNumberData && maxNumberData.length > 0) {
-                nextParticipantNumber = maxNumberData[0].participant_number + 1;
+                nextParticipantNumber = 1;
+                if (!maxNumberError && maxNumberData && maxNumberData.length > 0) {
+                    nextParticipantNumber = (maxNumberData[0].participant_number || 0) + 1;
+                }
             }
 
             // Step 5: Prepare the payload for saving (remove mode field)
             const { mode, ...filteredFormData } = {
                 ...formData,
                 profile_id: selectedUser.id,  // Ensure profile_id is set
-                participant_number: nextParticipantNumber, // Assign next available participant number
+                participant_number: nextParticipantNumber, // Assign next available participant number or keep existing
                 avatar_url: avatarUrl,
             };
 
@@ -168,21 +174,32 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             }
 
             // Step 7: Call the email confirmation endpoint with the upserted event_profile id
-            const upsertedProfileId = upsertedData?.[0]?.id;  // Assuming upsertedData contains the new event_profile id
+            const upsertedProfileId = upsertedData?.[0]?.id;
             if (upsertedProfileId) {
                 try {
-                    await fetch('https://www.northbikers.com/api/send_confirmation_email', {
+                    // Avoid CORS issues on localhost if possible, but still attempt the call
+                    // We catch the error specifically to prevent the Next.js error overlay
+                    const response = await fetch('https://www.northbikers.com/api/send_confirmation_email', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            eventProfileId: upsertedProfileId,  // Send the just upserted profile id
+                            eventProfileId: upsertedProfileId,
                         }),
+                    }).catch(err => {
+                        console.warn('Network error or CORS block when sending confirmation email:', err);
+                        return { ok: false };
                     });
-                    console.log('Confirmation email sent successfully.');
+
+                    if (response && response.ok) {
+                        console.log('Confirmation email sent successfully.');
+                    } else {
+                        console.warn('Confirmation email endpoint returned an error or was blocked.');
+                    }
                 } catch (emailError) {
-                    console.error('Error sending confirmation email:', emailError);
+                    // Double-wrap to ensure no unhandled rejections bubble up to the dev overlay
+                    console.error('Error in confirmation email process:', emailError);
                 }
             }
 
@@ -230,10 +247,10 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             console.log('profile', user.profile);
             setFormData({
                 ...formData,
-                // id: user.id,
-                // points: user.points,
-                profile_id: user.id,
-                participant_number: formData.participant_number,
+                id: user.id,
+                points: user.points,
+                profile_id: user.profile_id,
+                participant_number: user.participant_number,
                 category: user.category,
                 gender: user.gender,
                 name_on_jersey: user.name_on_jersey,
@@ -300,31 +317,52 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                     </div>
                 )}
 
-                {/* Profile Section */}
-                <div className="space-y-4 pt-2">
-                    <div className='flex flex-col md:flex-row gap-3 items-end'>
-                        <div className="flex-1 w-full">
-                            <TextInput 
-                                label={'Usuario en Sistema'} 
-                                disabled 
-                                value={selectedUser?.name || 'Seleccione un perfil...'} 
-                                className="bg-neutral-800 border-neutral-800 rounded-2xl"
-                            />
+                {/* Profile Selection Section */}
+                <div className="space-y-3 pt-2">
+                    <label className="text-[10px] uppercase font-bold tracking-widest text-gray-500 ml-1">Perfil del Participante</label>
+                    <div 
+                        onClick={handleToggleModal}
+                        className={`group cursor-pointer flex items-center justify-between p-4 rounded-[2rem] border-2 transition-all duration-300 ${
+                            selectedUser?.id 
+                            ? 'bg-yellow-500/5 border-yellow-500/20 hover:border-yellow-500/40 shadow-lg shadow-yellow-500/5' 
+                            : 'bg-neutral-800 border-neutral-800 hover:border-neutral-700'
+                        }`}
+                    >
+                        <div className="flex items-center space-x-5">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                                selectedUser?.id 
+                                ? 'bg-yellow-500 text-black shadow-xl shadow-yellow-500/20 rotate-3' 
+                                : 'bg-neutral-700 text-neutral-500'
+                            }`}>
+                                <AiOutlineSearch size={28} className={selectedUser?.id ? '-rotate-3' : ''} />
+                            </div>
+                            <div className="flex flex-col">
+                                <span className={`text-lg font-black uppercase tracking-tight leading-tight ${selectedUser?.id ? 'text-white' : 'text-neutral-500'}`}>
+                                    {selectedUser?.name || 'Vincular perfil de sistema...'}
+                                </span>
+                                {selectedUser?.email ? (
+                                    <span className="text-xs text-yellow-500/70 font-bold lowercase italic tracking-wide mt-1">{selectedUser?.email}</span>
+                                ) : (
+                                    <span className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest mt-1">Busca por nombre o correo</span>
+                                )}
+                            </div>
                         </div>
-                        <Button 
-                            className='h-[42px] px-8 bg-neutral-800 hover:bg-neutral-700 text-white rounded-2xl border border-neutral-800 transition-all flex items-center space-x-2' 
-                            onClick={handleToggleModal}
-                        >
-                            <AiOutlineSearch size={18} />
-                            <span className="text-xs font-bold uppercase tracking-wider">Buscar</span>
-                        </Button>
+                        <div className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl border transition-all duration-300 ${
+                            selectedUser?.id
+                            ? 'bg-neutral-900 border-white/5 text-neutral-400 group-hover:bg-yellow-500 group-hover:text-black group-hover:border-yellow-500 group-hover:scale-105'
+                            : 'bg-neutral-700 border-neutral-600 text-neutral-300 group-hover:bg-neutral-600'
+                        }`}>
+                            <span className="text-[10px] font-black uppercase tracking-widest">
+                                {selectedUser?.id ? 'Cambiar Perfil' : 'Seleccionar'}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
                 <div className="h-px bg-white/5 mx-2" />
 
-                {/* Category & Mode Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Category, Mode & Gender Section */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-2">
                         <span className="text-[10px] uppercase font-bold tracking-widest text-gray-500 ml-1">Categoría</span>
                         <Select
@@ -356,6 +394,16 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                                 saveFormData('is_couple', e.id === 'Pareja');
                                 saveFormData('is_team', e.id === 'Equipo');
                             }}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <span className="text-[10px] uppercase font-bold tracking-widest text-gray-500 ml-1">Género</span>
+                        <Select
+                            selected={formData?.gender}
+                            placeholder='Seleccionar'
+                            items={GENDERS.map(g => ({ id: g.id, label: g.title, title: g.title }))}
+                            className="bg-neutral-800 border-neutral-800 rounded-2xl"
+                            onChange={(e) => saveFormData('gender', e.id)}
                         />
                     </div>
                 </div>
