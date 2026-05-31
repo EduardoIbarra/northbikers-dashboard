@@ -769,6 +769,14 @@ const RouteBuilder = () => {
                                     >
                                         Ver productos comprados
                                     </Link>
+
+                                    {/* Botón para agregar productos a la ruta */}
+                                    <Link
+                                        href={`/routes/add-product?routeId=${encodeURIComponent(currentRoute?.id ?? '')}`}
+                                        className="inline-block bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition duration-300 ease-in-out"
+                                    >
+                                        Agregar Producto
+                                    </Link>
                                 </div>
 
                                 <div className="p-4 border-t border-gray-700 mt-8">

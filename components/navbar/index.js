@@ -162,6 +162,7 @@ const Navbar = () => {
         <div className="hidden md:flex items-center gap-2">
           {!user?.isParticipantsOnly && <NavLink href="/routes">Rutas</NavLink>}
           <NavLink href="/participants">Participantes</NavLink>
+          <NavLink href="/checkpoints">Checkpoints</NavLink>
           <button
             onClick={logout}
             className="ml-2 text-gray-100 hover:text-gray-300 transition duration-200 flex items-center text-sm md:text-base"
@@ -205,6 +206,7 @@ const Navbar = () => {
             <nav className="flex flex-col">
               {!user?.isParticipantsOnly && <NavLink href="/routes" onClick={() => setMobileOpen(false)}>Rutas</NavLink>}
               <NavLink href="/participants" onClick={() => setMobileOpen(false)}>Participantes</NavLink>
+              <NavLink href="/checkpoints" onClick={() => setMobileOpen(false)}>Checkpoints</NavLink>
               <button
                 onClick={logout}
                 className="mt-2 flex items-center gap-2 rounded-md px-3 py-2 text-left text-gray-200 hover:bg-gray-700"

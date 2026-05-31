@@ -12,18 +12,20 @@ export const Select = (
     }) => (
     <div className={`form-element  ${inline ? 'form-element-inline' : ''} ${size}`}>
         {label && <div className="form-label">{label}</div>}
-        <select className="form-select rounded text-gray-900" onChange={(event) => {
-            onChange(items.find((i) => i.id == event.target.value))
-        }}>
+        <select className="form-select rounded text-gray-900" 
+            value={selected}
+            onChange={(event) => {
+                onChange(items.find((i) => i.id == event.target.value))
+            }}
+        >
             {placeholder && (
-                <option disabled selected={showEmpty}>{placeholder}</option>
+                <option value="" disabled>{placeholder}</option>
             )}
             {items.map((i) => {
                 return (
                     <option
                         key={i.id}
                         value={i.id}
-                        selected={selected === i.id}
                         disabled={i.disabled}
                     >{i.title}</option>
                 )

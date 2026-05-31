@@ -28,12 +28,26 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
     const [avatarFile, setAvatarFile] = useState(null); // State to hold the selected file
     const currentRoute = useRecoilValue(CurrentRoute);
 
+    const [coupleData, setCoupleData] = useState({
+        email: '',
+        full_name: '',
+        phone: '',
+        name_on_jersey: '',
+        jersey_size: '',
+        gender: 'FEMALE',
+        city: '',
+        birthday: ''
+    });
+    const [coupleCreationMode, setCoupleCreationMode] = useState('merge'); // 'merge' or 'manual'
+    const [coupleSearchQuery, setCoupleSearchQuery] = useState('');
+    const [alertMessage, setAlertMessage] = useState('');
+
     const saveFormData = (key, value) => {
         setShowAlert(false);
-        setFormData({
-            ...formData,
+        setFormData(prev => ({
+            ...prev,
             [key]: value
-        });
+        }));
     };
 
     const handleFileChange = (event) => {
@@ -81,11 +95,47 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
         });
         setSelectedUser({});
         setAvatarFile(null);
+        setCoupleData({
+            email: '',
+            full_name: '',
+            phone: '',
+            name_on_jersey: '',
+            jersey_size: '',
+            gender: 'FEMALE',
+            city: '',
+            birthday: ''
+        });
+        setCoupleCreationMode('merge');
+        setCoupleSearchQuery('');
+        setAlertMessage('');
     };
+
+    const saveCoupleFormData = (key, value) => {
+        setCoupleData(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
+
+    const foundCouple = allList.find(item => {
+        if (!item || (formData.id && item.id === formData.id)) return false;
+        const target = coupleSearchQuery?.trim()?.toLowerCase();
+        if (!target) return false;
+        if (item.participant_number?.toString() === target) return true;
+        if (item.stripe_webhook_email_notification?.toLowerCase() === target) return true;
+        if (item.profile?.email?.toLowerCase() === target) return true;
+        return false;
+    });
 
     const handleSave = async () => {
         if (!selectedUser?.id) {
             console.log("No user selected!");
+            return;
+        }
+
+        if (formData.is_couple && coupleCreationMode === 'merge' && !foundCouple) {
+            setAlertMessage("Debes seleccionar una pareja válida.");
+            setShowAlert(true);
             return;
         }
 
@@ -159,6 +209,11 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 avatar_url: avatarUrl,
             };
 
+            // If manual couple creation is selected, override payment_status to 'promo'
+            if (formData.is_couple && coupleCreationMode === 'manual') {
+                filteredFormData.payment_status = 'promo';
+            }
+
             // Step 6: Perform the insert operation
             const { data: upsertedData, error: insertError } = await supabase
                 .from('event_profile')
@@ -173,8 +228,89 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 return;
             }
 
+            const upsertedProfileId = upsertedData?.[0]?.id || formData.id;
+
+            if (upsertedProfileId) {
+                if (formData.is_couple) {
+                    if (coupleCreationMode === 'merge' && foundCouple) {
+                        const coupleRecord = {
+                            event_profile_id: upsertedProfileId,
+                            email: foundCouple.profile?.email || foundCouple.stripe_webhook_email_notification || '',
+                            full_name: foundCouple.full_name || foundCouple.profile?.name || '',
+                            phone: foundCouple.phone || '',
+                            name_on_jersey: foundCouple.name_on_jersey || '',
+                            jersey_size: foundCouple.jersey_size || '',
+                            gender: foundCouple.gender || 'FEMALE',
+                            city: foundCouple.city || '',
+                            birthday: foundCouple.birthday || null,
+                        };
+
+                        const { data: existingCouples } = await supabase
+                            .from('event_profile_couple')
+                            .select('id')
+                            .eq('event_profile_id', upsertedProfileId);
+                        const existingCouple = existingCouples?.[0];
+
+                        const { error: coupleError } = await supabase
+                            .from('event_profile_couple')
+                            .upsert([{
+                                ...coupleRecord,
+                                ...(existingCouple?.id ? { id: existingCouple.id } : {})
+                            }]);
+
+                        if (coupleError) {
+                            console.error("Error upserting couple profile:", coupleError);
+                        }
+
+                        // Delete the merged couple from event_profile
+                        const { error: deleteCoupleError } = await supabase
+                            .from('event_profile')
+                            .delete()
+                            .eq('id', foundCouple.id);
+
+                        if (deleteCoupleError) {
+                            console.error("Error deleting merged couple from event_profile:", deleteCoupleError);
+                        }
+                    } else if (coupleCreationMode === 'manual') {
+                        const coupleRecord = {
+                            event_profile_id: upsertedProfileId,
+                            email: coupleData.email,
+                            full_name: coupleData.full_name,
+                            phone: coupleData.phone,
+                            name_on_jersey: coupleData.name_on_jersey,
+                            jersey_size: coupleData.jersey_size,
+                            gender: coupleData.gender,
+                            city: coupleData.city,
+                            birthday: coupleData.birthday || null,
+                        };
+
+                        const { data: existingCouples } = await supabase
+                            .from('event_profile_couple')
+                            .select('id')
+                            .eq('event_profile_id', upsertedProfileId);
+                        const existingCouple = existingCouples?.[0];
+
+                        const { error: coupleError } = await supabase
+                            .from('event_profile_couple')
+                            .upsert([{
+                                ...coupleRecord,
+                                ...(existingCouple?.id ? { id: existingCouple.id } : {})
+                            }]);
+
+                        if (coupleError) {
+                            console.error("Error upserting manual couple profile:", coupleError);
+                        }
+                    }
+                } else {
+                    // Clean up event_profile_couple record if it exists
+                    await supabase
+                        .from('event_profile_couple')
+                        .delete()
+                        .eq('event_profile_id', upsertedProfileId);
+                }
+            }
+
             // Step 7: Call the email confirmation endpoint with the upserted event_profile id
-            const upsertedProfileId = upsertedData?.[0]?.id;
             if (upsertedProfileId) {
                 try {
                     // Avoid CORS issues on localhost if possible, but still attempt the call
@@ -252,6 +388,9 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 profile_id: user.profile_id,
                 participant_number: user.participant_number,
                 category: user.category,
+                mode: user.is_couple ? 'Pareja' : (user.is_team ? 'Equipo' : 'Individual'),
+                is_couple: user.is_couple,
+                is_team: user.is_team,
                 gender: user.gender,
                 name_on_jersey: user.name_on_jersey,
                 jersey_size: user.jersey_size,
@@ -262,12 +401,43 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 emergencyContactName: user.emergencyContactName,
                 emergencyContactPhone: user.emergencyContactPhone,
                 emergencyContactRelation: user.emergencyContactRelation,
+                payment_status: user.payment_status || 'promo',
             });
+
+            if (user.is_couple) {
+                supabase
+                    .from('event_profile_couple')
+                    .select('*')
+                    .eq('event_profile_id', user.id)
+                    .then(({ data, error }) => {
+                        const couple = data?.[0];
+                        if (!error && couple) {
+                            setCoupleData({
+                                email: couple.email || '',
+                                full_name: couple.full_name || '',
+                                phone: couple.phone || '',
+                                name_on_jersey: couple.name_on_jersey || '',
+                                jersey_size: couple.jersey_size || '',
+                                gender: couple.gender || 'FEMALE',
+                                city: couple.city || '',
+                                birthday: couple.birthday ? couple.birthday.split('T')[0] : '',
+                            });
+                            setCoupleCreationMode('manual');
+                        }
+                    });
+            }
         }
         if (user) {
             setShowAlert(false);
         }
     }, [user]);
+
+    const isSaveDisabled = !selectedUser?.id || !termsAgreed || (
+        formData.is_couple && (
+            (coupleCreationMode === 'merge' && !foundCouple) ||
+            (coupleCreationMode === 'manual' && (!coupleData.full_name || !coupleData.email))
+        )
+    );
 
     return (
         <Modal
@@ -276,9 +446,9 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             size="5xl"
             shouldDismissOnBackdrop={false}
             title={user ? 'Gestionar Participante' : 'Nuevo Registro'}
-            subtitle={user ? 'Actualiza los detalles y el estado del piloto.' : 'Inscribe a un nuevo piloto en la ruta seleccionada.'}
+            subtitle={user ? 'Actualiza los detalles and el estado del piloto.' : 'Inscribe a un nuevo piloto en la ruta seleccionada.'}
             okButton={{
-                disabled: !selectedUser?.id || !termsAgreed,
+                disabled: isSaveDisabled,
                 onClick: handleSave,
                 label: isSaving ? (user ? 'Editando...' : 'Registrando..') : (user ? 'Editar' : 'Registrar'),
             }}
@@ -308,11 +478,14 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 {showAlert && (
                     <div className="animate-in fade-in slide-in-from-top-4 duration-300">
                         <Alert
-                            onClose={() => setShowAlert(false)}
+                            onClose={() => {
+                                setShowAlert(false);
+                                setAlertMessage('');
+                            }}
                             size="sm"
                             color="bg-red-500 text-red-400 border border-red-500"
                             icon={<FiAlertCircle className="mr-2 h-4 w-4" />}>
-                            Este usuario ya cuenta con un registro activo para esta ruta.
+                            {alertMessage || "Este usuario ya cuenta con un registro activo para esta ruta."}
                         </Alert>
                     </div>
                 )}
@@ -407,6 +580,118 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                         />
                     </div>
                 </div>
+
+                {formData?.is_couple && (
+                    <div className="p-8 rounded-[2rem] bg-neutral-800 border border-neutral-800 space-y-6">
+                        <h3 className="text-[10px] font-bold uppercase tracking-[0.3em] text-yellow-500 flex items-center">
+                            <span className="w-1 h-3 bg-yellow-500 rounded-full mr-3"></span>
+                            DATOS DE LA PAREJA
+                        </h3>
+                        
+                        <div className="flex space-x-4 p-1 bg-neutral-900 rounded-2xl border border-neutral-700/50">
+                            <button
+                                type="button"
+                                className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${
+                                    coupleCreationMode === 'merge'
+                                        ? 'bg-yellow-500 text-black shadow-md'
+                                        : 'text-neutral-400 hover:text-white'
+                                }`}
+                                onClick={() => setCoupleCreationMode('merge')}
+                            >
+                                Fusionar con participante existente
+                            </button>
+                            <button
+                                type="button"
+                                className={`flex-1 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all ${
+                                    coupleCreationMode === 'manual'
+                                        ? 'bg-yellow-500 text-black shadow-md'
+                                        : 'text-neutral-400 hover:text-white'
+                                }`}
+                                onClick={() => setCoupleCreationMode('manual')}
+                            >
+                                Registrar datos manualmente
+                            </button>
+                        </div>
+
+                        {coupleCreationMode === 'merge' ? (
+                            <div className="space-y-3">
+                                <TextInput
+                                    label={'Número de participante o Email de la pareja'}
+                                    value={coupleSearchQuery}
+                                    onChange={(val) => setCoupleSearchQuery(val)}
+                                    placeholder="Ej: 25 o correo@ejemplo.com"
+                                />
+                                {foundCouple ? (
+                                    <div className="flex items-center space-x-2 text-xs text-green-500 font-bold bg-green-500/10 p-3 rounded-xl border border-green-500/20">
+                                        <span>✓ Pareja encontrada:</span>
+                                        <span className="text-white">{foundCouple.full_name || foundCouple.profile?.name}</span>
+                                        <span className="text-neutral-400">({foundCouple.profile?.email || foundCouple.stripe_webhook_email_notification})</span>
+                                        <span className="bg-neutral-900 text-yellow-500 px-2 py-0.5 rounded font-mono text-[10px]">#{foundCouple.participant_number}</span>
+                                    </div>
+                                ) : coupleSearchQuery ? (
+                                    <div className="text-xs text-red-500 font-bold bg-red-500/10 p-3 rounded-xl border border-red-500/20">
+                                        ✗ No se encontró ningún participante activo con ese dorsal o correo en esta ruta.
+                                    </div>
+                                ) : null}
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                                <TextInput
+                                    label={'Nombre Completo'}
+                                    value={coupleData.full_name}
+                                    onChange={(val) => saveCoupleFormData('full_name', val)}
+                                    placeholder="Nombre de la pareja"
+                                />
+                                <TextInput
+                                    label={'Email'}
+                                    value={coupleData.email}
+                                    onChange={(val) => saveCoupleFormData('email', val)}
+                                    placeholder="correo@ejemplo.com"
+                                />
+                                <TextInput
+                                    label={'Teléfono'}
+                                    value={coupleData.phone}
+                                    onChange={(val) => saveCoupleFormData('phone', val)}
+                                    placeholder="Ej: 811XXXXXXX"
+                                />
+                                <TextInput
+                                    label={'Nombre en Jersey'}
+                                    value={coupleData.name_on_jersey}
+                                    onChange={(val) => saveCoupleFormData('name_on_jersey', val)}
+                                    placeholder="Ej: NOMBRE PAREJA"
+                                />
+                                <TextInput
+                                    label={'Talla de Jersey'}
+                                    value={coupleData.jersey_size}
+                                    onChange={(val) => saveCoupleFormData('jersey_size', val)}
+                                    placeholder="Ej: M"
+                                />
+                                <div className="space-y-2">
+                                    <span className="text-[10px] uppercase font-bold tracking-widest text-gray-500 ml-1">Género</span>
+                                    <Select
+                                        selected={coupleData.gender}
+                                        placeholder='Seleccionar'
+                                        items={GENDERS.map(g => ({ id: g.id, label: g.title, title: g.title }))}
+                                        className="bg-neutral-900 border-neutral-800 rounded-2xl"
+                                        onChange={(e) => saveCoupleFormData('gender', e.id)}
+                                    />
+                                </div>
+                                <TextInput
+                                    label={'Ciudad de Origen'}
+                                    value={coupleData.city}
+                                    onChange={(val) => saveCoupleFormData('city', val)}
+                                    placeholder="Ej: MONTERREY"
+                                />
+                                <TextInput
+                                    label={'Fecha de Nacimiento'}
+                                    type='date'
+                                    value={coupleData.birthday}
+                                    onChange={(val) => saveCoupleFormData('birthday', val)}
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Personal & Jersey Details */}
                 <div className="p-8 rounded-[2rem] bg-neutral-800 border border-neutral-800">
