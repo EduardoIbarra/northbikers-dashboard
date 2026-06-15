@@ -209,9 +209,11 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 avatar_url: avatarUrl,
             };
 
-            // If manual couple creation is selected, override payment_status to 'promo'
-            if (formData.is_couple && coupleCreationMode === 'manual') {
+            // If couple modality is selected, override payment status and modality flags
+            if (formData.is_couple) {
                 filteredFormData.payment_status = 'promo';
+                filteredFormData.is_couple = true;
+                filteredFormData.is_team = false;
             }
 
             // Step 6: Perform the insert operation
