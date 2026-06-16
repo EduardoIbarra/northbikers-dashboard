@@ -184,8 +184,36 @@ const CheckpointEditorPage = () => {
     const handleDelete = async (id) => {
         try {
             setLoading(true);
+
+            // 1. Obtener los IDs de event_checkpoints asociados a este checkpoint
+            const { data: eventCps, error: fetchError } = await supabase
+                .from("event_checkpoints")
+                .select("id")
+                .eq("checkpoint_id", id);
+
+            if (fetchError) throw fetchError;
+
+            if (eventCps && eventCps.length > 0) {
+                const eventCpIds = eventCps.map(ecp => ecp.id);
+
+                // 2. Eliminar referencias en profile_event_checkpoints primero
+                const { error: profileCpError } = await supabase
+                    .from("profile_event_checkpoints")
+                    .delete()
+                    .in("event_checkpoint_id", eventCpIds);
+
+                if (profileCpError) throw profileCpError;
+
+                // 3. Eliminar referencias en pick_checkpoints
+                const { error: pickCpError } = await supabase
+                    .from("pick_checkpoints")
+                    .delete()
+                    .in("event_checkpoint_id", eventCpIds);
+
+                if (pickCpError) throw pickCpError;
+            }
             
-            // Eliminar referencias en event_checkpoints primero
+            // 4. Eliminar referencias en event_checkpoints
             const { error: eventCpError } = await supabase
                 .from("event_checkpoints")
                 .delete()
@@ -193,7 +221,23 @@ const CheckpointEditorPage = () => {
                 
             if (eventCpError) throw eventCpError;
 
-            // Eliminar el checkpoint
+            // 5. Eliminar referencias en feeds
+            const { error: feedsError } = await supabase
+                .from("feeds")
+                .delete()
+                .eq("checkpoint_id", id);
+
+            if (feedsError) throw feedsError;
+
+            // 6. Eliminar referencias en check_ins
+            const { error: checkinsError } = await supabase
+                .from("check_ins")
+                .delete()
+                .eq("checkpoint_id", id);
+
+            if (checkinsError) throw checkinsError;
+
+            // 7. Eliminar el checkpoint
             const { error } = await supabase
                 .from("checkpoints")
                 .delete()
