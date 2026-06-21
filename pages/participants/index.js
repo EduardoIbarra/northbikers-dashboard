@@ -59,17 +59,33 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
 
             if (eventProfileError) throw eventProfileError;
 
-            // Fetch check-ins and join with checkpoints to get the icon field
-            const { data: checkIns, error: checkInsError } = await supabase
-                .from("check_ins")
-                .select(`
-                    *,
-                    checkpoints:checkpoint_id (icon)
-                `)
-                .eq('route_id', currentRoute.id)
-                .in('profile_id', eventProfiles.map(profile => profile.profile_id));
+            // Fetch check-ins in chunks of profile_ids to avoid the PostgREST max rows limit (typically 5000)
+            const profileIds = eventProfiles.map(profile => profile.profile_id).filter(Boolean);
+            const chunkSize = 50;
+            const chunks = [];
+            for (let i = 0; i < profileIds.length; i += chunkSize) {
+                chunks.push(profileIds.slice(i, i + chunkSize));
+            }
 
-            if (checkInsError) throw checkInsError;
+            const checkInsPromises = chunks.map(chunk =>
+                supabase
+                    .from("check_ins")
+                    .select(`
+                        *,
+                        checkpoints:checkpoint_id (icon)
+                    `)
+                    .eq('route_id', currentRoute.id)
+                    .in('profile_id', chunk)
+            );
+
+            const checkInsResults = await Promise.all(checkInsPromises);
+
+            // Check for errors
+            for (const res of checkInsResults) {
+                if (res.error) throw res.error;
+            }
+
+            const checkIns = checkInsResults.flatMap(res => res.data || []);
 
             // URL of the challenge icon
             const challengeIconUrl = 'https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/challenges.png';
