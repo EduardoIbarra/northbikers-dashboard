@@ -23,7 +23,7 @@ const Layouts = ({children}) => {
 
     if (pathname === '/') return <Layout>{children}</Layout>
 
-    if (['/participants', '/routes', '/checkpoints'].includes(pathname)) {
+    if (['/participants', '/routes', '/checkpoints', '/products'].includes(pathname)) {
         return <Layout>{children}</Layout>
     }
 
