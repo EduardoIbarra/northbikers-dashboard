@@ -11,7 +11,7 @@ const Layouts = ({children}) => {
     
     useEffect(() => {
         const user = getLoggedUser();
-        if (user?.isParticipantsOnly && !['/participants', '/checkpoints'].includes(pathname)) {
+        if (user?.isParticipantsOnly && !['/participants', '/checkpoints', '/routes', '/products'].includes(pathname)) {
             router.push('/participants');
         }
     }, [pathname]);

@@ -9,9 +9,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import SectionTitle from "../../components/section-title";
 import Widget from "../../components/widget";
 import TextInput from "../../components/input";
-import Select from "../../components/select";
 import Button from "../../components/button";
 import CheckpointsList from "./list";
+import { useRecoilValue } from 'recoil';
+import { CurrentRoute } from '../../store/atoms/global';
 
 const CheckpointEditorPage = () => {
     const router = useRouter();
@@ -21,7 +22,8 @@ const CheckpointEditorPage = () => {
     const [isLoading, setLoading] = useState(true);
     const [isSaving, setSaving] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedRouteId, setSelectedRouteId] = useState('all');
+    const currentRoute = useRecoilValue(CurrentRoute);
+    const selectedRouteId = currentRoute?.id ?? 'all';
     
     const [routes, setRoutes] = useState([]);
     const [allCheckpoints, setAllCheckpoints] = useState([]);
@@ -286,28 +288,15 @@ const CheckpointEditorPage = () => {
                 </div>
 
                 <div className="premium-card p-6 mb-8">
-                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                        <div className="md:col-span-6">
-                            <TextInput
-                                label={'Búsqueda por Nombre'}
-                                type='text'
-                                placeholder='Buscar checkpoint...'
-                                value={searchQuery}
-                                onChange={setSearchQuery}
-                                className="search-input-premium w-full"
-                            />
-                        </div>
-                        <div className="md:col-span-6">
-                            <Select
-                                label="Filtrar por Ruta (Asociación Directa)"
-                                className='bg-neutral-800 border-neutral-800 text-neutral-200 rounded-2xl'
-                                placeholder='Todas las rutas'
-                                showEmpty
-                                items={routes}
-                                selected={selectedRouteId}
-                                onChange={(e) => setSelectedRouteId(e?.id ?? 'all')}
-                            />
-                        </div>
+                    <div className="w-full">
+                        <TextInput
+                            label={'Búsqueda por Nombre'}
+                            type='text'
+                            placeholder='Buscar checkpoint...'
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            className="search-input-premium w-full"
+                        />
                     </div>
                 </div>
 

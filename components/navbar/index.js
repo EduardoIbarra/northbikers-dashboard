@@ -8,7 +8,7 @@ import { useMemo, useCallback, useEffect, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
 import { CurrentRoute, Routes } from "../../store/atoms/global";
 
-import Select from "../select";
+import SearchableSelect from "../select/searchable";
 import { getSupabase } from "../../utils/supabase";
 import { setLoggedUser, getLoggedUser } from "../../utils";
 
@@ -88,7 +88,7 @@ const Navbar = () => {
         }
         
         if (upcoming.length > 0 && past.length > 0) {
-          finalRoutes.push({ id: 'sep-past', title: '────────── Past Routes ──────────', disabled: true });
+          finalRoutes.push({ id: 'sep-past', title: 'Past Routes', disabled: true });
         }
 
         if (past.length > 0) {
@@ -144,7 +144,7 @@ const Navbar = () => {
 
         {/* Centro: Selector de ruta (desktop) */}
         <div className="hidden md:flex">
-          <Select
+          <SearchableSelect
             size="w-80"
             placeholder="Selecciona ruta"
             selected={currentRoute?.id}
@@ -160,7 +160,7 @@ const Navbar = () => {
 
         {/* Derecha: Links + logout (desktop) */}
         <div className="hidden md:flex items-center gap-2">
-          {!user?.isParticipantsOnly && <NavLink href="/routes">Rutas</NavLink>}
+          <NavLink href="/routes">Rutas</NavLink>
           <NavLink href="/participants">Participantes</NavLink>
           <NavLink href="/checkpoints">Checkpoints</NavLink>
           <button
@@ -188,7 +188,7 @@ const Navbar = () => {
         <div className="md:hidden border-t border-gray-700 bg-gray-800">
           <div className="p-3 space-y-3">
             {/* Selector de ruta también en móvil */}
-            <Select
+            <SearchableSelect
               size="w-full"
               placeholder="Selecciona ruta"
               selected={currentRoute?.id}
@@ -204,7 +204,7 @@ const Navbar = () => {
             />
 
             <nav className="flex flex-col">
-              {!user?.isParticipantsOnly && <NavLink href="/routes" onClick={() => setMobileOpen(false)}>Rutas</NavLink>}
+              <NavLink href="/routes" onClick={() => setMobileOpen(false)}>Rutas</NavLink>
               <NavLink href="/participants" onClick={() => setMobileOpen(false)}>Participantes</NavLink>
               <NavLink href="/checkpoints" onClick={() => setMobileOpen(false)}>Checkpoints</NavLink>
               <button

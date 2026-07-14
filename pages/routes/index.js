@@ -84,6 +84,32 @@ const RouteBuilder = () => {
         }
     }, [supabase, currentRoute?.id]);
 
+    const handleDeactivateCoupon = async (coupon) => {
+        if (!confirm(`¿Estás seguro de desactivar el cupón "${coupon.code}"?`)) return;
+
+        try {
+            const { error } = await supabase
+                .from("coupons")
+                .update({
+                    max_uses: 0,
+                    expires_at: new Date(0).toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq("id", coupon.id);
+
+            if (error) {
+                toast.error("Error al desactivar el cupón: " + error.message);
+            } else {
+                toast.success(`Cupón "${coupon.code}" desactivado.`);
+                await logRouteAction('DEACTIVATE_COUPON', `Deactivated coupon code: ${coupon.code}`);
+                fetchCoupons();
+            }
+        } catch (e) {
+            console.error("Error deactivating coupon", e);
+            toast.error("Error inesperado al desactivar el cupón.");
+        }
+    };
+
     const handleGenerateLinks = async () => {
         if (!referralCode) {
             toast.error("Por favor ingresa un código.");
@@ -196,6 +222,22 @@ const RouteBuilder = () => {
         fetchUser();
     }, [currentRoute]);
 
+    const logRouteAction = async (actionType, summary) => {
+        if (!currentRoute?.id) return;
+        try {
+            await supabase
+                .from('route_logs')
+                .insert({
+                    route_id: currentRoute.id,
+                    user_id: loggedUser?.id,
+                    action_type: actionType,
+                    summary: summary
+                });
+        } catch (e) {
+            console.error("Error writing route log:", e);
+        }
+    };
+
     // Handle field updates
     const handleInputChange = (key, value) => {
         setRouteAttributes((prev) => ({ ...prev, [key]: value }));
@@ -203,6 +245,14 @@ const RouteBuilder = () => {
 
     const handleSaveAttribute = async (key, value) => {
         try {
+            // Fetch old attribute value to log difference
+            const { data: oldRouteData } = await supabase
+                .from("routes")
+                .select(key)
+                .eq("id", currentRoute.id)
+                .single();
+            const oldValue = oldRouteData ? oldRouteData[key] : "";
+
             const { error } = await supabase
                 .from("routes")
                 .update({ [key]: value })
@@ -212,6 +262,7 @@ const RouteBuilder = () => {
                 toast.error(`Error saving ${key}:`, error);
             } else {
                 toast.success(`"${key}" saved successfully!`);
+                await logRouteAction('UPDATE_ROUTE_ATTRIBUTE', `Updated route attribute "${key}": set from "${oldValue}" to "${value}"`);
             }
         } catch (e) {
             toast.error(`Unexpected error saving ${key}:`, e);
@@ -251,6 +302,7 @@ const RouteBuilder = () => {
             }
 
             toast.success(`Archivo PDF subido y guardado exitosamente`);
+            await logRouteAction('UPDATE_ROUTE_INSTRUCTIONS', `Uploaded new instructions PDF`);
             setRouteAttributes(prev => ({ ...prev, instructions: publicUrl }));
 
         } catch (err) {
@@ -305,6 +357,7 @@ const RouteBuilder = () => {
             }
 
             toast.success(`Imagen subida y guardada en ${fieldName}`);
+            await logRouteAction('UPDATE_ROUTE_BANNER', `Uploaded new ${fieldName}`);
 
             // Optional: update local state to show immediately
             setRouteAttributes(prev => ({ ...prev, [fieldName]: publicUrl }));
@@ -388,6 +441,13 @@ const RouteBuilder = () => {
         try {
             const updatedCheckpoint = checkpoint.checkpoints;
 
+            // Fetch old checkpoint data to log differences
+            const { data: oldCpData } = await supabase
+                .from("checkpoints")
+                .select("*")
+                .eq("id", checkpoint.checkpoint_id)
+                .single();
+
             const { error } = await supabase
                 .from('checkpoints')
                 .update({
@@ -411,14 +471,30 @@ const RouteBuilder = () => {
             if (error) {
                 toast.error("Error saving checkpoint:", error);
             } else {
+                let changes = [];
+                if (oldCpData) {
+                    if (oldCpData.name !== updatedCheckpoint.name) changes.push(`name from "${oldCpData.name}" to "${updatedCheckpoint.name}"`);
+                    if (Number(oldCpData.lat) !== Number(updatedCheckpoint.lat)) changes.push(`lat from ${oldCpData.lat} to ${updatedCheckpoint.lat}`);
+                    if (Number(oldCpData.lng) !== Number(updatedCheckpoint.lng)) changes.push(`lng from ${oldCpData.lng} to ${updatedCheckpoint.lng}`);
+                    if (oldCpData.description !== updatedCheckpoint.description) changes.push(`description from "${oldCpData.description}" to "${updatedCheckpoint.description}"`);
+                    if (Number(oldCpData.points) !== Number(updatedCheckpoint.points)) changes.push(`points from ${oldCpData.points} to ${updatedCheckpoint.points}`);
+                    if (oldCpData.is_challenge !== updatedCheckpoint.is_challenge) changes.push(`is_challenge from ${oldCpData.is_challenge} to ${updatedCheckpoint.is_challenge}`);
+                    if (oldCpData.terrain !== updatedCheckpoint.terrain) changes.push(`terrain from "${oldCpData.terrain}" to "${updatedCheckpoint.terrain}"`);
+                }
+                const logSummary = changes.length > 0 
+                    ? `Updated checkpoint "${updatedCheckpoint.name}": set ${changes.join(', ')}`
+                    : `Updated checkpoint "${updatedCheckpoint.name}" (no changes detected)`;
+
                 // Log the modification
                 await supabase
                     .from('checkpoint_logs')
                     .insert({
                         checkpoint_id: checkpoint.checkpoint_id,
                         user_id: loggedUser?.id,
-                        summary: `Updated checkpoint: ${updatedCheckpoint.name}`
+                        summary: logSummary
                     });
+
+                await logRouteAction('UPDATE_CHECKPOINT', logSummary);
 
                 toast.success("Cambios guardados exitosamente.");
             }
@@ -477,6 +553,8 @@ const RouteBuilder = () => {
                     user_id: loggedUser?.id,
                     summary: `Created checkpoint: ${newCheckpoint.name}`
                 });
+
+            await logRouteAction('CREATE_CHECKPOINT', `Created checkpoint: ${newCheckpoint.name}`);
 
             toast.success("Nuevo checkpoint creado y asociado exitosamente.");
 
@@ -566,6 +644,7 @@ const RouteBuilder = () => {
             }
 
             toast.success(newPick.id ? "Pick actualizado exitosamente." : "Pick creado exitosamente.");
+            await logRouteAction(newPick.id ? 'UPDATE_PICK' : 'CREATE_PICK', `${newPick.id ? 'Updated' : 'Created'} pick: ${newPick.title}`);
             setNewPick({ title: '', description: '', picture: '', checkpoints: [], id: null });
             fetchPicks();
         } catch (e) {
@@ -609,6 +688,7 @@ const RouteBuilder = () => {
                 toast.error("Error al eliminar Pick: " + error.message);
             } else {
                 toast.success("Pick eliminado.");
+                await logRouteAction('DELETE_PICK', `Deleted pick id: ${pickId}`);
                 fetchPicks();
             }
         } catch (e) {
@@ -687,6 +767,8 @@ const RouteBuilder = () => {
                         user_id: loggedUser?.id,
                         summary: `Updated image for checkpoint: ${checkpoint.checkpoints?.name || checkpoint.checkpoint_id}`
                     });
+
+                await logRouteAction('UPDATE_CHECKPOINT_IMAGE', `Updated image for checkpoint: ${checkpoint.checkpoints?.name || checkpoint.checkpoint_id}`);
 
                 toast.success("Imagen subida exitosamente.", {
                     position: "top-right", // Position the toast at the top-right corner
@@ -885,20 +967,29 @@ const RouteBuilder = () => {
                                                             const couponLink = `https://www.northbikers.com/${routeAttributes.slug}?ref=${coupon.code}&coupon_code=${coupon.code}`;
                                                             const referralLink = `https://www.northbikers.com/${routeAttributes.slug}?ref=${coupon.code}`;
                                                             
+                                                            const isDeactivated = coupon.max_uses === 0 || (coupon.expires_at && new Date(coupon.expires_at) < new Date());
+                                                            
                                                             return (
-                                                                <tr key={coupon.id} className="hover:bg-gray-700/30 transition-colors">
-                                                                    <td className="px-6 py-4 font-mono text-sm text-blue-400">{coupon.code}</td>
+                                                                <tr key={coupon.id} className={`hover:bg-gray-700/30 transition-colors ${isDeactivated ? 'opacity-50' : ''}`}>
+                                                                    <td className={`px-6 py-4 font-mono text-sm ${isDeactivated ? 'text-gray-500 line-through' : 'text-blue-400'}`}>{coupon.code}</td>
                                                                     <td className="px-6 py-4 text-sm font-bold text-gray-200 text-center">{coupon.discount_percentage}%</td>
                                                                     <td className="px-6 py-4">
-                                                                        <div className="flex flex-col">
-                                                                            <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{coupon.current_uses} / {coupon.max_uses}</span>
-                                                                            <div className="w-24 h-1 bg-gray-700 rounded-full mt-1.5 overflow-hidden">
-                                                                                <div 
-                                                                                    className="h-full bg-blue-500 rounded-full" 
-                                                                                    style={{ width: `${Math.min((coupon.current_uses / coupon.max_uses) * 100, 100)}%` }}
-                                                                                ></div>
+                                                                        {isDeactivated ? (
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-[10px] text-red-500 font-bold uppercase tracking-widest">Desactivado</span>
+                                                                                <span className="text-[9px] text-gray-500 font-semibold uppercase">{coupon.current_uses} usos</span>
                                                                             </div>
-                                                                        </div>
+                                                                        ) : (
+                                                                            <div className="flex flex-col">
+                                                                                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{coupon.current_uses} / {coupon.max_uses}</span>
+                                                                                <div className="w-24 h-1 bg-gray-700 rounded-full mt-1.5 overflow-hidden">
+                                                                                    <div 
+                                                                                        className="h-full bg-blue-500 rounded-full" 
+                                                                                        style={{ width: `${Math.min((coupon.current_uses / coupon.max_uses) * 100, 100)}%` }}
+                                                                                    ></div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </td>
                                                                     <td className="px-6 py-4 text-right">
                                                                         <div className="flex items-center justify-end gap-2">
@@ -922,6 +1013,15 @@ const RouteBuilder = () => {
                                                                             >
                                                                                 Cupón
                                                                             </button>
+                                                                            {!isDeactivated && (
+                                                                                <button 
+                                                                                    onClick={() => handleDeactivateCoupon(coupon)}
+                                                                                    className="px-3 py-1.5 bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-500/30 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all"
+                                                                                    title="Desactivar Cupón"
+                                                                                >
+                                                                                    Desactivar
+                                                                                </button>
+                                                                            )}
                                                                         </div>
                                                                     </td>
                                                                 </tr>
