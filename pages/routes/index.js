@@ -21,6 +21,8 @@ const RouteBuilder = () => {
     const currentRoute = useRecoilValue(CurrentRoute);
     const setCurrentRoute = useSetRecoilState(CurrentRoute);
     const [checkpoints, setCheckpoints] = useState([]);
+    const [draggedCpIndex, setDraggedCpIndex] = useState(null);
+
     const [categories, setCategories] = useState([]);
     const [newCheckpoint, setNewCheckpoint] = useState({
         name: '',
@@ -390,8 +392,9 @@ const RouteBuilder = () => {
             try {
                 const { data, error } = await supabase
                     .from('event_checkpoints')
-                    .select('id, checkpoint_id, checkpoints(name, lat, lng, description, points, icon, terrain, weakSignal, picture, category_id, is_challenge)')
-                    .eq('event_id', currentRoute.id);
+                    .select('id, checkpoint_id, order, checkpoints(name, lat, lng, description, points, icon, terrain, weakSignal, picture, category_id, is_challenge)')
+                    .eq('event_id', currentRoute.id)
+                    .order('order', { ascending: true });
 
                 if (data) {
                     setCheckpoints(data);
@@ -402,6 +405,56 @@ const RouteBuilder = () => {
             }
         }
     }, [currentRoute]);
+
+    const handleCpDragStart = (e, index) => {
+        setDraggedCpIndex(index);
+        e.dataTransfer.effectAllowed = "move";
+    };
+
+    const handleCpDragOver = (e, index) => {
+        e.preventDefault();
+    };
+
+    const handleCpDrop = async (e, targetIndex) => {
+        e.preventDefault();
+        if (draggedCpIndex === null || draggedCpIndex === targetIndex) return;
+
+        const newCheckpoints = [...checkpoints];
+        const draggedItem = newCheckpoints[draggedCpIndex];
+
+        // Remove the dragged item and insert it at the target position
+        newCheckpoints.splice(draggedCpIndex, 1);
+        newCheckpoints.splice(targetIndex, 0, draggedItem);
+
+        // Update local state immediately
+        setCheckpoints(newCheckpoints);
+        setDraggedCpIndex(null);
+
+        // Save order changes in Supabase event_checkpoints table
+        try {
+            const updates = newCheckpoints.map((cp, idx) => {
+                return supabase
+                    .from('event_checkpoints')
+                    .update({ order: idx + 1 })
+                    .eq('id', cp.id);
+            });
+
+            const results = await Promise.all(updates);
+            const errors = results.filter(r => r.error);
+
+            if (errors.length > 0) {
+                toast.error("Error al guardar el nuevo orden de los checkpoints.");
+                console.error(errors);
+            } else {
+                toast.success("Orden de checkpoints actualizado con éxito.");
+                await logRouteAction('REORDER_CHECKPOINTS', `Reordered checkpoints for route ${currentRoute.title}`);
+            }
+        } catch (error) {
+            toast.error("Error al reordenar los checkpoints.");
+            console.error(error);
+        }
+    };
+
 
     const fetchPicks = useCallback(async () => {
         if (!currentRoute?.id) return;
@@ -1454,8 +1507,18 @@ const RouteBuilder = () => {
 
                                                 {/* Existing Checkpoints */}
                                                 {checkpoints.map((cp, index) => (
-                                                    <tr key={cp.id}>
-                                                        <td>{cp.checkpoint_id}</td>
+                                                    <tr
+                                                        key={cp.id}
+                                                        draggable={true}
+                                                        onDragStart={(e) => handleCpDragStart(e, index)}
+                                                        onDragOver={(e) => handleCpDragOver(e, index)}
+                                                        onDrop={(e) => handleCpDrop(e, index)}
+                                                        className="cursor-move hover:bg-gray-700/50 transition-colors border-b border-gray-700/50"
+                                                    >
+                                                        <td className="p-2 flex items-center gap-2">
+                                                            <span className="text-gray-500">☰</span>
+                                                            {cp.checkpoint_id}
+                                                        </td>
                                                         <td>
                                                             <input
                                                                 type="text"
