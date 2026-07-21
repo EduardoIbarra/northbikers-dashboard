@@ -58,8 +58,45 @@ export default function ProductsPage() {
     return [];
   };
 
+  const getVariantsList = () => {
+    if (!formData.custom_fields_schema) return [];
+    try {
+      const parsed = typeof formData.custom_fields_schema === 'string'
+        ? JSON.parse(formData.custom_fields_schema)
+        : formData.custom_fields_schema;
+      if (parsed && Array.isArray(parsed.variants)) {
+        return parsed.variants;
+      }
+    } catch (e) {}
+    return [];
+  };
+
+  const syncVariantsToFields = (variants, currentFields) => {
+    const activeSizes = variants.map(v => v.size).filter(Boolean);
+    let tallaFieldIndex = currentFields.findIndex(f => f.name === 'talla' || (f.label && f.label.toLowerCase().includes('talla')));
+    
+    if (activeSizes.length > 0) {
+      if (tallaFieldIndex >= 0) {
+        currentFields[tallaFieldIndex] = {
+          ...currentFields[tallaFieldIndex],
+          options: activeSizes,
+        };
+      } else {
+        currentFields.push({
+          name: 'talla',
+          label: 'Talla',
+          type: 'select',
+          required: true,
+          options: activeSizes,
+        });
+      }
+    }
+    return currentFields;
+  };
+
   const handleAddField = () => {
     const fields = getCustomFieldsList();
+    const variants = getVariantsList();
     const newField = {
       name: `campo_${fields.length + 1}`,
       label: `Campo ${fields.length + 1}`,
@@ -70,12 +107,13 @@ export default function ProductsPage() {
     const updated = [...fields, newField];
     setFormData(prev => ({
       ...prev,
-      custom_fields_schema: JSON.stringify({ fields: updated }, null, 2)
+      custom_fields_schema: JSON.stringify({ fields: updated, variants }, null, 2)
     }));
   };
 
   const handleUpdateField = (index, key, val) => {
     const fields = getCustomFieldsList();
+    const variants = getVariantsList();
     const updatedFields = fields.map((field, idx) => {
       if (idx === index) {
         if (key === 'label') {
@@ -95,17 +133,80 @@ export default function ProductsPage() {
     });
     setFormData(prev => ({
       ...prev,
-      custom_fields_schema: JSON.stringify({ fields: updatedFields }, null, 2)
+      custom_fields_schema: JSON.stringify({ fields: updatedFields, variants }, null, 2)
     }));
   };
 
   const handleDeleteField = (index) => {
     const fields = getCustomFieldsList();
+    const variants = getVariantsList();
     const updatedFields = fields.filter((_, idx) => idx !== index);
     setFormData(prev => ({
       ...prev,
-      custom_fields_schema: updatedFields.length > 0 
-        ? JSON.stringify({ fields: updatedFields }, null, 2)
+      custom_fields_schema: (updatedFields.length > 0 || variants.length > 0)
+        ? JSON.stringify({ fields: updatedFields, variants }, null, 2)
+        : ''
+    }));
+  };
+
+  const handleAddVariant = (sizeName = '', stockCount = 0) => {
+    const variants = getVariantsList();
+    const fields = getCustomFieldsList();
+    const newVariant = { size: sizeName || `Talla ${variants.length + 1}`, stock: Number(stockCount) || 0 };
+    const updatedVariants = [...variants, newVariant];
+    const updatedFields = syncVariantsToFields(updatedVariants, [...fields]);
+
+    setFormData(prev => ({
+      ...prev,
+      custom_fields_schema: JSON.stringify({ fields: updatedFields, variants: updatedVariants }, null, 2)
+    }));
+  };
+
+  const handleAddStandardSizes = () => {
+    const standardSizes = [
+      { size: 'CH', stock: 10 },
+      { size: 'M', stock: 10 },
+      { size: 'G', stock: 10 },
+      { size: 'XG', stock: 10 },
+      { size: 'XXG', stock: 5 },
+    ];
+    const fields = getCustomFieldsList();
+    const updatedFields = syncVariantsToFields(standardSizes, [...fields]);
+
+    setFormData(prev => ({
+      ...prev,
+      custom_fields_schema: JSON.stringify({ fields: updatedFields, variants: standardSizes }, null, 2)
+    }));
+  };
+
+  const handleUpdateVariant = (index, key, val) => {
+    const variants = getVariantsList();
+    const fields = getCustomFieldsList();
+    const updatedVariants = variants.map((v, idx) => {
+      if (idx === index) {
+        return { ...v, [key]: key === 'stock' ? Math.max(0, parseInt(val) || 0) : val };
+      }
+      return v;
+    });
+
+    const updatedFields = syncVariantsToFields(updatedVariants, [...fields]);
+
+    setFormData(prev => ({
+      ...prev,
+      custom_fields_schema: JSON.stringify({ fields: updatedFields, variants: updatedVariants }, null, 2)
+    }));
+  };
+
+  const handleDeleteVariant = (index) => {
+    const variants = getVariantsList();
+    const fields = getCustomFieldsList();
+    const updatedVariants = variants.filter((_, idx) => idx !== index);
+    const updatedFields = syncVariantsToFields(updatedVariants, [...fields]);
+
+    setFormData(prev => ({
+      ...prev,
+      custom_fields_schema: (updatedFields.length > 0 || updatedVariants.length > 0)
+        ? JSON.stringify({ fields: updatedFields, variants: updatedVariants }, null, 2)
         : ''
     }));
   };
@@ -624,6 +725,10 @@ export default function ProductsPage() {
 
                 const linkedRoutesCount = routeProducts.filter(rp => rp.product_id === product.id).length;
 
+                const productVariants = Array.isArray(product.custom_fields_schema?.variants)
+                  ? product.custom_fields_schema.variants
+                  : [];
+
                 return (
                   <div
                     key={product.id}
@@ -688,6 +793,17 @@ export default function ProductsPage() {
                           </span>
                         )}
                       </div>
+
+                      {productVariants.length > 0 && (
+                        <div className="w-full mt-3 pt-3 border-t border-gray-800 flex flex-wrap gap-1 items-center">
+                          <span className="text-[10px] text-gray-400 font-semibold mr-1">Stock Tallas:</span>
+                          {productVariants.map((v, i) => (
+                            <span key={i} className="text-[10px] font-mono font-bold bg-gray-950 text-emerald-400 border border-gray-800 rounded px-1.5 py-0.5">
+                              {v.size}: {v.stock}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}
@@ -953,6 +1069,85 @@ export default function ProductsPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Variants & Stock Builder */}
+              <div className="space-y-4 pt-4 border-t border-gray-800">
+                <div className="flex flex-wrap justify-between items-center gap-2">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-300">Variantes y Stock por Talla</label>
+                    <p className="text-[11px] text-gray-400">Define las tallas disponibles y su inventario inicial.</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {getVariantsList().length === 0 && (
+                      <button
+                        type="button"
+                        onClick={handleAddStandardSizes}
+                        className="bg-emerald-900/40 hover:bg-emerald-800/60 border border-emerald-800/50 text-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition"
+                      >
+                        ⚡ Cargar Tallas Estándar (CH, M, G, XG, XXG)
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleAddVariant('', 0)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                    >
+                      + Agregar Talla
+                    </button>
+                  </div>
+                </div>
+
+                {getVariantsList().length === 0 ? (
+                  <div className="text-center p-6 bg-gray-900/50 border border-gray-800 rounded-xl text-gray-500 text-xs">
+                    No has definido variantes de talla ni stock. (Opcional)
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {getVariantsList().map((variant, idx) => (
+                      <div key={idx} className="bg-gray-900 p-3 border border-gray-800 rounded-xl flex items-center gap-3">
+                        <div className="flex-1">
+                          <label className="block text-[10px] font-semibold text-gray-400 mb-1">Talla</label>
+                          <input
+                            type="text"
+                            value={variant.size || ''}
+                            onChange={(e) => handleUpdateVariant(idx, 'size', e.target.value)}
+                            placeholder="Ej: CH, M, 42, etc."
+                            className="w-full bg-gray-800 text-gray-100 border border-gray-700 rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div className="w-28">
+                          <label className="block text-[10px] font-semibold text-gray-400 mb-1">Stock</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={variant.stock !== undefined ? variant.stock : 0}
+                            onChange={(e) => handleUpdateVariant(idx, 'stock', e.target.value)}
+                            placeholder="0"
+                            className="w-full bg-gray-800 text-emerald-400 font-black border border-gray-700 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 text-right"
+                          />
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVariant(idx)}
+                          className="self-end mb-1 bg-red-950/40 hover:bg-red-900/60 border border-red-900/30 text-red-400 p-1.5 rounded-lg text-xs transition"
+                          title="Eliminar talla"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {getVariantsList().length > 0 && (
+                  <div className="flex justify-between items-center text-xs text-gray-400 bg-gray-900/60 px-4 py-2 border border-gray-800 rounded-xl">
+                    <span>Total de tallas: <strong className="text-white">{getVariantsList().length}</strong></span>
+                    <span>Stock Total Combinado: <strong className="text-emerald-400">{getVariantsList().reduce((sum, v) => sum + (Number(v.stock) || 0), 0)} unidades</strong></span>
                   </div>
                 )}
               </div>
