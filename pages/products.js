@@ -42,6 +42,88 @@ export default function ProductsPage() {
   const [existingImages, setExistingImages] = useState([]);
   const [saving, setSaving] = useState(false);
 
+  // Custom Fields Schema helper functions for visual builder
+  const getCustomFieldsList = () => {
+    if (!formData.custom_fields_schema) return [];
+    try {
+      const parsed = typeof formData.custom_fields_schema === 'string'
+        ? JSON.parse(formData.custom_fields_schema)
+        : formData.custom_fields_schema;
+      if (parsed && Array.isArray(parsed.fields)) {
+        return parsed.fields;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return [];
+  };
+
+  const handleAddField = () => {
+    const fields = getCustomFieldsList();
+    const newField = {
+      name: `campo_${fields.length + 1}`,
+      label: `Campo ${fields.length + 1}`,
+      type: 'text',
+      required: false,
+      options: []
+    };
+    const updated = [...fields, newField];
+    setFormData(prev => ({
+      ...prev,
+      custom_fields_schema: JSON.stringify({ fields: updated }, null, 2)
+    }));
+  };
+
+  const handleUpdateField = (index, key, val) => {
+    const fields = getCustomFieldsList();
+    const updatedFields = fields.map((field, idx) => {
+      if (idx === index) {
+        if (key === 'label') {
+          const nameVal = val.toLowerCase()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9_]/g, '_')
+            .replace(/__+/g, '_')
+            .replace(/^_+|_+$/g, '');
+          return { ...field, label: val, name: nameVal };
+        }
+        if (key === 'options_raw') {
+          return { ...field, options: val };
+        }
+        return { ...field, [key]: val };
+      }
+      return field;
+    });
+    setFormData(prev => ({
+      ...prev,
+      custom_fields_schema: JSON.stringify({ fields: updatedFields }, null, 2)
+    }));
+  };
+
+  const handleDeleteField = (index) => {
+    const fields = getCustomFieldsList();
+    const updatedFields = fields.filter((_, idx) => idx !== index);
+    setFormData(prev => ({
+      ...prev,
+      custom_fields_schema: updatedFields.length > 0 
+        ? JSON.stringify({ fields: updatedFields }, null, 2)
+        : ''
+    }));
+  };
+
+  const [copiedId, setCopiedId] = useState(null);
+
+  const handleCopyLink = (productId) => {
+    const link = `https://www.northbikers.com/product/${productId}`;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopiedId(productId);
+      toast.success('¡Enlace de producto copiado!');
+      setTimeout(() => setCopiedId(null), 2000);
+    }).catch(err => {
+      console.error('Failed to copy', err);
+      toast.error('No se pudo copiar el enlace.');
+    });
+  };
+
   // Fetch initial data
   const fetchData = async () => {
     try {
@@ -566,7 +648,23 @@ export default function ProductsPage() {
 
                     {/* Info */}
                     <div className="flex-1 p-6">
-                      <h3 className="text-lg font-bold text-white truncate">{product.title}</h3>
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="text-lg font-bold text-white truncate flex-1">{product.title}</h3>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyLink(product.id)}
+                          className="flex items-center justify-center p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition duration-200 border border-gray-700 shrink-0"
+                          title="Copiar enlace del producto"
+                        >
+                          {copiedId === product.id ? (
+                            <span className="text-[10px] text-emerald-400 font-bold px-1">¡Copiado!</span>
+                          ) : (
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                          )}
+                        </button>
+                      </div>
                       <p className="text-xs text-gray-400 mt-2 line-clamp-2 leading-relaxed">
                         {product.description || 'Sin descripción.'}
                       </p>
@@ -673,7 +771,7 @@ export default function ProductsPage() {
                   value={formData.title}
                   onChange={handleInputChange}
                   placeholder="Ej: Sudadera Oficial NB"
-                  className="w-full bg-gray-950 text-gray-100 border border-gray-850 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                  className="w-full bg-gray-900 text-gray-100 border border-gray-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
                 />
               </div>
 
@@ -686,7 +784,7 @@ export default function ProductsPage() {
                   onChange={handleInputChange}
                   rows="3"
                   placeholder="Detalles sobre materiales, tallas, entrega..."
-                  className="w-full bg-gray-950 text-gray-100 border border-gray-850 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm resize-none"
+                  className="w-full bg-gray-900 text-gray-100 border border-gray-800 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm resize-none"
                 />
               </div>
 
@@ -702,27 +800,165 @@ export default function ProductsPage() {
                     onChange={handleInputChange}
                     placeholder="0.00"
                     step="0.01"
-                    className="w-full bg-gray-950 text-gray-100 border border-gray-850 rounded-xl pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+                    className="w-full bg-gray-900 text-gray-100 border border-gray-800 rounded-xl pl-8 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
                   />
                 </div>
               </div>
 
-              {/* Custom fields schema */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">Esquema de campos personalizados (JSON)</label>
-                <textarea
-                  name="custom_fields_schema"
-                  value={formData.custom_fields_schema}
-                  onChange={handleInputChange}
-                  rows="3"
-                  placeholder='Ej: { "fields": [ { "name": "color", "label": "Color", "type": "text", "required": true } ] }'
-                  className="w-full bg-gray-950 text-gray-100 border border-gray-850 rounded-xl px-4 py-3 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-y"
-                />
-                <p className="text-[10px] text-gray-500 mt-1">Define tallas, colores o nombres requeridos en formato JSON.</p>
+              {/* Custom fields schema builder */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="block text-sm font-semibold text-gray-300">Campos Personalizados (para el Comprador)</label>
+                  <button
+                    type="button"
+                    onClick={handleAddField}
+                    className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                  >
+                    + Agregar Campo
+                  </button>
+                </div>
+                
+                {getCustomFieldsList().length === 0 ? (
+                  <div className="text-center p-6 bg-gray-900/50 border border-gray-800 rounded-xl text-gray-500 text-xs">
+                    Ningún campo personalizado configurado. (Opcional)
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {getCustomFieldsList().map((field, idx) => (
+                      <div key={idx} className="bg-gray-900 p-4 border border-gray-800 rounded-xl space-y-3 relative group">
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+                          {/* Label input */}
+                          <div className="sm:col-span-4">
+                            <label className="block text-[10px] font-semibold text-gray-400 mb-1">Nombre visible (Etiqueta)</label>
+                            <input
+                              type="text"
+                              value={field.label || ''}
+                              onChange={(e) => handleUpdateField(idx, 'label', e.target.value)}
+                              placeholder="Ej: Talla de Sudadera"
+                              className="w-full bg-gray-900 text-gray-100 border border-gray-800 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+
+                          {/* Type Select */}
+                          <div className="sm:col-span-3">
+                            <label className="block text-[10px] font-semibold text-gray-400 mb-1">Tipo de Campo</label>
+                            <select
+                              value={field.type || 'text'}
+                              onChange={(e) => handleUpdateField(idx, 'type', e.target.value)}
+                              className="w-full bg-gray-900 text-gray-100 border border-gray-800 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            >
+                              <option value="text">Texto</option>
+                              <option value="select">Lista de opciones (Select)</option>
+                              <option value="number">Número</option>
+                              <option value="checkbox">Casilla de verificación</option>
+                            </select>
+                          </div>
+
+                          {/* Required Checkbox */}
+                          <div className="sm:col-span-2 flex items-center justify-start pb-2">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!field.required}
+                                onChange={(e) => handleUpdateField(idx, 'required', e.target.checked)}
+                                className="rounded border-gray-700 bg-gray-900 text-blue-500 focus:ring-blue-500 h-3.5 w-3.5"
+                              />
+                              <span className="text-[11px] text-gray-300 font-medium">Requerido</span>
+                            </label>
+                          </div>
+
+                          {/* Unique Checkbox */}
+                          <div className="sm:col-span-2 flex items-center justify-start pb-2">
+                            <label className="flex items-center gap-2 cursor-pointer" title="Evita que dos participantes registren el mismo valor para este producto">
+                              <input
+                                type="checkbox"
+                                checked={!!field.unique}
+                                onChange={(e) => handleUpdateField(idx, 'unique', e.target.checked)}
+                                className="rounded border-gray-700 bg-gray-900 text-blue-500 focus:ring-blue-500 h-3.5 w-3.5"
+                              />
+                              <span className="text-[11px] text-gray-300 font-medium">No repetir</span>
+                            </label>
+                          </div>
+
+                          {/* Delete Button */}
+                          <div className="sm:col-span-1 flex justify-end pb-1">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteField(idx)}
+                              className="bg-red-950/40 hover:bg-red-900/60 border border-red-900/30 text-red-400 p-1.5 rounded-lg text-xs transition"
+                              title="Eliminar campo"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Options Input (Only shown if type is select) */}
+                        {field.type === 'select' && (
+                          <div className="pt-2 border-t border-gray-900/50">
+                            <label className="block text-[10px] font-semibold text-gray-400 mb-1.5">
+                              Opciones del menú desplegable (presiona Enter o Coma para agregar)
+                            </label>
+                            <div className="flex flex-wrap gap-1.5 p-2 bg-gray-900 border border-gray-800 rounded-lg min-h-[38px] items-center">
+                              {(field.options || []).map((opt, optIdx) => (
+                                <span
+                                  key={optIdx}
+                                  className="inline-flex items-center gap-1 bg-blue-900/40 text-blue-300 border border-blue-800/40 px-2 py-0.5 rounded text-xs font-medium"
+                                >
+                                  {opt}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updatedOpts = (field.options || []).filter((_, oIdx) => oIdx !== optIdx);
+                                      handleUpdateField(idx, 'options_raw', updatedOpts);
+                                    }}
+                                    className="text-blue-400 hover:text-blue-200 transition text-[10px] font-bold"
+                                  >
+                                    ✕
+                                  </button>
+                                </span>
+                              ))}
+                              
+                              <input
+                                type="text"
+                                placeholder={(field.options || []).length === 0 ? "Escribe una opción y presiona Enter o Coma" : "Agregar opción..."}
+                                className="flex-1 bg-transparent text-gray-100 placeholder-gray-500 text-xs focus:outline-none border-none p-0 min-w-[120px]"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ',') {
+                                    e.preventDefault();
+                                    const val = e.target.value.trim().replace(/,$/, '');
+                                    if (val && !(field.options || []).includes(val)) {
+                                      const updatedOpts = [...(field.options || []), val];
+                                      handleUpdateField(idx, 'options_raw', updatedOpts);
+                                    }
+                                    e.target.value = '';
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const val = e.target.value.trim().replace(/,$/, '');
+                                  if (val && !(field.options || []).includes(val)) {
+                                    const updatedOpts = [...(field.options || []), val];
+                                    handleUpdateField(idx, 'options_raw', updatedOpts);
+                                  }
+                                  e.target.value = '';
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Hidden/Helper Name display */}
+                        <div className="text-[9px] text-gray-500 mt-1">
+                          Clave interna (BD): <code className="bg-gray-900 text-gray-400 px-1 py-0.5 rounded font-mono">{field.name}</code>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Shipping toggle */}
-              <div className="bg-gray-950 p-4 border border-gray-850 rounded-xl space-y-4">
+              <div className="bg-gray-900 p-4 border border-gray-800 rounded-xl space-y-4">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -829,11 +1065,11 @@ export default function ProductsPage() {
               </div>
             </form>
 
-            <div className="px-6 py-4 bg-gray-950 border-t border-gray-850 flex justify-end gap-3">
+            <div className="px-6 py-4 bg-gray-900 border-t border-gray-800 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowFormModal(false)}
-                className="bg-gray-900 hover:bg-gray-850 border border-gray-800 px-6 py-2.5 rounded-xl text-sm font-semibold transition"
+                className="bg-gray-900 hover:bg-gray-800 border border-gray-800 px-6 py-2.5 rounded-xl text-sm font-semibold transition"
               >
                 Cancelar
               </button>
