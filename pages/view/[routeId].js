@@ -1,6 +1,6 @@
 import ParticipantsPage from "../participants";
 import {useRouter} from "next/router";
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import {useSetRecoilState} from "recoil";
 import {CurrentRoute} from "../../store/atoms/global";
 import {getLoggedUser} from "../../utils";
@@ -11,14 +11,25 @@ const RoutePage = () => {
     const setCurrentRoute = useSetRecoilState(CurrentRoute);
     const loggedUser = getLoggedUser();
 
+    const [mounted, setMounted] = useState(false);
+
     useEffect(() => {
-        setCurrentRoute({id: routeId})
-    }, [routeId])
+        setMounted(true);
+    }, []);
 
+    useEffect(() => {
+        if (mounted && routeId) {
+            setCurrentRoute({ id: routeId });
+        }
+    }, [routeId, mounted]);
 
-    // comment code if view is public
-    if(!loggedUser){
-        router.push('/login')
+    useEffect(() => {
+        if (mounted && !loggedUser) {
+            router.push('/login');
+        }
+    }, [mounted, loggedUser]);
+
+    if (!mounted || !loggedUser) {
         return null;
     }
     return (
