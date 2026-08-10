@@ -3,11 +3,14 @@ export const getUniqueValues  = (source, key) => {
 }
 
 export const setLoggedUser = (user) => {
-    localStorage.setItem('logged_user', JSON.stringify(user));
+    if (typeof window !== 'undefined') {
+        localStorage.setItem('logged_user', JSON.stringify(user));
+    }
 }
 
 export const getLoggedUser = () => {
-    const l =   localStorage.getItem('logged_user')
+    if (typeof window === 'undefined') return null;
+    const l = localStorage.getItem('logged_user')
     return l ? JSON.parse(l): null
 }
 

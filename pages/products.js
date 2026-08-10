@@ -271,7 +271,7 @@ export default function ProductsPage() {
         .select(`
           id, quantity, unit_price_cents, notes, created_at,
           event_profile!inner (
-            id, full_name, payment_status,
+            id, full_name, payment_status, participant_number, name_on_jersey,
             profile:profiles ( id, name, email )
           )
         `)
@@ -321,6 +321,8 @@ export default function ProductsPage() {
           total_cents: item.quantity * item.unit_price_cents,
           buyer_name: item.event_profile?.full_name || item.event_profile?.profile?.name || 'Participante',
           buyer_email: item.event_profile?.profile?.email || '—',
+          participant_number: item.event_profile?.participant_number ?? null,
+          name_on_jersey: item.event_profile?.name_on_jersey || '',
           delivery_method,
           shipping_address,
           answers: customFieldsAnswers,
@@ -357,6 +359,8 @@ export default function ProductsPage() {
           total_cents: item.quantity * item.unit_price_cents,
           buyer_name: item.profile?.name || 'Cliente',
           buyer_email: item.profile?.email || '—',
+          participant_number: null,
+          name_on_jersey: '',
           delivery_method,
           shipping_address,
           answers: customFieldsAnswers,
@@ -645,17 +649,28 @@ export default function ProductsPage() {
     }
   };
 
+  // Whether the product currently being inspected is linked to at least one route
+  const inspectingProductIsRouteTied = useMemo(() => {
+    if (!inspectingProduct) return false;
+    return routeProducts.some(rp => rp.product_id === inspectingProduct.id);
+  }, [inspectingProduct, routeProducts]);
+
   // Export CSV of product sales
   const handleExportSales = () => {
     if (!inspectingProduct || sales.length === 0) return;
     const header = [
-      'Fecha', 'Comprador', 'Email', 'Cantidad', 'Unitario (MXN)', 'Subtotal (MXN)',
+      'Fecha', 'Comprador', 'Email',
+      ...(inspectingProductIsRouteTied ? ['Número de participante', 'Nombre en jersey'] : []),
+      'Cantidad', 'Unitario (MXN)', 'Subtotal (MXN)',
       'Método de entrega', 'Dirección de envío', 'Respuestas campos personalizados', 'Tipo'
     ];
     const body = sales.map(s => [
       new Date(s.created_at).toLocaleString('es-MX'),
       s.buyer_name,
       s.buyer_email,
+      ...(inspectingProductIsRouteTied
+        ? [s.participant_number ?? '', s.name_on_jersey || '']
+        : []),
       s.quantity,
       (s.unit_price_cents / 100).toFixed(2),
       (s.total_cents / 100).toFixed(2),
@@ -1335,6 +1350,12 @@ export default function ProductsPage() {
                         <tr>
                           <th className="px-4 py-3">Fecha</th>
                           <th className="px-4 py-3">Comprador</th>
+                          {inspectingProductIsRouteTied && (
+                            <>
+                              <th className="px-4 py-3">No. Participante</th>
+                              <th className="px-4 py-3">Nombre en Jersey</th>
+                            </>
+                          )}
                           <th className="px-4 py-3">Cant.</th>
                           <th className="px-4 py-3">Monto</th>
                           <th className="px-4 py-3">Entrega</th>
@@ -1353,6 +1374,18 @@ export default function ProductsPage() {
                               <span className="block font-bold text-white">{item.buyer_name}</span>
                               <span className="text-[10px] text-gray-400">{item.buyer_email}</span>
                             </td>
+                            {inspectingProductIsRouteTied && (
+                              <>
+                                <td className="px-4 py-3 whitespace-nowrap font-mono font-bold text-yellow-500">
+                                  {item.participant_number != null && item.participant_number > 0
+                                    ? `#${item.participant_number}`
+                                    : '—'}
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-white font-semibold">
+                                  {item.name_on_jersey || '—'}
+                                </td>
+                              </>
+                            )}
                             <td className="px-4 py-3 font-semibold">{item.quantity}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-emerald-400 font-bold">
                               {centsToMoney(item.total_cents)}

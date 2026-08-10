@@ -887,7 +887,14 @@ const RouteBuilder = () => {
                         <div className="min-h-screen w-full p-4">
                             <div className="route-builder">
                                 {/* <h2 className="text-center mt-6">Constructor de Rutas {currentRoute.title}</h2> */}
-                                <div className="text-center mt-6 flex items-center justify-center gap-3">
+                                <div className="text-center mt-6 flex flex-wrap items-center justify-center gap-3">
+                                    <Link
+                                        href="/routes/create"
+                                        className="inline-block bg-yellow-500 text-black font-black py-2 px-5 rounded-lg shadow-lg hover:bg-yellow-400 hover:shadow-xl transition duration-300 ease-in-out text-xs uppercase tracking-widest"
+                                    >
+                                        + Crear Nueva Ruta / Rally
+                                    </Link>
+
                                     <a
                                         href={`https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=https://www.northbikers.com/${currentRoute.slug}`}
                                         target="_blank"

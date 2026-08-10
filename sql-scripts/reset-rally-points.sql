@@ -1,6 +1,6 @@
 DO $$
 DECLARE
-  target_route_id int := 243;
+  target_route_id int := 241;
 BEGIN
 
   DELETE FROM check_ins

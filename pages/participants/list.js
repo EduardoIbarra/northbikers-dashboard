@@ -194,9 +194,9 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
         return [headers, ...rows].join('\n');
     };
 
+    // ── Desktop table row ────────────────────────────────────────────────
     const TableItem = memo((row) => {
         const { profile, participant_number, position, category, points, route, gender, payment_status, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
-        const title = route?.title;
         const { name, email } = profile;
 
         return (
@@ -277,6 +277,76 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
         );
     });
 
+    // ── Mobile card ──────────────────────────────────────────────────────
+    const MobileCard = memo((row) => {
+        const { profile, participant_number, position, category, points, gender, payment_status, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
+        const { name, email } = profile;
+
+        return (
+            <div
+                onClick={() => { if (isPrivateView) setSelectedUser(profile); }}
+                className="flex flex-col gap-3 p-4 border-b border-white/5 bg-transparent hover:bg-neutral-800/50 transition-all duration-200 cursor-pointer"
+            >
+                {/* Top row: position + name + edit button */}
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-xs font-black text-neutral-500 shrink-0">#{position}</span>
+                        <div className="flex flex-col min-w-0">
+                            <span className="font-bold text-white uppercase tracking-tight text-sm truncate">{name}</span>
+                            <span className="text-xs text-neutral-500 truncate">{email}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                        {avatar_url && (
+                            <button
+                                onClick={(e) => { e.stopPropagation(); window.open(avatar_url, "_blank"); }}
+                                className="text-[10px] font-black uppercase tracking-widest text-yellow-500 hover:text-yellow-400 transition-colors"
+                            >
+                                Foto
+                            </button>
+                        )}
+                        {isPrivateView && (
+                            <button
+                                className="p-2 transition-all hover:bg-yellow-500 hover:text-black rounded-xl text-neutral-500"
+                                onClick={(e) => { onEdit(row); e.stopPropagation(); e.preventDefault(); }}
+                            >
+                                <AiFillEdit size={16} />
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Bottom row: stats */}
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-1">
+                        <span className="text-lg font-black text-yellow-500">{points ?? 0}</span>
+                        <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">pts</span>
+                    </div>
+                    <div className="w-[1px] h-4 bg-neutral-700"></div>
+                    <span className="bg-neutral-800 border border-neutral-700 text-neutral-300 font-mono px-2 py-0.5 rounded-lg text-xs">#{participant_number}</span>
+                    <div className="w-[1px] h-4 bg-neutral-700"></div>
+                    <span className="text-xs text-neutral-400 italic">{getSelectValue(category, CATEGORIES)}</span>
+                    <div className="w-[1px] h-4 bg-neutral-700"></div>
+                    <span className={payment_status === 'paid' ? 'status-paid' : 'status-unpaid'} style={{ fontSize: 10 }}>
+                        {payment_status === 'paid' ? 'Pagado' : 'Pendiente'}
+                    </span>
+                </div>
+
+                {/* Checkins row */}
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Checkins</span>
+                        <span className="font-black text-neutral-200 text-sm">{regular_checkins_number}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest">Retos</span>
+                        <span className="font-black text-yellow-500 text-sm">{challenge_checkins_number}</span>
+                    </div>
+                </div>
+            </div>
+        );
+    });
+
     const fields = [
         ...(isPrivateView ? [{ name: '' }] : []),
         { name: 'Pos' },
@@ -296,7 +366,7 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
     };
 
     return (
-        <div className='overflow-x-auto w-full'>
+        <div className='w-full'>
             {isLoading && (
                 <div className="flex flex-col items-center justify-center p-20 space-y-4">
                     <Spinner size={50} />
@@ -305,29 +375,30 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
             )}
             {!isLoading && data?.length ? (
                 <div className="flex flex-col">
-                    <div className="flex flex-row items-center justify-between p-6 border-b border-white/5 bg-neutral-900 rounded-t-[2.5rem]">
-                        <div className="flex space-x-3">
+                    {/* Toolbar: buttons + count */}
+                    <div className="flex flex-col gap-3 p-4 sm:p-6 border-b border-white/5 bg-neutral-900 rounded-t-[2.5rem]">
+                        <div className="grid grid-cols-2 sm:flex sm:flex-row gap-2">
                             <Button
                                 onClick={downloadCSV}
-                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
+                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
                             >
                                 CSV Maestro
                             </Button>
                             <Button
                                 onClick={downloadRankingCSV}
-                                className="bg-neutral-800 hover:bg-yellow-500 hover:text-black text-neutral-300 border border-neutral-700 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
+                                className="bg-neutral-800 hover:bg-yellow-500 hover:text-black text-neutral-300 border border-neutral-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
                             >
                                 CSV Ranking
                             </Button>
                             <Button
                                 onClick={downloadParticipantJerseys}
-                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
+                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
                             >
                                 Jerseys Pilotos
                             </Button>
                             <Button
                                 onClick={downloadCoupleJerseys}
-                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
+                                className="bg-neutral-800 hover:bg-neutral-700 text-neutral-300 border border-neutral-700 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg"
                             >
                                 Jerseys Parejas
                             </Button>
@@ -336,20 +407,31 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                             Mostrando <span className="text-yellow-500">{data.length}</span> participantes
                         </div>
                     </div>
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-black text-neutral-500 uppercase text-[10px] font-black tracking-[0.25em]">
-                                {fields.map(({ name }) => (
-                                    <th key={name} className="py-5 px-4 border-b border-white/5">{name}</th>
+
+                    {/* Mobile: card list */}
+                    <div className="md:hidden flex flex-col">
+                        {data.map((u) => (
+                            <MobileCard key={u.id} {...u} />
+                        ))}
+                    </div>
+
+                    {/* Desktop: full table */}
+                    <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-black text-neutral-500 uppercase text-[10px] font-black tracking-[0.25em]">
+                                    {fields.map(({ name }) => (
+                                        <th key={name} className="py-5 px-4 border-b border-white/5">{name}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.map((u) => (
+                                    <TableItem key={u.id} {...u} />
                                 ))}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {data.map((u) => {
-                                return <TableItem key={u.id} {...u} />;
-                            })}
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             ) : null}
 

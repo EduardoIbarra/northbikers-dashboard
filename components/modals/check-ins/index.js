@@ -34,8 +34,11 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                 .order('id', {ascending: false})
 
             setCheckins(data)
-            const defaultCheckin = data.find((d) => d.id === selectedCheckIn?.id)
-            setSelectedCheckIn(defaultCheckin ?? data[0]);
+            const defaultCheckin = data.find((d) => d.id === selectedCheckIn?.id) ?? data[0];
+            setSelectedCheckIn(defaultCheckin);
+            if (defaultCheckin) {
+                setMarkers(buildMarkers(defaultCheckin));
+            }
         } catch (e) {
             console.log("Error", e);
             setCheckins([])
@@ -56,13 +59,19 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
     }, [isOpen, profile])
 
 
+    const buildMarkers = (item) => {
+        if (!item) return [];
+        const m = [
+            item.checkpoint?.lat && item.checkpoint?.lng ? { latitude: item.checkpoint.lat, longitude: item.checkpoint.lng, icon: '/check-in.png' } : null,
+            item.original_lat && item.original_lng ? { latitude: item.original_lat, longitude: item.original_lng, icon: '/pin.png' } : null,
+            item.lat && item.lng && (item.original_lat !== item.lat || item.original_lng !== item.lng) ? { latitude: item.lat, longitude: item.lng, icon: '/pin-black.png' } : null,
+        ].filter(Boolean);
+        return m;
+    }
+
     const handleItemClick = (item) => {
-        setSelectedCheckIn(item)
-        setMarkers([
-            {latitude: item.checkpoint.lat, longitude: item.checkpoint.lng, icon: '/check-in.png'},
-            item.original_lat ? {latitude: item.original_lat, longitude: item.original_lng, icon: '/pin.png'} : [],
-            item.original_lat !== item.lat ? {latitude: item.lat, longitude: item.lng, icon: '/pin-black.png'} : [],
-        ])
+        setSelectedCheckIn(item);
+        setMarkers(buildMarkers(item));
     }
 
     const handleSuccess = () => {
@@ -88,13 +97,18 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
 
                     return (
                         <div key={c.id} className={`relative p-4 rounded-2xl border border-transparent hover:border-neutral-700 transition-all cursor-pointer flex items-center mb-2 ${selectedCheckIn?.id === c.id ? 'bg-neutral-800 border-neutral-700' : 'hover:bg-neutral-800'}`} onClick={() => handleItemClick(c)}>
-                            {c?.checkpoint?.picture && <img src={c?.checkpoint?.picture?.includes('http') ? c?.checkpoint.picture : imgSource} alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>}
-                            {!c?.checkpoint?.picture && <img src='/icon.jpg' alt="" className='inline object-cover w-16 h-16 mr-2 rounded-full'/>}
-                            <div className='pr-10'>
+                            <div className="w-14 h-14 shrink-0 rounded-full overflow-hidden mr-3 border border-neutral-700">
+                                <img
+                                    src={c?.checkpoint?.picture?.includes('http') ? c?.checkpoint.picture : (c?.checkpoint?.picture ? imgSource : '/icon.jpg')}
+                                    alt=""
+                                    className='w-full h-full object-cover'
+                                />
+                            </div>
+                            <div className='pr-8 min-w-0'>
                                 {c.checkpoint.icon.includes('challenge') && (
                                     <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest block mb-1">[RETO]</span>
                                 )}
-                                <span className="font-bold text-white uppercase tracking-tight block">{c.checkpoint.name}</span>
+                                <span className="font-bold text-white uppercase tracking-tight block truncate">{c.checkpoint.name}</span>
                                 <p className="text-xs text-neutral-500 line-clamp-1">{c.checkpoint.description}</p>
                                 <p className="text-[10px] font-bold text-neutral-400 mt-1 uppercase tracking-widest">
                                     <span className="text-yellow-500">{c.points ?? 0}</span> pts | <span className="text-yellow-500">{c.distance.toFixed(2)}km</span> Distancia
@@ -138,29 +152,33 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
             }}
             className="z-[60]"
         >
-            <div className='flex gap-4 mb-6'>
-                <div className='flex flex-1 items-center px-4 py-3 bg-neutral-800 border border-neutral-800 rounded-2xl'>
-                    <img src="/check-in.png" alt="" className="w-5 h-5 mr-3"/>
+            <div className='flex flex-wrap gap-2 mb-6'>
+                <div className='flex flex-1 min-w-[120px] items-center px-3 py-2.5 bg-neutral-800 border border-neutral-800 rounded-2xl'>
+                    <img src="/check-in.png" alt="" className="w-4 h-4 mr-2"/>
                     <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Checkpoint</span>
                 </div>
-                <div className='flex flex-1 items-center px-4 py-3 bg-neutral-800 border border-neutral-800 rounded-2xl'>
-                    <img src="/pin.png" alt="" className="w-5 h-5 mr-3"/>
+                <div className='flex flex-1 min-w-[120px] items-center px-3 py-2.5 bg-neutral-800 border border-neutral-800 rounded-2xl'>
+                    <img src="/pin.png" alt="" className="w-4 h-4 mr-2"/>
                     <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">CheckIn Original</span>
                 </div>
-                <div className='flex flex-1 items-center px-4 py-3 bg-neutral-800 border border-neutral-800 rounded-2xl'>
-                    <img src="/pin-black.png" alt="" className="w-5 h-5 mr-3"/>
+                <div className='flex flex-1 min-w-[120px] items-center px-3 py-2.5 bg-neutral-800 border border-neutral-800 rounded-2xl'>
+                    <img src="/pin-black.png" alt="" className="w-4 h-4 mr-2"/>
                     <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Checkin Actualizado</span>
                 </div>
             </div>
 
-            <div className='flex h-vp-60'>
-                <div className='w-4/12   overflow-auto '>
+            {/* Main layout: stacks on mobile, side-by-side on md+ */}
+            <div className='flex flex-col md:flex-row gap-4 max-h-[550px] min-h-0'>
+                {/* Check-in list — fixed height to fit up to 4 items */}
+                <div className='w-full md:w-4/12 h-[470px] overflow-y-auto pr-2 custom-scrollbar'>
                     {renderContent()}
                 </div>
-                <div className='w-full flex flex-col overflow-auto bg-neutral-900 rounded-[2rem] border border-neutral-800 p-6'>
+
+                {/* Detail panel */}
+                <div className='flex-1 flex flex-col overflow-auto bg-neutral-900 rounded-[1.5rem] sm:rounded-[2rem] border border-neutral-800 p-4 sm:p-6'>
                     {selectedCheckIn && <div className='text-[10px] uppercase font-bold tracking-widest text-yellow-500 mb-4 ml-1'>Registro de Fechas</div>}
                     {selectedCheckIn && (
-                        <div className='grid grid-cols-3 gap-6 mb-8 px-4'>
+                        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8'>
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-1">Original</span>
                                 <span className="text-xs font-bold text-neutral-300 capitalize">{moment(selectedCheckIn.id).format('dddd DD MMM, h:mm A')}</span>
@@ -175,11 +193,12 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
                             </div>
                         </div>
                     )}
-                    <div className='flex h-vp-60'>
-                        <div className='w-6/12  overflow-auto'>
-                            <Map width='100%' markers={markers}/>
+                    {/* Map + Image: stacks on mobile, side-by-side on md+ */}
+                    <div className='flex flex-col sm:flex-row gap-4 flex-1 min-h-0'>
+                        <div className='w-full sm:w-6/12 h-[260px] shrink-0 overflow-hidden rounded-2xl'>
+                            <Map width='100%' height='260px' markers={markers}/>
                         </div>
-                        <div className='w-6/12  overflow-auto'>
+                        <div className='w-full sm:w-6/12 overflow-auto'>
                             <CheckInImage checkIn={selectedCheckIn} onSuccess={handleSuccess}/>
                         </div>
                     </div>

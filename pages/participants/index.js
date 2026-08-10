@@ -36,10 +36,19 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
     const [isPollingEnabled, setIsPollingEnabled] = useState(false);
     const intervalRef = useRef(null);
 
-    if (!loggedUser && isPrivateView) {
-        router.push('/login');
-        return null;
-    }
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (mounted && !loggedUser && isPrivateView) {
+            router.push('/login');
+        }
+    }, [mounted]);
+
+
 
     const getData = useCallback(async (showLoading) => {
         if (!currentRoute.id) return;
@@ -253,21 +262,23 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
         setIsDownloading(false);
     };
 
+    if (!mounted || (!loggedUser && isPrivateView)) return null;
+
     return (
         <div>
 
             {isPrivateView && loggedUser && (
-                <div className="flex flex-row items-center justify-between mb-8 pt-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pt-4">
                     <div className="flex flex-col">
                         <div className="text-xs uppercase font-bold tracking-widest text-yellow-500 mb-2">
                             DETALLES DE EVENTO
                         </div>
-                        <h1 className="text-5xl font-black text-white tracking-tighter">
+                        <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tighter">
                             Participantes
                         </h1>
                     </div>
                     <Button
-                        className="bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-yellow-500 hover:scale-[1.02] active:scale-[0.98]"
+                        className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-400 text-black px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-yellow-500 hover:scale-[1.02] active:scale-[0.98]"
                         onClick={() => {
                             getData(false);
                             setIsOpen(true);
@@ -278,19 +289,17 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                 </div>
             )}
 
-            <div className="premium-card p-6 mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                    <div className="md:col-span-4">
-                        <TextInput
-                            label={'Búsqueda Rápida'}
-                            type='text'
-                            placeholder='Nombre del participante...'
-                            value={searchQuery}
-                            onChange={setSearchQuery}
-                            className="search-input-premium w-full"
-                        />
-                    </div>
-                    <div className="md:col-span-3">
+            <div className="premium-card p-4 sm:p-6 mb-8">
+                <div className="flex flex-col gap-4">
+                    <TextInput
+                        label={'Búsqueda Rápida'}
+                        type='text'
+                        placeholder='Nombre del participante...'
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        className="search-input-premium w-full"
+                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Select
                             label="Categoría"
                             className='bg-neutral-800 border-neutral-800 text-neutral-200 rounded-2xl'
@@ -299,8 +308,6 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                             items={CATEGORIES}
                             onChange={(e) => setCategory(e?.id ?? '')}
                         />
-                    </div>
-                    <div className="md:col-span-3">
                         <Select
                             label="Ordenar Por"
                             className='bg-neutral-800 border-neutral-800 text-neutral-200 rounded-2xl'
@@ -313,7 +320,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                             onChange={(e) => setOrder(e?.id)}
                         />
                     </div>
-                    <div className="md:col-span-2 flex items-center justify-center bg-neutral-800 rounded-2xl p-4 border border-neutral-800">
+                    <div className="flex items-center bg-neutral-800 rounded-2xl px-4 py-3 border border-neutral-700">
                         <label className="flex items-center space-x-3 cursor-pointer group">
                             <input
                                 type="checkbox"
@@ -322,7 +329,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                                 onChange={togglePolling}
                             />
                             <span className="text-xs font-bold uppercase tracking-widest text-neutral-400 group-hover:text-white transition-colors">
-                                Real-time
+                                Actualización en tiempo real
                             </span>
                         </label>
                     </div>

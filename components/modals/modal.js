@@ -57,12 +57,12 @@ const Modal = (
                         <div 
                             style={{ backgroundColor: '#161616', opacity: 1 }}
                             data-background={theme}
-                            className={`inline-block w-full p-10 my-8 overflow-hidden text-left align-middle transition-all transform shadow-[0_35px_60px_-15px_rgba(0,0,0,1)] rounded-[3rem] ${theme === 'dark' ? 'border border-neutral-800 text-white' : 'bg-white text-gray-900'} ${modalSize}`}
+                            className={`inline-block w-full p-4 sm:p-10 my-2 sm:my-8 overflow-hidden text-left align-middle transition-all transform shadow-[0_35px_60px_-15px_rgba(0,0,0,1)] rounded-[2rem] sm:rounded-[3rem] ${theme === 'dark' ? 'border border-neutral-800 text-white' : 'bg-white text-gray-900'} ${modalSize}`}
                         >
                             <div className="mb-10">
                                 <Dialog.Title
                                     as="h3"
-                                    className={`text-4xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
+                                    className={`text-2xl sm:text-4xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}
                                 >
                                     {title}
                                 </Dialog.Title>
@@ -79,12 +79,12 @@ const Modal = (
                                 {children}
  
                                 {(okButton || cancelButton) && (
-                                    <div className="mt-12 pt-10 border-t border-neutral-800 flex flex-row-reverse gap-6">
+                                    <div className="mt-8 pt-6 sm:mt-12 sm:pt-10 border-t border-neutral-800 flex flex-col-reverse sm:flex-row-reverse gap-3 sm:gap-6">
                                         {okButton?.label && okButton?.onClick && (
                                             <button
                                                 disabled={okButton?.disabled}
                                                 type="button"
-                                                className={`px-12 py-5 rounded-3xl font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-xl ${
+                                                className={`w-full sm:w-auto px-8 sm:px-12 py-4 sm:py-5 rounded-3xl font-black text-xs uppercase tracking-widest transition-all duration-300 shadow-xl ${
                                                     okButton?.disabled 
                                                         ? 'bg-neutral-800 text-neutral-600 cursor-not-allowed' 
                                                         : 'bg-yellow-500 hover:bg-yellow-400 text-black hover:shadow-yellow-500 hover:scale-[1.02] active:scale-[0.98]'
@@ -98,7 +98,7 @@ const Modal = (
                                         {cancelButton?.label && cancelButton?.onClick && (
                                             <button
                                                 type="button"
-                                                className="px-10 py-5 rounded-3xl font-black text-xs uppercase tracking-widest text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-300"
+                                                className="w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 rounded-3xl font-black text-xs uppercase tracking-widest text-neutral-500 hover:text-white hover:bg-neutral-800 transition-all duration-300"
                                                 onClick={cancelButton.onClick}
                                             >
                                                 {cancelButton.label}

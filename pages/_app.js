@@ -25,7 +25,7 @@ import '../css/components/tabs.scss'
 import '../css/components/user-widgets/widget-2.scss'
 import '../css/components/user-widgets/widget-4.scss'
 import { RecoilRoot } from 'recoil'
-import { LoadScript } from '@react-google-maps/api'
+
 
 Router.events.on('routeChangeStart', () => NProgress.start())
 Router.events.on('routeChangeComplete', () => NProgress.done())
@@ -35,9 +35,7 @@ export default function App({ Component, pageProps }) {
   // If page has a custom layout, use it
   const getLayout = Component.getLayout || ((page) => (
     <Layout>
-      <LoadScript googleMapsApiKey="AIzaSyDinWw03ObW9w4RzpIposc_qTLNI9dCGcQ">
-        {page}
-      </LoadScript>
+      {page}
     </Layout>
   ))
 
