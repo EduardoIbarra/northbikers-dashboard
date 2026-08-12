@@ -1,9 +1,13 @@
 // pages/routes/purchases.js
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { CurrentRoute, Routes } from '../../store/atoms/global';
+import SearchableSelect from '../../components/select/searchable';
 import { getSupabase } from '../../utils/supabase';
+import { getLoggedUser } from '../../utils';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -53,6 +57,18 @@ export default function RoutePurchasesPage() {
   const [routeTitle, setRouteTitle] = useState('');
   const [routePrices, setRoutePrices] = useState({ amount_cents: 0, couple_price_cents: 0 });
   const [participants, setParticipants] = useState([]);
+  const [routes, setRoutes] = useRecoilState(Routes);
+  const currentRoute = useRecoilValue(CurrentRoute);
+  const setCurrentRoute = useSetRecoilState(CurrentRoute);
+
+  // Sync current route atom to match routeId when loaded
+  useEffect(() => {
+    if (!routes || routes.length === 0 || !routeId) return;
+    const match = routes.find(r => r.id == routeId);
+    if (match) {
+      setCurrentRoute(match);
+    }
+  }, [routeId, routes, setCurrentRoute]);
 
   // ---------- Fetch principal ----------
   const fetchAll = async (rId) => {
@@ -325,18 +341,18 @@ export default function RoutePurchasesPage() {
       <div className="min-h-screen bg-gray-900 text-gray-100">
         <div className="max-w-7xl mx-auto p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold">Compras</h1>
               <p className="text-sm text-gray-300">
                 Ruta: <span className="font-semibold">{routeTitle}</span> — ID: {routeId}
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               {activeTab === 'PRODUCTS' && (
                 <button
                   onClick={downloadCSVProducts}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm font-medium"
                 >
                   Exportar CSV (Productos)
                 </button>
@@ -344,12 +360,12 @@ export default function RoutePurchasesPage() {
               {activeTab === 'PARTICIPANTS' && (
                 <button
                   onClick={downloadCSVParticipants}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm font-medium"
                 >
                   Exportar CSV (Participantes)
                 </button>
               )}
-              <Link href="/routes" className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded">
+              <Link href="/routes" className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium">
                 Volver a Rutas
               </Link>
             </div>

@@ -152,7 +152,15 @@ const Navbar = () => {
             inline
             onChange={(val) => {
               setCurrentRoute(val);
-              if (val?.id) localStorage.setItem('selected_route_id', val.id);
+              if (val?.id) {
+                localStorage.setItem('selected_route_id', val.id);
+                if (router.pathname === '/routes/purchases') {
+                  router.push({
+                    pathname: '/routes/purchases',
+                    query: { routeId: val.id },
+                  });
+                }
+              }
             }}
             className="text-gray-900 focus:ring focus:ring-blue-500 focus:border-blue-500"
           />
@@ -196,7 +204,15 @@ const Navbar = () => {
               inline={false}
               onChange={(val) => {
                 setCurrentRoute(val);
-                if (val?.id) localStorage.setItem('selected_route_id', val.id);
+                if (val?.id) {
+                  localStorage.setItem('selected_route_id', val.id);
+                  if (router.pathname === '/routes/purchases') {
+                    router.push({
+                      pathname: '/routes/purchases',
+                      query: { routeId: val.id },
+                    });
+                  }
+                }
                 // opcional: cerrar al seleccionar
                 // setMobileOpen(false);
               }}
