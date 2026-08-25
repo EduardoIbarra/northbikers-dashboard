@@ -37,9 +37,9 @@ export default function ProductsPage() {
     pickup_details: '',
     selectedRoutes: [],
   });
-  const [files, setFiles] = useState([]);
-  const [previews, setPreviews] = useState([]);
-  const [existingImages, setExistingImages] = useState([]);
+  // Images state (unified for existing and new uploads to allow re-ordering)
+  const [productImages, setProductImages] = useState([]);
+  const [draggedIndex, setDraggedIndex] = useState(null);
   const [saving, setSaving] = useState(false);
 
   // Custom Fields Schema helper functions for visual builder
@@ -509,9 +509,7 @@ export default function ProductsPage() {
       pickup_details: '',
       selectedRoutes: [],
     });
-    setFiles([]);
-    setPreviews([]);
-    setExistingImages([]);
+    setProductImages([]);
     setShowFormModal(true);
   };
 
@@ -541,9 +539,11 @@ export default function ProductsPage() {
       .map(s => s.trim())
       .filter(Boolean);
 
-    setFiles([]);
-    setPreviews([]);
-    setExistingImages(pics);
+    setProductImages(pics.map((src, i) => ({
+      id: `existing-${i}-${src}`,
+      type: 'existing',
+      url: src,
+    })));
     setShowFormModal(true);
   };
 
@@ -566,26 +566,63 @@ export default function ProductsPage() {
     });
   };
 
-  // Handle files
+  // Image handling and reordering
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFiles = Array.from(e.target.files);
-      setFiles(prev => [...prev, ...selectedFiles]);
-      const newPreviews = selectedFiles.map(file => URL.createObjectURL(file));
-      setPreviews(prev => [...prev, ...newPreviews]);
+      const newItems = selectedFiles.map((file, i) => ({
+        id: `new-${Date.now()}-${Math.random().toString(36).substring(2, 7)}-${i}`,
+        type: 'new',
+        url: URL.createObjectURL(file),
+        file,
+      }));
+      setProductImages(prev => [...prev, ...newItems]);
+      e.target.value = '';
     }
   };
 
-  const removeNewFile = (idx) => {
-    setFiles(prev => prev.filter((_, i) => i !== idx));
-    setPreviews(prev => {
-      URL.revokeObjectURL(prev[idx]);
-      return prev.filter((_, i) => i !== idx);
+  const handleRemoveImage = (index) => {
+    setProductImages(prev => {
+      const item = prev[index];
+      if (item && item.type === 'new' && item.url) {
+        URL.revokeObjectURL(item.url);
+      }
+      return prev.filter((_, i) => i !== index);
     });
   };
 
-  const removeExistingImage = (idx) => {
-    setExistingImages(prev => prev.filter((_, i) => i !== idx));
+  const handleMoveImage = (index, direction) => {
+    setProductImages(prev => {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+      const updated = [...prev];
+      const temp = updated[index];
+      updated[index] = updated[targetIndex];
+      updated[targetIndex] = temp;
+      return updated;
+    });
+  };
+
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === targetIndex) return;
+    setProductImages(prev => {
+      const updated = [...prev];
+      const [draggedItem] = updated.splice(draggedIndex, 1);
+      updated.splice(targetIndex, 0, draggedItem);
+      return updated;
+    });
+    setDraggedIndex(null);
   };
 
   // Submit Product Form
@@ -652,27 +689,31 @@ export default function ProductsPage() {
         productId = newProd.id;
       }
 
-      // 2. Upload images
+      // 2. Upload images in order and compile final URLs sequence
       const projectRef = 'aezxnubglexywadbjpgo';
-      const uploadedUrls = [];
+      const finalUrls = [];
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const fileExt = file.name.split('.').pop().toLowerCase();
-        const fileName = `products/${productId}/${Date.now()}-${i}.${fileExt}`;
+      for (let i = 0; i < productImages.length; i++) {
+        const item = productImages[i];
+        if (item.type === 'existing') {
+          finalUrls.push(item.url);
+        } else if (item.type === 'new' && item.file) {
+          const file = item.file;
+          const fileExt = file.name.split('.').pop().toLowerCase();
+          const fileName = `products/${productId}/${Date.now()}-${i}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('pictures')
-          .upload(fileName, file, { cacheControl: '3600', upsert: false });
+          const { error: uploadError } = await supabase.storage
+            .from('pictures')
+            .upload(fileName, file, { cacheControl: '3600', upsert: false });
 
-        if (uploadError) throw new Error(`Error subiendo imagen: ${uploadError.message}`);
+          if (uploadError) throw new Error(`Error subiendo imagen: ${uploadError.message}`);
 
-        const publicUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/pictures/${fileName}`;
-        uploadedUrls.push(publicUrl);
+          const publicUrl = `https://${projectRef}.supabase.co/storage/v1/object/public/pictures/${fileName}`;
+          finalUrls.push(publicUrl);
+        }
       }
 
-      // Final pictures list: combine remaining existing images + newly uploaded images
-      const finalPicturesCsv = [...existingImages, ...uploadedUrls].join(',');
+      const finalPicturesCsv = finalUrls.join(',');
 
       // 3. Update pictures_csv
       const { error: picUpdateErr } = await supabase
@@ -1430,7 +1471,15 @@ export default function ProductsPage() {
 
               {/* Images */}
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">Imágenes del Producto</label>
+                <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
+                  <label className="block text-sm font-semibold text-gray-300">Imágenes del Producto</label>
+                  {productImages.length > 1 && (
+                    <span className="text-[11px] text-blue-400 font-medium bg-blue-950/40 px-2.5 py-1 rounded-lg border border-blue-800/40">
+                      💡 Reordena usando las flechas (← →) o arrastrando las fotos
+                    </span>
+                  )}
+                </div>
+
                 <div className="flex justify-center px-6 pt-5 pb-6 border-2 border-gray-800 border-dashed rounded-xl hover:border-blue-500 hover:bg-gray-950 transition-colors">
                   <div className="space-y-1 text-center">
                     <svg className="mx-auto h-10 w-10 text-gray-500" stroke="currentColor" fill="none" viewBox="0 0 48 48">
@@ -1445,39 +1494,86 @@ export default function ProductsPage() {
                   </div>
                 </div>
 
-                {/* Previews grid */}
-                {(existingImages.length > 0 || previews.length > 0) && (
-                  <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-4">
-                    {/* Existing images */}
-                    {existingImages.map((src, index) => (
-                      <div key={`existing-${index}`} className="relative group rounded-lg overflow-hidden border border-gray-800 aspect-square">
-                        <img src={src} alt="Existing" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button
-                            type="button"
-                            onClick={() => removeExistingImage(index)}
-                            className="bg-red-600 text-white p-1.5 rounded-full text-xs hover:bg-red-700"
-                          >
-                            ✕
-                          </button>
+                {/* Interactive Reorderable Grid */}
+                {productImages.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {productImages.map((imgItem, index) => {
+                      const isFirst = index === 0;
+                      const isLast = index === productImages.length - 1;
+                      const isDragging = draggedIndex === index;
+
+                      return (
+                        <div
+                          key={imgItem.id || `img-${index}`}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, index)}
+                          onDragOver={(e) => handleDragOver(e, index)}
+                          onDrop={(e) => handleDrop(e, index)}
+                          className={`relative group rounded-xl overflow-hidden border transition-all duration-200 aspect-square select-none cursor-grab active:cursor-grabbing ${
+                            isDragging ? 'opacity-40 border-blue-500 scale-95' : 'border-gray-800 hover:border-gray-600 bg-gray-900'
+                          }`}
+                        >
+                          <img src={imgItem.url} alt={`Imagen ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
+
+                          {/* Badge for Position / Principal */}
+                          <div className="absolute top-2 left-2 flex items-center gap-1">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-md shadow-md backdrop-blur-md ${
+                              isFirst
+                                ? 'bg-amber-500 text-black border border-amber-300 font-black'
+                                : 'bg-black/70 text-gray-200 border border-white/10 font-bold'
+                            }`}>
+                              {isFirst ? '⭐ Principal' : `#${index + 1}`}
+                            </span>
+                            {imgItem.type === 'new' && (
+                              <span className="bg-blue-600/90 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow">
+                                Nueva
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Overlay Controls */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-2">
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveImage(index)}
+                                className="bg-red-600/90 text-white w-7 h-7 rounded-lg text-xs font-bold hover:bg-red-600 flex items-center justify-center transition shadow-lg"
+                                title="Eliminar imagen"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                            {/* Action Bar for Reordering */}
+                            <div className="flex items-center justify-between bg-gray-900/90 border border-gray-700/80 rounded-lg p-1 text-white backdrop-blur-sm">
+                              <button
+                                type="button"
+                                disabled={isFirst}
+                                onClick={() => handleMoveImage(index, -1)}
+                                className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-700 disabled:opacity-20 disabled:hover:bg-transparent text-xs font-bold"
+                                title="Mover hacia atrás"
+                              >
+                                ←
+                              </button>
+
+                              <span className="text-[10px] font-bold text-gray-300">
+                                {index + 1} / {productImages.length}
+                              </span>
+
+                              <button
+                                type="button"
+                                disabled={isLast}
+                                onClick={() => handleMoveImage(index, 1)}
+                                className="w-7 h-7 rounded flex items-center justify-center hover:bg-gray-700 disabled:opacity-20 disabled:hover:bg-transparent text-xs font-bold"
+                                title="Mover hacia adelante"
+                              >
+                                →
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    {/* New previews */}
-                    {previews.map((src, index) => (
-                      <div key={`new-${index}`} className="relative group rounded-lg overflow-hidden border border-gray-800 aspect-square">
-                        <img src={src} alt="Preview" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button
-                            type="button"
-                            onClick={() => removeNewFile(index)}
-                            className="bg-red-600 text-white p-1.5 rounded-full text-xs hover:bg-red-700"
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
