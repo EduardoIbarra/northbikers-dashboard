@@ -35,6 +35,7 @@ export default function ProductsPage() {
     shipping_price: '200',
     shipping_details: '',
     pickup_details: '',
+    is_active: true,
     selectedRoutes: [],
   });
   // Images state (unified for existing and new uploads to allow re-ordering)
@@ -475,7 +476,7 @@ export default function ProductsPage() {
   // Handle soft delete / toggling active status
   const handleToggleActive = async (product) => {
     try {
-      const nextStatus = !product.is_active;
+      const nextStatus = product.is_active === false;
       const { error } = await supabase
         .from('products')
         .update({ is_active: nextStatus })
@@ -507,6 +508,7 @@ export default function ProductsPage() {
       shipping_price: '200',
       shipping_details: '',
       pickup_details: '',
+      is_active: true,
       selectedRoutes: [],
     });
     setProductImages([]);
@@ -531,6 +533,7 @@ export default function ProductsPage() {
       shipping_price: product.shipping_price_cents ? (product.shipping_price_cents / 100).toString() : '200',
       shipping_details: product.shipping_details || '',
       pickup_details: product.pickup_details || '',
+      is_active: product.is_active !== false,
       selectedRoutes: linkedRouteIds,
     });
 
@@ -667,7 +670,7 @@ export default function ProductsPage() {
         shipping_price_cents: shippingPriceCents,
         shipping_details: formData.shipping_details.trim() || null,
         pickup_details: formData.pickup_details.trim() || null,
-        is_active: editingProduct ? editingProduct.is_active : true,
+        is_active: formData.is_active,
       };
 
       let productId = editingProduct?.id;
@@ -978,6 +981,7 @@ export default function ProductsPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => {
+                const isActive = product.is_active !== false;
                 const pics = (product.pictures_csv || '')
                   .split(',')
                   .map(s => s.trim())
@@ -993,7 +997,7 @@ export default function ProductsPage() {
                 return (
                   <div
                     key={product.id}
-                    className={`flex flex-col bg-gray-900 border ${product.is_active ? 'border-gray-800' : 'border-red-900/30 bg-gray-900/30'} rounded-2xl overflow-hidden hover:shadow-xl hover:border-gray-700/80 transition duration-200`}
+                    className={`flex flex-col bg-gray-900 border ${isActive ? 'border-gray-800' : 'border-red-900/30 bg-gray-900/30'} rounded-2xl overflow-hidden hover:shadow-xl hover:border-gray-700/80 transition duration-200`}
                   >
                     {/* Thumbnail */}
                     <div className="relative aspect-video w-full bg-gray-950 overflow-hidden border-b border-gray-800">
@@ -1005,7 +1009,7 @@ export default function ProductsPage() {
                       <div className="absolute right-3 top-3 rounded-lg bg-gray-900/90 px-3 py-1.5 text-xs font-black text-white shadow backdrop-blur-md">
                         {centsToMoney(product.price_cents)}
                       </div>
-                      {!product.is_active && (
+                      {!isActive && (
                         <div className="absolute left-3 top-3 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow">
                           INACTIVO
                         </div>
@@ -1087,13 +1091,13 @@ export default function ProductsPage() {
                       <button
                         onClick={() => handleToggleActive(product)}
                         className={`px-3 py-2 rounded-lg text-xs font-black transition duration-200 ${
-                          product.is_active
+                          isActive
                             ? 'bg-red-950/20 hover:bg-red-950 text-red-400 hover:text-red-200'
                             : 'bg-emerald-950/20 hover:bg-emerald-950 text-emerald-400 hover:text-emerald-200'
                         }`}
-                        title={product.is_active ? 'Desactivar producto (Soft Delete)' : 'Activar producto'}
+                        title={isActive ? 'Desactivar artículo' : 'Activar artículo'}
                       >
-                        {product.is_active ? 'Borrador' : 'Activar'}
+                        {isActive ? 'Desactivar' : 'Activar'}
                       </button>
                     </div>
                   </div>
@@ -1117,6 +1121,29 @@ export default function ProductsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Availability */}
+              <label className={`flex items-center justify-between gap-4 rounded-xl border p-4 cursor-pointer transition-colors ${
+                formData.is_active
+                  ? 'bg-emerald-950/20 border-emerald-900/50'
+                  : 'bg-red-950/20 border-red-900/50'
+              }`}>
+                <div>
+                  <span className="block text-sm font-bold text-gray-100">Artículo disponible</span>
+                  <span className="block mt-1 text-xs text-gray-400">
+                    {formData.is_active
+                      ? 'El artículo está activo y disponible para compra.'
+                      : 'El artículo está desactivado y no se ofrecerá para compra.'}
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  name="is_active"
+                  checked={formData.is_active}
+                  onChange={handleInputChange}
+                  className="h-5 w-5 shrink-0 rounded border-gray-700 bg-gray-900 text-emerald-500 focus:ring-emerald-500"
+                />
+              </label>
+
               {/* Route Associations */}
               <div>
                 <label className="block text-sm font-semibold text-gray-300 mb-2">Rutas en las que se ofrece (Opcional)</label>
