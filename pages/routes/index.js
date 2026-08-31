@@ -169,6 +169,25 @@ const RouteBuilder = () => {
         setGeneratedLinks(links);
     };
 
+    const handleCopyCardCreatorLink = async () => {
+        const eventSlug = routeAttributes.slug?.trim();
+
+        if (!eventSlug) {
+            toast.error("La ruta seleccionada no tiene un slug configurado.");
+            return;
+        }
+
+        const cardCreatorLink = `https://www.northbikers.com/card-creator?event=${encodeURIComponent(eventSlug)}`;
+
+        try {
+            await navigator.clipboard.writeText(cardCreatorLink);
+            toast.success("Link del creador de tarjeta copiado!");
+        } catch (error) {
+            console.error("Error copying card creator link", error);
+            toast.error("No se pudo copiar el link.");
+        }
+    };
+
     // Preload route data
     const preloadRouteData = async () => {
         if (!currentRoute?.id) return;
@@ -903,6 +922,18 @@ const RouteBuilder = () => {
                                     >
                                         Descargar QR para este evento
                                     </a>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleCopyCardCreatorLink}
+                                        className="inline-block bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:bg-purple-700 hover:shadow-xl transition duration-300 ease-in-out disabled:cursor-not-allowed disabled:opacity-50"
+                                        disabled={!routeAttributes.slug?.trim()}
+                                        title={routeAttributes.slug
+                                            ? `https://www.northbikers.com/card-creator?event=${encodeURIComponent(routeAttributes.slug)}`
+                                            : "Configura el slug del evento para generar el link"}
+                                    >
+                                        Copiar link de Card Creator
+                                    </button>
 
                                     {/* Nuevo botón para ver compras */}
                                     <Link
