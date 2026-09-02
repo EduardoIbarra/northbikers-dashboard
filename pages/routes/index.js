@@ -22,6 +22,8 @@ const RouteBuilder = () => {
     const setCurrentRoute = useSetRecoilState(CurrentRoute);
     const [checkpoints, setCheckpoints] = useState([]);
     const [draggedCpIndex, setDraggedCpIndex] = useState(null);
+    const [savingCheckpointIds, setSavingCheckpointIds] = useState([]);
+    const [removingCheckpointIds, setRemovingCheckpointIds] = useState([]);
 
     const [categories, setCategories] = useState([]);
     const [newCheckpoint, setNewCheckpoint] = useState({
@@ -510,6 +512,10 @@ const RouteBuilder = () => {
     }, [currentRoute, getCheckpoints, fetchPicks]);
 
     const handleSaveCheckpoint = async (checkpoint) => {
+        const checkpointId = checkpoint.checkpoint_id;
+        if (savingCheckpointIds.includes(checkpointId)) return;
+
+        setSavingCheckpointIds((ids) => [...ids, checkpointId]);
         try {
             const updatedCheckpoint = checkpoint.checkpoints;
 
@@ -520,7 +526,7 @@ const RouteBuilder = () => {
                 .eq("id", checkpoint.checkpoint_id)
                 .single();
 
-            const { error } = await supabase
+            const { data: savedCheckpoint, error } = await supabase
                 .from('checkpoints')
                 .update({
                     name: updatedCheckpoint.name,
@@ -538,10 +544,12 @@ const RouteBuilder = () => {
                         ? Number(updatedCheckpoint.category_id)
                         : null, // ✅ Correct field
                 })
-                .eq('id', checkpoint.checkpoint_id);
+                .eq('id', checkpointId)
+                .select('id')
+                .single();
 
-            if (error) {
-                toast.error("Error saving checkpoint:", error);
+            if (error || !savedCheckpoint) {
+                toast.error(`Error al guardar el checkpoint: ${error?.message || 'no se actualizó ningún registro'}`);
             } else {
                 let changes = [];
                 if (oldCpData) {
@@ -569,9 +577,70 @@ const RouteBuilder = () => {
                 await logRouteAction('UPDATE_CHECKPOINT', logSummary);
 
                 toast.success("Cambios guardados exitosamente.");
+                await getCheckpoints();
             }
         } catch (e) {
-            toast.error("Error updating checkpoint", e);
+            console.error("Error updating checkpoint", e);
+            toast.error("Error inesperado al actualizar el checkpoint.");
+        } finally {
+            setSavingCheckpointIds((ids) => ids.filter((id) => id !== checkpointId));
+        }
+    };
+
+    const handleRemoveCheckpoint = async (checkpoint) => {
+        const checkpointName = checkpoint.checkpoints?.name || `#${checkpoint.checkpoint_id}`;
+        const eventCheckpointId = checkpoint.id;
+
+        if (removingCheckpointIds.includes(eventCheckpointId)) return;
+        if (!window.confirm(`¿Quitar "${checkpointName}" de esta ruta?`)) return;
+        if (!window.confirm(`Última confirmación: se eliminarán de esta ruta los avances de participantes y Picks asociados a "${checkpointName}". Esta acción no se puede deshacer. ¿Continuar?`)) return;
+
+        setRemovingCheckpointIds((ids) => [...ids, eventCheckpointId]);
+        try {
+            const { error: progressError } = await supabase
+                .from('profile_event_checkpoints')
+                .delete()
+                .eq('event_checkpoint_id', eventCheckpointId);
+            if (progressError) throw progressError;
+
+            const { error: picksError } = await supabase
+                .from('pick_checkpoints')
+                .delete()
+                .eq('event_checkpoint_id', eventCheckpointId);
+            if (picksError) throw picksError;
+
+            const { data: removedCheckpoint, error: removeError } = await supabase
+                .from('event_checkpoints')
+                .delete()
+                .eq('id', eventCheckpointId)
+                .eq('event_id', currentRoute.id)
+                .select('id')
+                .single();
+            if (removeError || !removedCheckpoint) {
+                throw removeError || new Error('No se eliminó ningún registro de la ruta');
+            }
+
+            const logSummary = `Removed checkpoint "${checkpointName}" from route "${currentRoute.title}"`;
+            const { error: checkpointLogError } = await supabase
+                .from('checkpoint_logs')
+                .insert({
+                    checkpoint_id: checkpoint.checkpoint_id,
+                    user_id: loggedUser?.id,
+                    summary: logSummary
+                });
+            if (checkpointLogError) {
+                console.error("Error writing checkpoint removal log:", checkpointLogError);
+            }
+
+            await logRouteAction('REMOVE_CHECKPOINT', logSummary);
+            toast.success(`"${checkpointName}" fue quitado de la ruta.`);
+            await Promise.all([getCheckpoints(), fetchPicks()]);
+        } catch (e) {
+            console.error("Error removing checkpoint from route", e);
+            toast.error(`Error al quitar el checkpoint: ${e.message || 'error inesperado'}`);
+            await getCheckpoints();
+        } finally {
+            setRemovingCheckpointIds((ids) => ids.filter((id) => id !== eventCheckpointId));
         }
     };
 
@@ -1424,7 +1493,7 @@ const RouteBuilder = () => {
                                                     <th>Categoría</th>
                                                     <th>Imagen</th>
                                                     <th>Ver</th>
-                                                    <th>Guardar</th>
+                                                    <th>Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -1723,9 +1792,17 @@ const RouteBuilder = () => {
                                                         </td>
 
                                                         <td>
-                                                            <button style={{ backgroundColor: 'black', color: 'white', padding: '8px 16px', borderRadius: '4px' }}
+                                                            <button type="button" style={{ backgroundColor: 'black', color: 'white', padding: '8px 16px', borderRadius: '4px' }}
+                                                                disabled={savingCheckpointIds.includes(cp.checkpoint_id) || removingCheckpointIds.includes(cp.id)}
                                                                 onClick={() => handleSaveCheckpoint(cp)}>
-                                                                Guardar
+                                                                {savingCheckpointIds.includes(cp.checkpoint_id) ? 'Guardando...' : 'Guardar'}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                className="ml-2 bg-red-700 hover:bg-red-600 disabled:opacity-50 text-white py-2 px-4 rounded"
+                                                                disabled={savingCheckpointIds.includes(cp.checkpoint_id) || removingCheckpointIds.includes(cp.id)}
+                                                                onClick={() => handleRemoveCheckpoint(cp)}>
+                                                                {removingCheckpointIds.includes(cp.id) ? 'Quitando...' : 'Quitar'}
                                                             </button>
                                                         </td>
                                                     </tr>
