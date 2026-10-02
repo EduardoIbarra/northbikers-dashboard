@@ -6,6 +6,20 @@ import Button from "../../components/button";
 import { AiFillEdit } from "react-icons/ai";
 import { getSupabase } from "../../utils/supabase";
 
+const getPaymentDisplayStatus = ({ payment_intent, stripe_checkout_id, participant_number }) => {
+    const hasStripePayment = Boolean(payment_intent && stripe_checkout_id);
+
+    if (hasStripePayment) {
+        return { label: 'Pagado', className: 'status-paid' };
+    }
+
+    if (Number(participant_number) > 0) {
+        return { label: 'Promoción', className: 'status-paid' };
+    }
+
+    return { label: 'Pendiente', className: 'status-unpaid' };
+};
+
 const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit, isPrivateView = true }) => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [data, setData] = useState([]);
@@ -52,7 +66,7 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
             row.regular_checkins_number ?? 0,
             row.challenge_checkins_number ?? 0,
             `"${row.route?.title?.replace(/"/g, '""') || ""}"`,
-            row.payment_status === 'paid' ? 'Pagado' : 'Pendiente'
+            getPaymentDisplayStatus(row).label
         ]);
 
         downloadCSVFile("ranking_participantes.csv", headers, rows);
@@ -196,8 +210,9 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
 
     // ── Desktop table row ────────────────────────────────────────────────
     const TableItem = memo((row) => {
-        const { profile, participant_number, position, category, points, route, gender, payment_status, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
+        const { profile, participant_number, position, category, points, route, gender, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
         const { name, email } = profile;
+        const paymentDisplayStatus = getPaymentDisplayStatus(row);
 
         return (
             <tr onClick={() => {
@@ -254,8 +269,8 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                     </div>
                 </td>
                 <td className="py-4 px-4">
-                    <span className={payment_status === 'paid' ? 'status-paid' : 'status-unpaid'}>
-                        {payment_status === 'paid' ? 'Pagado' : 'Pendiente'}
+                    <span className={paymentDisplayStatus.className}>
+                        {paymentDisplayStatus.label}
                     </span>
                 </td>
                 <td className="py-4 px-4">
@@ -279,8 +294,9 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
 
     // ── Mobile card ──────────────────────────────────────────────────────
     const MobileCard = memo((row) => {
-        const { profile, participant_number, position, category, points, gender, payment_status, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
+        const { profile, participant_number, position, category, points, gender, regular_checkins_number, challenge_checkins_number, avatar_url } = row;
         const { name, email } = profile;
+        const paymentDisplayStatus = getPaymentDisplayStatus(row);
 
         return (
             <div
@@ -327,8 +343,8 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                     <div className="w-[1px] h-4 bg-neutral-700"></div>
                     <span className="text-xs text-neutral-400 italic">{getSelectValue(category, CATEGORIES)}</span>
                     <div className="w-[1px] h-4 bg-neutral-700"></div>
-                    <span className={payment_status === 'paid' ? 'status-paid' : 'status-unpaid'} style={{ fontSize: 10 }}>
-                        {payment_status === 'paid' ? 'Pagado' : 'Pendiente'}
+                    <span className={paymentDisplayStatus.className} style={{ fontSize: 10 }}>
+                        {paymentDisplayStatus.label}
                     </span>
                 </div>
 
