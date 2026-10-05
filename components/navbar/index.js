@@ -2,7 +2,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiLogOut, FiMenu, FiX, FiFileText } from 'react-icons/fi';
 import { useMemo, useCallback, useEffect, useState } from 'react';
 
 import { useRecoilState, useRecoilValue, useSetRecoilState } from "recoil";
@@ -171,6 +171,7 @@ const Navbar = () => {
           <NavLink href="/routes">Rutas</NavLink>
           <NavLink href="/participants">Participantes</NavLink>
           <NavLink href="/checkpoints">Checkpoints</NavLink>
+          {user?.email?.toLowerCase() === 'eduardoibarra904@gmail.com' && <NavLink href="/news"><FiFileText className="inline mr-1" />Noticias</NavLink>}
           <button
             onClick={logout}
             className="ml-2 text-gray-100 hover:text-gray-300 transition duration-200 flex items-center text-sm md:text-base"
@@ -191,38 +192,36 @@ const Navbar = () => {
         </button>
       </div>
 
+      {/* Keep the selected route visible and switchable on mobile. */}
+      <div className="md:hidden px-3 pb-3">
+        <SearchableSelect
+          size="w-full"
+          placeholder="Selecciona ruta"
+          selected={currentRoute?.id}
+          items={routes}
+          inline={false}
+          onChange={(val) => {
+            setCurrentRoute(val);
+            if (val?.id) {
+              localStorage.setItem('selected_route_id', val.id);
+              if (router.pathname === '/routes/purchases') {
+                router.push({ pathname: '/routes/purchases', query: { routeId: val.id } });
+              }
+            }
+          }}
+          className="w-full text-gray-900"
+        />
+      </div>
+
       {/* Menú móvil */}
       {mobileOpen && (
         <div className="md:hidden border-t border-gray-700 bg-gray-800">
           <div className="p-3 space-y-3">
-            {/* Selector de ruta también en móvil */}
-            <SearchableSelect
-              size="w-full"
-              placeholder="Selecciona ruta"
-              selected={currentRoute?.id}
-              items={routes}
-              inline={false}
-              onChange={(val) => {
-                setCurrentRoute(val);
-                if (val?.id) {
-                  localStorage.setItem('selected_route_id', val.id);
-                  if (router.pathname === '/routes/purchases') {
-                    router.push({
-                      pathname: '/routes/purchases',
-                      query: { routeId: val.id },
-                    });
-                  }
-                }
-                // opcional: cerrar al seleccionar
-                // setMobileOpen(false);
-              }}
-              className="w-full text-gray-900"
-            />
-
             <nav className="flex flex-col">
               <NavLink href="/routes" onClick={() => setMobileOpen(false)}>Rutas</NavLink>
               <NavLink href="/participants" onClick={() => setMobileOpen(false)}>Participantes</NavLink>
               <NavLink href="/checkpoints" onClick={() => setMobileOpen(false)}>Checkpoints</NavLink>
+              {user?.email?.toLowerCase() === 'eduardoibarra904@gmail.com' && <NavLink href="/news" onClick={() => setMobileOpen(false)}><FiFileText className="inline mr-2" />Noticias</NavLink>}
               <button
                 onClick={logout}
                 className="mt-2 flex items-center gap-2 rounded-md px-3 py-2 text-left text-gray-200 hover:bg-gray-700"

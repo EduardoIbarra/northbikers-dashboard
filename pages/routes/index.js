@@ -11,11 +11,43 @@ import "react-quill/dist/quill.snow.css";
 import 'react-toastify/dist/ReactToastify.css';
 import dynamic from "next/dynamic";
 import Link from 'next/link';
+import moment from 'moment-timezone';
 // Import ReactQuill dynamically with SSR disabled
 const ReactQuill = dynamic(() => import("react-quill"), {
     ssr: false,
     loading: () => <p>Loading editor...</p> // Optional loading message
 });
+
+const ROUTE_TIMEZONES = [
+    { value: 'America/Monterrey', label: 'Monterrey, México (America/Monterrey)' },
+    { value: 'America/Mexico_City', label: 'Ciudad de México (America/Mexico_City)' },
+    { value: 'America/Cancun', label: 'Cancún (America/Cancun)' },
+    { value: 'America/Merida', label: 'Mérida (America/Merida)' },
+    { value: 'America/Chihuahua', label: 'Chihuahua (America/Chihuahua)' },
+    { value: 'America/Ciudad_Juarez', label: 'Ciudad Juárez (America/Ciudad_Juarez)' },
+    { value: 'America/Hermosillo', label: 'Hermosillo (America/Hermosillo)' },
+    { value: 'America/Mazatlan', label: 'Mazatlán (America/Mazatlan)' },
+    { value: 'America/Tijuana', label: 'Tijuana (America/Tijuana)' },
+];
+
+const DEFAULT_CHALLENGE_INSTRUCTIONS = 'Lee y sigue las instrucciones específicas del reto. Para validar los puntos, publica una foto (no una historia) en Facebook o Instagram, etiquetando las cuentas indicadas e incluyendo el hashtag requerido. Toma una captura donde se vean las etiquetas y el hashtag y súbela a NorthBikers. Sin señal, haz el check-in en modo offline y sube la foto cuando tengas conexión. En cada checkpoint y reto, incluye una selfie con tu buff o jersey visible, o con el número de piloto de tu moto visible. Si falta algún requisito, los puntos no serán válidos.';
+const DEFAULT_CHALLENGE_SOCIAL = '#RallyADVEdoMex';
+
+const toRouteLocalDateTime = (timestamp, timezone = 'America/Monterrey') => {
+    if (!timestamp) return '';
+    // routes.start_timestamp/end_timestamp are PostgreSQL `timestamp` values
+    // returned without an offset, but the application stores UTC clock time in
+    // them. Parse explicitly as UTC before rendering the event's local time.
+    const value = moment.utc(timestamp);
+    return value.isValid() ? value.tz(timezone).format('YYYY-MM-DDTHH:mm') : '';
+};
+
+const routeLocalDateTimeToUtc = (localDateTime, timezone = 'America/Monterrey') => {
+    if (!localDateTime) return null;
+    const value = moment.tz(localDateTime, 'YYYY-MM-DDTHH:mm', true, timezone);
+    return value.isValid() ? value.toISOString() : null;
+};
+
 const RouteBuilder = () => {
     const [routes, setRoutes] = useRecoilState(Routes);
     const currentRoute = useRecoilValue(CurrentRoute);
@@ -50,7 +82,10 @@ const RouteBuilder = () => {
         venue_iframe: "",
         start_timestamp: "",
         end_timestamp: "",
+        timezone: "America/Monterrey",
         instructions: "",
+        challenge_instructions: DEFAULT_CHALLENGE_INSTRUCTIONS,
+        challenge_hashtags_accounts: DEFAULT_CHALLENGE_SOCIAL,
         amount: 0,
         slug: "",
     });
@@ -65,6 +100,16 @@ const RouteBuilder = () => {
     const [loggedUser, setLoggedUser] = useState(null);
     const [bannerFile, setBannerFile] = useState(null);
     const [bannerHFile, setBannerHFile] = useState(null);
+    const [activeAttributeTab, setActiveAttributeTab] = useState('general');
+    const [eventPauses, setEventPauses] = useState([]);
+    const [loadingPauses, setLoadingPauses] = useState(false);
+    const [savingPause, setSavingPause] = useState(false);
+    const [pauseDraft, setPauseDraft] = useState({
+        id: null,
+        pause_start: '',
+        pause_end: '',
+        description: '',
+    });
     const supabase = getSupabase();
 
     // Link Generator State
@@ -73,18 +118,34 @@ const RouteBuilder = () => {
     const [desiredPrice, setDesiredPrice] = useState("");
     const [generatedLinks, setGeneratedLinks] = useState(null);
     const [existingCoupons, setExistingCoupons] = useState([]);
+    const [referralStats, setReferralStats] = useState([]);
 
     const fetchCoupons = useCallback(async () => {
         if (!currentRoute?.id) return;
 
-        const { data, error } = await supabase
-            .from("coupons")
-            .select("*")
-            .eq("route_id", currentRoute.id)
-            .order("created_at", { ascending: false });
+        const [couponsResult, referralsResult] = await Promise.all([
+            supabase
+                .from("coupons")
+                .select("*")
+                .eq("route_id", currentRoute.id)
+                .order("created_at", { ascending: false }),
+            supabase
+                .from("event_profile")
+                .select("referrer")
+                .eq("route_id", currentRoute.id)
+                .not("referrer", "is", null),
+        ]);
 
-        if (!error && data) {
-            setExistingCoupons(data);
+        if (!couponsResult.error) setExistingCoupons(couponsResult.data || []);
+        if (!referralsResult.error) {
+            const counts = (referralsResult.data || []).reduce((result, item) => {
+                const code = item.referrer?.trim();
+                if (code) result[code] = (result[code] || 0) + 1;
+                return result;
+            }, {});
+            setReferralStats(Object.entries(counts)
+                .map(([code, registrations]) => ({ code, registrations }))
+                .sort((a, b) => b.registrations - a.registrations));
         }
     }, [supabase, currentRoute?.id]);
 
@@ -199,8 +260,8 @@ const RouteBuilder = () => {
                 .from("routes")
                 .select(
                     "title, venue, dates, description, long_description, en_long_description, " +
-                    "venue_link, whatsapp_group_url, venue_iframe, start_timestamp, end_timestamp, " +
-                    "banner, banner_h, instructions, amount, slug"   // ← added
+                    "venue_link, whatsapp_group_url, venue_iframe, start_timestamp, end_timestamp, timezone, " +
+                    "banner, banner_h, instructions, amount, slug, challenge_instructions, challenge_hashtags_accounts"
                 )
                 .eq("id", currentRoute.id)
                 .single();
@@ -210,7 +271,9 @@ const RouteBuilder = () => {
                 return;
             }
 
-            // Update the state with fetched data
+            const routeTimezone = data.timezone || "America/Monterrey";
+
+            // Timestamps are stored as instants and displayed in the route's local timezone.
             setRouteAttributes({
                 title: data.title || "",
                 venue: data.venue || "",
@@ -221,11 +284,14 @@ const RouteBuilder = () => {
                 venue_link: data.venue_link || "",
                 whatsapp_group_url: data.whatsapp_group_url || "",
                 venue_iframe: data.venue_iframe || "",
-                start_timestamp: data.start_timestamp || "",
-                end_timestamp: data.end_timestamp || "",
+                start_timestamp: toRouteLocalDateTime(data.start_timestamp, routeTimezone),
+                end_timestamp: toRouteLocalDateTime(data.end_timestamp, routeTimezone),
+                timezone: routeTimezone,
                 banner: data.banner || "",
                 banner_h: data.banner_h || "",
                 instructions: data.instructions || "",
+                challenge_instructions: data.challenge_instructions || DEFAULT_CHALLENGE_INSTRUCTIONS,
+                challenge_hashtags_accounts: data.challenge_hashtags_accounts || DEFAULT_CHALLENGE_SOCIAL,
                 amount: data.amount || 0,
                 slug: data.slug || "",
             });
@@ -266,8 +332,37 @@ const RouteBuilder = () => {
         setRouteAttributes((prev) => ({ ...prev, [key]: value }));
     };
 
+    const handleTimezoneChange = (nextTimezone) => {
+        setRouteAttributes((prev) => {
+            const previousTimezone = prev.timezone || 'America/Monterrey';
+            const convertLocalValue = (localValue) => {
+                if (!localValue) return '';
+                const instant = moment.tz(localValue, 'YYYY-MM-DDTHH:mm', true, previousTimezone);
+                return instant.isValid()
+                    ? instant.tz(nextTimezone).format('YYYY-MM-DDTHH:mm')
+                    : localValue;
+            };
+
+            return {
+                ...prev,
+                timezone: nextTimezone,
+                start_timestamp: convertLocalValue(prev.start_timestamp),
+                end_timestamp: convertLocalValue(prev.end_timestamp),
+            };
+        });
+    };
+
     const handleSaveAttribute = async (key, value) => {
         try {
+            const databaseValue = ['start_timestamp', 'end_timestamp'].includes(key)
+                ? routeLocalDateTimeToUtc(value, routeAttributes.timezone)
+                : value;
+
+            if (['start_timestamp', 'end_timestamp'].includes(key) && value && !databaseValue) {
+                toast.error('La fecha y hora no son válidas.');
+                return;
+            }
+
             // Fetch old attribute value to log difference
             const { data: oldRouteData } = await supabase
                 .from("routes")
@@ -278,18 +373,108 @@ const RouteBuilder = () => {
 
             const { error } = await supabase
                 .from("routes")
-                .update({ [key]: value })
+                .update({ [key]: databaseValue })
                 .eq("id", currentRoute.id);
 
             if (error) {
                 toast.error(`Error saving ${key}:`, error);
             } else {
                 toast.success(`"${key}" saved successfully!`);
-                await logRouteAction('UPDATE_ROUTE_ATTRIBUTE', `Updated route attribute "${key}": set from "${oldValue}" to "${value}"`);
+                await logRouteAction('UPDATE_ROUTE_ATTRIBUTE', `Updated route attribute "${key}": set from "${oldValue}" to "${databaseValue}"`);
             }
         } catch (e) {
             toast.error(`Unexpected error saving ${key}:`, e);
         }
+    };
+
+    const fetchEventPauses = useCallback(async () => {
+        if (!currentRoute?.id) {
+            setEventPauses([]);
+            return;
+        }
+
+        setLoadingPauses(true);
+        const { data, error } = await supabase
+            .from('event_pauses')
+            .select('id, event_id, pause_start, pause_end, description, created_at, updated_at')
+            .eq('event_id', currentRoute.id)
+            .order('pause_start', { ascending: true });
+
+        if (error) {
+            toast.error(`Error al cargar pausas: ${error.message}`);
+        } else {
+            setEventPauses(data || []);
+        }
+        setLoadingPauses(false);
+    }, [currentRoute?.id, supabase]);
+
+    useEffect(() => {
+        fetchEventPauses();
+        setPauseDraft({ id: null, pause_start: '', pause_end: '', description: '' });
+    }, [fetchEventPauses]);
+
+    const handleEditPause = (pause) => {
+        setPauseDraft({
+            id: pause.id,
+            pause_start: toRouteLocalDateTime(pause.pause_start, routeAttributes.timezone),
+            pause_end: toRouteLocalDateTime(pause.pause_end, routeAttributes.timezone),
+            description: pause.description || '',
+        });
+    };
+
+    const handleCancelPauseEdit = () => {
+        setPauseDraft({ id: null, pause_start: '', pause_end: '', description: '' });
+    };
+
+    const handleSavePause = async () => {
+        if (!currentRoute?.id || !pauseDraft.pause_start || !pauseDraft.pause_end) {
+            toast.error('Selecciona el inicio y fin de la pausa.');
+            return;
+        }
+
+        const pauseStart = routeLocalDateTimeToUtc(pauseDraft.pause_start, routeAttributes.timezone);
+        const pauseEnd = routeLocalDateTimeToUtc(pauseDraft.pause_end, routeAttributes.timezone);
+        if (!pauseStart || !pauseEnd || moment(pauseEnd).isSameOrBefore(moment(pauseStart))) {
+            toast.error('El fin de la pausa debe ser posterior al inicio.');
+            return;
+        }
+
+        setSavingPause(true);
+        const payload = {
+            event_id: currentRoute.id,
+            pause_start: pauseStart,
+            pause_end: pauseEnd,
+            description: pauseDraft.description.trim() || null,
+        };
+        const result = pauseDraft.id
+            ? await supabase.from('event_pauses').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', pauseDraft.id)
+            : await supabase.from('event_pauses').insert(payload);
+
+        if (result.error) {
+            toast.error(`Error al guardar la pausa: ${result.error.message}`);
+        } else {
+            toast.success(pauseDraft.id ? 'Pausa actualizada.' : 'Pausa creada.');
+            await logRouteAction(
+                pauseDraft.id ? 'UPDATE_EVENT_PAUSE' : 'CREATE_EVENT_PAUSE',
+                `${pauseDraft.id ? 'Updated' : 'Created'} event pause from ${pauseStart} to ${pauseEnd}`
+            );
+            handleCancelPauseEdit();
+            await fetchEventPauses();
+        }
+        setSavingPause(false);
+    };
+
+    const handleDeletePause = async (pause) => {
+        if (!confirm('¿Eliminar esta pausa del evento?')) return;
+        const { error } = await supabase.from('event_pauses').delete().eq('id', pause.id);
+        if (error) {
+            toast.error(`Error al eliminar la pausa: ${error.message}`);
+            return;
+        }
+        toast.success('Pausa eliminada.');
+        await logRouteAction('DELETE_EVENT_PAUSE', `Deleted event pause #${pause.id}`);
+        if (pauseDraft.id === pause.id) handleCancelPauseEdit();
+        await fetchEventPauses();
     };
 
     const handleInstructionsUpload = async (file) => {
@@ -968,28 +1153,21 @@ const RouteBuilder = () => {
                 data-navbar="light"
                 data-left-sidebar="light"
                 data-right-sidebar="light"
-                className='font-sans antialiased text-sm disable-scrollbars'>
-                <div className="flex h-screen bg-gray-900 text-gray-100">
+                className='route-management-page font-sans antialiased text-sm'>
+                <div className="flex min-h-screen w-full min-w-0 bg-gray-900 text-gray-100">
                     {/* <Sidebar /> */}
-                    <div className="flex-1 p-6 overflow-y-auto bg-gray-800">
-                        <div className="min-h-screen w-full p-4">
+                    <div className="flex-1 min-w-0 p-2 sm:p-4 lg:p-6 overflow-x-hidden bg-gray-800">
+                        <div className="min-h-screen w-full p-0 sm:p-2 lg:p-4">
                             <div className="route-builder">
                                 {/* <h2 className="text-center mt-6">Constructor de Rutas {currentRoute.title}</h2> */}
-                                <div className="text-center mt-6 flex flex-wrap items-center justify-center gap-3">
-                                    <Link
-                                        href="/routes/create"
-                                        className="inline-block bg-yellow-500 text-black font-black py-2 px-5 rounded-lg shadow-lg hover:bg-yellow-400 hover:shadow-xl transition duration-300 ease-in-out text-xs uppercase tracking-widest"
-                                    >
-                                        + Crear Nueva Ruta / Rally
-                                    </Link>
-
+                                <div className="route-action-bar text-center mt-3 sm:mt-6 flex flex-wrap items-center justify-center gap-3">
                                     <a
                                         href={`https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=https://www.northbikers.com/${currentRoute.slug}`}
                                         target="_blank"
                                         download={`qr-${currentRoute.slug}.png`}
                                         className="inline-block bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition duration-300 ease-in-out"
                                     >
-                                        Descargar QR para este evento
+                                        <span className="route-action-label">Descargar QR para este evento</span>
                                     </a>
 
                                     <button
@@ -1001,7 +1179,7 @@ const RouteBuilder = () => {
                                             ? `https://www.northbikers.com/card-creator?event=${encodeURIComponent(routeAttributes.slug)}`
                                             : "Configura el slug del evento para generar el link"}
                                     >
-                                        Copiar link de Card Creator
+                                        <span className="route-action-label">Copiar link de Card Creator</span>
                                     </button>
 
                                     {/* Nuevo botón para ver compras */}
@@ -1009,7 +1187,7 @@ const RouteBuilder = () => {
                                         href={`/routes/purchases?routeId=${encodeURIComponent(currentRoute?.id ?? '')}`}
                                         className="inline-block bg-emerald-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:bg-emerald-700 hover:shadow-xl transition duration-300 ease-in-out"
                                     >
-                                        Ver productos comprados
+                                        <span className="route-action-label">Ver productos comprados</span>
                                     </Link>
 
                                     {/* Botón para agregar productos a la ruta */}
@@ -1017,13 +1195,45 @@ const RouteBuilder = () => {
                                         href={`/routes/add-product?routeId=${encodeURIComponent(currentRoute?.id ?? '')}`}
                                         className="inline-block bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-lg hover:bg-blue-700 hover:shadow-xl transition duration-300 ease-in-out"
                                     >
-                                        Agregar Producto
+                                        <span className="route-action-label">Agregar Producto</span>
                                     </Link>
                                 </div>
 
-                                <div className="p-4 border-t border-gray-700 mt-8">
-                                    <h2 className="text-2xl font-bold mb-4">Generador de Referidos y Cupones</h2>
-                                    <div className="bg-gray-700/30 p-6 rounded-xl border border-gray-600">
+                                <div className="p-2 sm:p-4 border-t border-gray-700 mt-6 sm:mt-8">
+                                    <div className="flex flex-col gap-1 mb-4">
+                                        <h2 className="text-2xl font-bold">Administración de la Ruta</h2>
+                                        <p className="text-xs text-gray-400">Actualiza atributos, archivos y herramientas comerciales desde un solo lugar.</p>
+                                    </div>
+                                    <div className="attribute-tabs flex flex-nowrap sm:flex-wrap gap-2 mb-5 p-1.5 rounded-xl bg-gray-900/60 border border-gray-700 overflow-x-auto" role="tablist" aria-label="Administración de la ruta">
+                                        {[
+                                            { id: 'general', label: 'General' },
+                                            { id: 'content', label: 'Contenido' },
+                                            { id: 'schedule', label: 'Ubicación y horarios' },
+                                            { id: 'assets', label: 'Archivos e imágenes' },
+                                            { id: 'marketing', label: 'Referidos y cupones' },
+                                        ].map((tab) => (
+                                            <button
+                                                key={tab.id}
+                                                type="button"
+                                                role="tab"
+                                                aria-selected={activeAttributeTab === tab.id}
+                                                onClick={() => setActiveAttributeTab(tab.id)}
+                                                className={`whitespace-nowrap flex-shrink-0 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                                                    activeAttributeTab === tab.id
+                                                        ? 'bg-blue-500 text-white shadow'
+                                                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                                                }`}
+                                            >
+                                                {tab.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {activeAttributeTab === 'marketing' && (
+                                <div className="p-2 sm:p-4">
+                                    <h2 className="text-xl sm:text-2xl font-bold mb-4">Generador de Referidos y Cupones</h2>
+                                    <div className="bg-gray-700/30 p-3 sm:p-6 rounded-xl border border-gray-600">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block font-bold text-gray-100 mb-2">Código (Referido/Cupón)</label>
@@ -1072,7 +1282,7 @@ const RouteBuilder = () => {
                                             <div className="mt-8 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
                                                 <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
                                                     <span className="text-xs font-bold text-gray-400 block mb-1 uppercase tracking-wider">Link de Referido</span>
-                                                    <div className="flex items-center justify-between gap-4">
+                                                    <div className="generated-link-row flex items-center justify-between gap-4">
                                                         <code className="text-sm text-blue-400 break-all">{generatedLinks.referral}</code>
                                                         <button 
                                                             onClick={() => {
@@ -1088,7 +1298,7 @@ const RouteBuilder = () => {
                                                 {generatedLinks.coupon && (
                                                     <div className="p-4 bg-gray-800 rounded-lg border border-gray-600">
                                                         <span className="text-xs font-bold text-blue-400 block mb-1 uppercase tracking-wider">Link con Cupón Aplicado</span>
-                                                        <div className="flex items-center justify-between gap-4">
+                                                        <div className="generated-link-row flex items-center justify-between gap-4">
                                                             <code className="text-sm text-blue-300 break-all">{generatedLinks.coupon}</code>
                                                             <button 
                                                                 onClick={() => {
@@ -1106,6 +1316,58 @@ const RouteBuilder = () => {
                                         )}
                                     </div>
 
+                                    <div className="mt-8">
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                                            <h3 className="text-lg font-bold text-gray-100 flex items-center gap-2">
+                                                <span className="w-1.5 h-6 bg-purple-500 rounded-full"></span>
+                                                Actividad de Referidos
+                                            </h3>
+                                            <span className="text-xs text-gray-400">
+                                                {referralStats.reduce((sum, item) => sum + item.registrations, 0)} registros referidos
+                                            </span>
+                                        </div>
+                                        {referralStats.length === 0 ? (
+                                            <div className="rounded-xl border border-dashed border-gray-600 bg-gray-800/20 p-6 text-center text-sm text-gray-500">
+                                                Todavía no hay registros atribuidos a un código de referido para esta ruta.
+                                            </div>
+                                        ) : (
+                                            <div className="overflow-x-auto rounded-xl border border-gray-600 bg-gray-800/20">
+                                                <table className="route-coupons-table w-full min-w-[520px] text-left">
+                                                    <thead>
+                                                        <tr className="bg-gray-800 text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-600">
+                                                            <th className="px-6 py-4">Código de referido</th>
+                                                            <th className="px-6 py-4 text-center">Registros</th>
+                                                            <th className="px-6 py-4 text-right">Acción</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-700">
+                                                        {referralStats.map((referral) => {
+                                                            const referralLink = `https://www.northbikers.com/${routeAttributes.slug}?ref=${referral.code}`;
+                                                            return (
+                                                                <tr key={referral.code} className="hover:bg-gray-700/30 transition-colors">
+                                                                    <td className="px-6 py-4 font-mono text-sm text-purple-300">{referral.code}</td>
+                                                                    <td className="px-6 py-4 text-center font-bold text-gray-100">{referral.registrations}</td>
+                                                                    <td className="px-6 py-4 text-right">
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                navigator.clipboard.writeText(referralLink);
+                                                                                toast.success('Link de referido copiado!');
+                                                                            }}
+                                                                            className="rounded-lg border border-purple-500/30 bg-purple-600/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-purple-300 hover:bg-purple-600/40"
+                                                                        >
+                                                                            Copiar link
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {existingCoupons.length > 0 && (
                                         <div className="mt-12">
                                             <h3 className="text-lg font-bold text-gray-100 mb-6 flex items-center gap-2">
@@ -1113,7 +1375,7 @@ const RouteBuilder = () => {
                                                 Cupones Existentes
                                             </h3>
                                             <div className="overflow-x-auto rounded-xl border border-gray-600 bg-gray-800/20">
-                                                <table className="w-full text-left">
+                                                <table className="route-coupons-table w-full min-w-[620px] text-left">
                                                     <thead>
                                                         <tr className="bg-gray-800 text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-600">
                                                             <th className="px-6 py-4">Código</th>
@@ -1193,13 +1455,13 @@ const RouteBuilder = () => {
                                         </div>
                                     )}
                                 </div>
-                            </div>
+                                )}
 
-                                <div className="p-4">
-                                    <h2 className="text-2xl font-bold mb-4">Actualizar Atributos de la Ruta</h2>
-
+                                <div className="p-2 sm:p-4">
+                                    {activeAttributeTab === 'general' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {/* Title */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold text-gray-100">Título</label>
                                         <input
                                             type="text"
@@ -1216,7 +1478,7 @@ const RouteBuilder = () => {
                                     </div>
 
                                     {/* Venue */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold">Sede</label>
                                         <input
                                             type="text"
@@ -1233,7 +1495,7 @@ const RouteBuilder = () => {
                                     </div>
 
                                     {/* Dates */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4 md:col-span-2">
                                         <label className="block font-bold">Fechas (Texto)</label>
                                         <input
                                             type="text"
@@ -1248,9 +1510,13 @@ const RouteBuilder = () => {
                                             Guardar Fechas
                                         </button>
                                     </div>
+                                    </div>
+                                    )}
 
+                                    {activeAttributeTab === 'content' && (
+                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                                     {/* Long Description */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold">Descripción Larga</label>
                                         <ReactQuill
                                             value={routeAttributes.long_description}
@@ -1265,7 +1531,7 @@ const RouteBuilder = () => {
                                     </div>
 
                                     {/* English Long Description */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold">Descripción Larga (Inglés)</label>
                                         <ReactQuill
                                             value={routeAttributes.en_long_description}
@@ -1278,9 +1544,46 @@ const RouteBuilder = () => {
                                             Guardar Descripción Larga (Inglés)
                                         </button>
                                     </div>
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
+                                        <label className="block font-bold text-gray-100 mb-1">Instrucciones generales de retos</label>
+                                        <p className="text-xs text-gray-400 mb-2">Aplican a todos los retos de esta ruta.</p>
+                                        <textarea
+                                            rows={8}
+                                            value={routeAttributes.challenge_instructions}
+                                            onChange={(e) => handleInputChange('challenge_instructions', e.target.value)}
+                                            className="bg-gray-700 text-gray-100 border border-gray-600 p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute('challenge_instructions', routeAttributes.challenge_instructions)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Instrucciones de Retos
+                                        </button>
+                                    </div>
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
+                                        <label className="block font-bold text-gray-100 mb-1">Hashtags y cuentas para retos</label>
+                                        <p className="text-xs text-gray-400 mb-2">Indica el hashtag y las cuentas que deben etiquetarse en Facebook e Instagram.</p>
+                                        <textarea
+                                            rows={8}
+                                            value={routeAttributes.challenge_hashtags_accounts}
+                                            onChange={(e) => handleInputChange('challenge_hashtags_accounts', e.target.value)}
+                                            placeholder="#RallyADVEdoMex\nFacebook: @cuenta1, @cuenta2\nInstagram: @cuenta1, @cuenta2"
+                                            className="bg-gray-700 text-gray-100 border border-gray-600 p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                        <button
+                                            onClick={() => handleSaveAttribute('challenge_hashtags_accounts', routeAttributes.challenge_hashtags_accounts)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Hashtags y Cuentas
+                                        </button>
+                                    </div>
+                                    </div>
+                                    )}
 
+                                    {activeAttributeTab === 'schedule' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {/* Venue Link */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold">Enlace del Lugar</label>
                                         <input
                                             type="text"
@@ -1297,7 +1600,7 @@ const RouteBuilder = () => {
                                     </div>
 
                                     {/* Venue Link */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold">Enlace del Grupo de WhatsApp</label>
                                         <input
                                             type="text"
@@ -1315,7 +1618,7 @@ const RouteBuilder = () => {
 
 
                                     {/* Venue Iframe */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4 md:col-span-2">
                                         <label className="block font-bold">Iframe del Lugar</label>
                                         <textarea
                                             value={routeAttributes.venue_iframe}
@@ -1331,8 +1634,36 @@ const RouteBuilder = () => {
                                     </div>
 
                                     {/* Start Timestamp */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4 md:col-span-2">
+                                        <label className="block font-bold mb-1">Zona horaria</label>
+                                        <p className="text-xs text-gray-400 mb-2">
+                                            Se usa para interpretar los horarios locales de inicio y fin de esta ruta.
+                                        </p>
+                                        <select
+                                            value={routeAttributes.timezone}
+                                            onChange={(e) => handleTimezoneChange(e.target.value)}
+                                            className="bg-gray-700 text-gray-100 border border-gray-600 p-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        >
+                                            {ROUTE_TIMEZONES.map((timezone) => (
+                                                <option key={timezone.value} value={timezone.value}>
+                                                    {timezone.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <button
+                                            onClick={() => handleSaveAttribute("timezone", routeAttributes.timezone)}
+                                            className="bg-blue-500 text-white px-4 py-2 rounded mt-2"
+                                        >
+                                            Guardar Zona Horaria
+                                        </button>
+                                    </div>
+
+                                    {/* Start Timestamp */}
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold">Inicio</label>
+                                        <p className="text-xs text-gray-400 mb-2">
+                                            Hora local en {routeAttributes.timezone} ({moment().tz(routeAttributes.timezone).format('z UTCZ')})
+                                        </p>
                                         <input
                                             type="datetime-local"
                                             value={routeAttributes.start_timestamp}
@@ -1348,8 +1679,11 @@ const RouteBuilder = () => {
                                     </div>
 
                                     {/* End Timestamp */}
-                                    <div className="mb-4">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold">Fin</label>
+                                        <p className="text-xs text-gray-400 mb-2">
+                                            Hora local en {routeAttributes.timezone} ({moment().tz(routeAttributes.timezone).format('z UTCZ')})
+                                        </p>
                                         <input
                                             type="datetime-local"
                                             value={routeAttributes.end_timestamp}
@@ -1363,9 +1697,13 @@ const RouteBuilder = () => {
                                             Guardar Fin
                                         </button>
                                     </div>
+                                    </div>
+                                    )}
 
+                                    {activeAttributeTab === 'assets' && (
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                     {/* Banner principal (routes.banner) */}
-                                    <div className="mb-6">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold text-gray-100 mb-1">Banner principal (routes.banner)</label>
                                         <input
                                             type="file"
@@ -1398,7 +1736,7 @@ const RouteBuilder = () => {
                                     </div>
 
                                     {/* Banner horizontal / alternativa (routes.banner_h) */}
-                                    <div className="mb-6">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
                                         <label className="block font-bold text-gray-100 mb-1">Banner horizontal / secundario (routes.banner_h)</label>
                                         <input
                                             type="file"
@@ -1431,7 +1769,7 @@ const RouteBuilder = () => {
                                     </div>
 
                                     {/* Instrucciones PDF */}
-                                    <div className="mb-6">
+                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4 lg:col-span-2">
                                         <label className="block font-bold text-gray-100 mb-1">Instrucciones (PDF)</label>
                                         <input
                                             type="file"
@@ -1463,13 +1801,118 @@ const RouteBuilder = () => {
                                             </div>
                                         )}
                                     </div>
+                                    </div>
+                                    )}
                                 </div>
 
+                                <section className="event-pauses-section mx-2 sm:mx-4 mt-5 sm:mt-8 rounded-xl border border-gray-700 bg-gray-900/35 p-3 sm:p-5">
+                                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-5">
+                                        <div>
+                                            <h2 className="text-xl sm:text-2xl font-bold">Pausas del evento</h2>
+                                            <p className="text-xs text-gray-400 mt-1">
+                                                Configura periodos en los que la actividad estará pausada. Horario local: {routeAttributes.timezone}.
+                                            </p>
+                                        </div>
+                                        <span className="self-start rounded-full border border-gray-600 bg-gray-800 px-3 py-1 text-xs text-gray-300">
+                                            {eventPauses.length} {eventPauses.length === 1 ? 'pausa' : 'pausas'}
+                                        </span>
+                                    </div>
 
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 rounded-xl border border-gray-700 bg-gray-900 p-3 sm:p-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-300 mb-1">Inicio de pausa</label>
+                                            <input
+                                                type="datetime-local"
+                                                value={pauseDraft.pause_start}
+                                                onChange={(e) => setPauseDraft(prev => ({ ...prev, pause_start: e.target.value }))}
+                                                className="w-full rounded border border-gray-600 bg-gray-800 p-2 text-gray-100 focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-300 mb-1">Fin de pausa</label>
+                                            <input
+                                                type="datetime-local"
+                                                value={pauseDraft.pause_end}
+                                                onChange={(e) => setPauseDraft(prev => ({ ...prev, pause_end: e.target.value }))}
+                                                className="w-full rounded border border-gray-600 bg-gray-800 p-2 text-gray-100 focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="xl:col-span-2">
+                                            <label className="block text-xs font-bold text-gray-300 mb-1">Descripción</label>
+                                            <input
+                                                type="text"
+                                                value={pauseDraft.description}
+                                                onChange={(e) => setPauseDraft(prev => ({ ...prev, description: e.target.value }))}
+                                                placeholder="Ej. Pausa para descansar y evitar rodar de noche"
+                                                className="w-full rounded border border-gray-600 bg-gray-800 p-2 text-gray-100 placeholder-gray-500 focus:border-blue-500 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2 xl:col-span-4 flex flex-col sm:flex-row gap-2 sm:justify-end">
+                                            {pauseDraft.id && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleCancelPauseEdit}
+                                                    className="rounded bg-gray-700 px-4 py-2 font-semibold text-gray-100 hover:bg-gray-600"
+                                                >
+                                                    Cancelar edición
+                                                </button>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={handleSavePause}
+                                                disabled={savingPause}
+                                                className="rounded bg-blue-600 px-4 py-2 font-bold text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+                                            >
+                                                {savingPause ? 'Guardando…' : pauseDraft.id ? 'Actualizar pausa' : 'Crear pausa'}
+                                            </button>
+                                        </div>
+                                    </div>
 
+                                    <div className="mt-4 space-y-2">
+                                        {loadingPauses ? (
+                                            <p className="py-6 text-center text-sm text-gray-500">Cargando pausas…</p>
+                                        ) : eventPauses.length === 0 ? (
+                                            <p className="rounded-lg border border-dashed border-gray-700 py-6 text-center text-sm text-gray-500">No hay pausas configuradas para esta ruta.</p>
+                                        ) : eventPauses.map((pause) => (
+                                            <article key={pause.id} className="flex flex-col lg:flex-row lg:items-center gap-3 rounded-lg border border-gray-700 bg-gray-800/70 p-3">
+                                                <div className="grid flex-1 grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    <div>
+                                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">Inicio</span>
+                                                        <strong className="text-sm text-gray-100">
+                                                            {moment.utc(pause.pause_start).tz(routeAttributes.timezone).format('DD/MM/YYYY, h:mm a')}
+                                                        </strong>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[10px] font-bold uppercase tracking-wider text-gray-500">Fin</span>
+                                                        <strong className="text-sm text-gray-100">
+                                                            {moment.utc(pause.pause_end).tz(routeAttributes.timezone).format('DD/MM/YYYY, h:mm a')}
+                                                        </strong>
+                                                    </div>
+                                                </div>
+                                                <p className="flex-1 text-sm text-gray-300">{pause.description || 'Sin descripción'}</p>
+                                                <div className="flex gap-2 sm:self-end lg:self-auto">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleEditPause(pause)}
+                                                        className="flex-1 rounded border border-blue-700 px-3 py-2 text-xs font-bold text-blue-300 hover:bg-blue-900/30"
+                                                    >
+                                                        Editar
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeletePause(pause)}
+                                                        className="flex-1 rounded border border-red-800 px-3 py-2 text-xs font-bold text-red-300 hover:bg-red-900/30"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                </div>
+                                            </article>
+                                        ))}
+                                    </div>
+                                </section>
 
-                                <div className="container mx-auto mt-4">
-                                    <div className="text-right mb-4">
+                                <div className="container mx-auto mt-4 min-w-0">
+                                    <div className="checkpoint-actions text-right mb-4">
                                         <button
                                             onClick={downloadCheckpointsCSV}
                                             className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded shadow-lg transition duration-300"
@@ -1477,8 +1920,8 @@ const RouteBuilder = () => {
                                             Descargar Checkpoints en CSV
                                         </button>
                                     </div>
-                                    <div className="overflow-x-auto">
-                                        <table className="table-auto w-full text-left">
+                                    <div className="route-checkpoints-scroll overflow-x-auto rounded-lg border border-gray-700">
+                                        <table className="route-checkpoints-table table-auto min-w-[1500px] w-full text-left">
                                             <thead>
                                                 <tr>
                                                     <th>ID</th>
@@ -1810,11 +2253,11 @@ const RouteBuilder = () => {
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div className="mt-12 bg-gray-800 p-6 rounded-lg border border-gray-700">
-                                        <h2 className="text-2xl font-bold mb-6 text-blue-400">Picks de la Ruta</h2>
+                                    <div className="mt-8 sm:mt-12 bg-gray-800 p-3 sm:p-6 rounded-lg border border-gray-700">
+                                        <h2 className="text-xl sm:text-2xl font-bold mb-6 text-blue-400">Picks de la Ruta</h2>
 
                                         {/* Create New Pick Form */}
-                                        <div className="mb-8 bg-gray-900 p-4 rounded-lg border border-gray-600">
+                                        <div className="mb-8 bg-gray-900 p-3 sm:p-4 rounded-lg border border-gray-600">
                                             <h3 className="text-lg font-semibold mb-4">
                                                 {newPick.id ? 'Editar Pick' : 'Crear Nuevo Pick'}
                                             </h3>
@@ -1971,6 +2414,42 @@ const RouteBuilder = () => {
                     </div>
                 </div>
             </div>
+            </div>
+            <style jsx global>{`
+                .route-management-page,
+                .route-management-page * { box-sizing: border-box; }
+                .route-management-page { width: 100%; max-width: 100vw; min-width: 0; overflow-x: clip; }
+                .route-management-page > .flex,
+                .route-management-page .route-builder { width: 100%; max-width: 100%; min-width: 0; }
+                .route-management-page input,
+                .route-management-page select,
+                .route-management-page textarea { max-width: 100%; }
+                .route-management-page .ql-toolbar { display: flex; flex-wrap: wrap; }
+                .route-management-page .ql-container { min-height: 150px; }
+                .route-management-page .route-checkpoints-table th,
+                .route-management-page .route-checkpoints-table td { padding: .5rem; vertical-align: middle; }
+                .route-management-page .route-checkpoints-table input:not([type='checkbox']):not([type='file']),
+                .route-management-page .route-checkpoints-table select { width: 125px; min-width: 100px; padding: .4rem; border-radius: .25rem; }
+                .route-management-page .route-checkpoints-table input[type='file'] { width: 190px; }
+                .route-management-page .route-checkpoints-table textarea { width: 260px; min-width: 240px; min-height: 96px; padding: .45rem; border-radius: .25rem; background: #374151; color: #f3f4f6; }
+                .route-management-page .route-checkpoints-scroll { -webkit-overflow-scrolling: touch; }
+                @media (max-width: 640px) {
+                    .route-management-page .route-action-bar > a,
+                    .route-management-page .route-action-bar > button { width: 100%; min-height: 48px; display: flex; justify-content: center; align-items: center; padding: 10px 14px; white-space: normal; line-height: 1.35; font-size: 13px; color: #fff !important; text-align: center; }
+                    .route-management-page .route-action-bar > a { width: 100%; min-height: 48px; display: flex; justify-content: center; align-items: center; padding: 10px 14px; white-space: normal; line-height: 1.35; font-size: 13px; color: #fff !important; text-align: center; }
+                    .route-management-page .route-action-label { display: block; width: 100%; color: #fff !important; font-size: 13px; line-height: 1.35; text-align: center; overflow: visible; }
+                    .route-management-page .route-action-bar { gap: 8px; padding: 0 2px; }
+                    .route-management-page .generated-link-row { align-items: stretch; flex-direction: column; }
+                    .route-management-page .generated-link-row button { align-self: flex-end; }
+                    .route-management-page .checkpoint-actions button { width: 100%; }
+                    .route-management-page .attribute-tabs { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); overflow: visible; }
+                    .route-management-page .attribute-tabs [role='tab'] { width: 100%; min-height: 42px; white-space: normal; padding: 8px 6px; line-height: 1.25; }
+                    .route-management-page .route-coupons-table th,
+                    .route-management-page .route-coupons-table td { padding: .75rem; }
+                    .route-management-page input[type='file'] { font-size: 11px; }
+                    .route-management-page .ql-editor { min-height: 150px; }
+                }
+            `}</style>
         </>
     );
 };

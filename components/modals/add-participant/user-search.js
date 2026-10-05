@@ -2,7 +2,7 @@ import Modal from "../modal";
 import TextInput from "../../input";
 import Select from "../../select";
 import {getSupabase} from "../../../utils/supabase";
-import {useCallback, useEffect, useState} from "react";
+import {useEffect, useState} from "react";
 import Button from "../../button";
 
 const SearchUserModal = ({isOpen, onClose, onSelect}) => {
@@ -10,31 +10,6 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
     const [users, setUsers] = useState(null);
     const [query, setQuery] = useState(null);
     const [isLoading, setLoading] = useState(false);
-
-    const getResults = useCallback(async () => {
-        setLoading(true);
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select(`
-                    *,
-                    event_profile!left(*)
-                `)
-                .or(`email.ilike.%${query}%,name.ilike.%${query}%`)
-                .order('created_at', { foreignTable: 'event_profile', ascending: false })
-                .limit(10);
-    
-            if (error) throw error;
-            
-            setUsers(data ?? []);
-        } catch (e) {
-            console.log("Error", e);
-            setUsers([]);
-        }
-    
-        setLoading(false);
-    }, [query]);    
-
 
     const Item = (user) => {
         const {id, name, email, event_profile} = user;
@@ -62,16 +37,49 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
     }
 
     useEffect(() => {
-        if (!isOpen) setUsers(null)
-    }, [isOpen])
+        const searchQuery = query?.trim();
 
-    useEffect(() => {
-        if (query) getResults()
-
-        if (!query) {
-            setUsers(null)
+        if (!isOpen || !searchQuery) {
+            setUsers(null);
+            setLoading(false);
+            return;
         }
-    }, [query])
+
+        const controller = new AbortController();
+        const debounceTimer = setTimeout(async () => {
+            setLoading(true);
+
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select(`
+                        *,
+                        event_profile!left(*)
+                    `)
+                    .or(`email.ilike.%${searchQuery}%,name.ilike.%${searchQuery}%`)
+                    .order('created_at', { foreignTable: 'event_profile', ascending: false })
+                    .limit(10)
+                    .abortSignal(controller.signal);
+
+                if (controller.signal.aborted) return;
+                if (error) throw error;
+
+                setUsers(data ?? []);
+            } catch (e) {
+                if (!controller.signal.aborted) {
+                    console.log("Error", e);
+                    setUsers([]);
+                }
+            } finally {
+                if (!controller.signal.aborted) setLoading(false);
+            }
+        }, 300);
+
+        return () => {
+            clearTimeout(debounceTimer);
+            controller.abort();
+        };
+    }, [isOpen, query, supabase])
 
     return (
         <Modal

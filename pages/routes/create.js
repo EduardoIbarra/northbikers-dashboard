@@ -315,6 +315,7 @@ export default function CreateRoutePage() {
                 en_long_description: formData.en_long_description,
                 dates: formData.dates || `${formData.start_date_local || ''} - ${formData.end_date_local || ''}`,
                 start_timestamp: startTimestamp,
+                timezone: selectedLocation?.tz || 'America/Monterrey',
                 end_timestamp: endTimestamp,
                 venue: formData.venue,
                 venue_link: formData.venue_link,
