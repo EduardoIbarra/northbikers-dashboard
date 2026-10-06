@@ -815,6 +815,108 @@ export default function ProductsPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Export one row per bundle buyer, alphabetically by cliente/rider and without prices.
+  const handleExportBundleSales = () => {
+    if (!inspectingBundle) return;
+
+    const bundleItems = inspectingBundle.productIds
+      .map(id => products.find(product => product.id === id))
+      .filter(Boolean);
+    const buyersMap = new Map();
+
+    epSalesRaw.forEach(item => {
+      let notes = {};
+      if (typeof item.notes === 'string') {
+        try { notes = JSON.parse(item.notes); } catch (e) {}
+      } else if (typeof item.notes === 'object' && item.notes !== null) {
+        notes = item.notes;
+      }
+
+      const isPaid = item.event_profile?.payment_status === 'paid' || notes.payment_status === 'paid';
+      const matchesBundle = notes.bundle_id === inspectingBundle.id
+        || notes.is_bundle === true
+        || inspectingBundle.productIds.includes(item.product_id);
+
+      if (!isPaid || !matchesBundle) return;
+
+      const name = notes.nombre
+        || item.event_profile?.full_name
+        || item.event_profile?.profile?.name
+        || 'Participante';
+      const email = item.event_profile?.profile?.email || '';
+      const key = `${name}_${email}`;
+
+      if (!buyersMap.has(key)) {
+        buyersMap.set(key, {
+          name,
+          email,
+          created_at: item.created_at,
+          delivery_method: notes.delivery_method || 'pickup',
+          shipping_address: notes.shipping_address || '',
+          items: [],
+        });
+      }
+
+      buyersMap.get(key).items.push({
+        productTitle: bundleItems.find(product => product.id === item.product_id)?.title || item.product_id,
+        details: notes,
+      });
+    });
+
+    const buyers = Array.from(buyersMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name, 'es-MX', { sensitivity: 'base', numeric: true })
+    );
+
+    if (buyers.length === 0) {
+      toast.info('No hay ventas finalizadas para exportar.');
+      return;
+    }
+
+    const excludedDetailKeys = [
+      'delivery_method', 'shipping_address', 'payment_status', 'is_bundle', 'bundle_id',
+    ];
+    const isPriceField = key => /price|precio|cost|costo|amount|monto|subtotal|total/i.test(key);
+    const header = [
+      'Cliente / Rider', 'Email', 'Fecha', 'Artículos comprados',
+      'Especificaciones (tallas / nombres)', 'Método de entrega', 'Dirección de envío',
+    ];
+    const body = buyers.map(buyer => {
+      const itemNames = buyer.items.map(item => item.productTitle).join(' | ');
+      const specifications = buyer.items.map(item => {
+        const details = Object.entries(item.details)
+          .filter(([key]) => !excludedDetailKeys.includes(key) && !isPriceField(key))
+          .map(([key, value]) => `${key}: ${value}`)
+          .join(', ');
+        return details ? `${item.productTitle}: ${details}` : '';
+      }).filter(Boolean).join(' | ');
+
+      return [
+        buyer.name,
+        buyer.email,
+        new Date(buyer.created_at).toLocaleString('es-MX'),
+        itemNames,
+        specifications,
+        buyer.delivery_method === 'ship' ? 'Envío a domicilio' : 'Recoger en persona',
+        buyer.shipping_address,
+      ];
+    });
+    const csvContent = [header, ...body].map(row => row.map(value => {
+      if (value === null || value === undefined) return '';
+      const stringValue = String(value);
+      return /[",\n]/.test(stringValue) ? `"${stringValue.replace(/"/g, '""')}"` : stringValue;
+    }).join(',')).join('\n');
+
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ventas_${inspectingBundle.id}_por_cliente.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <>
       <Head>
@@ -1958,7 +2060,14 @@ export default function ProductsPage() {
               })()}
             </div>
 
-            <div className="px-6 py-4 bg-gray-950 border-t border-gray-800 flex justify-end">
+            <div className="px-6 py-4 bg-gray-950 border-t border-gray-800 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleExportBundleSales}
+                className="bg-emerald-600 hover:bg-emerald-500 px-6 py-2 rounded-xl text-sm font-bold text-white transition"
+              >
+                Descargar CSV
+              </button>
               <button
                 type="button"
                 onClick={() => setShowBundleModal(false)}
