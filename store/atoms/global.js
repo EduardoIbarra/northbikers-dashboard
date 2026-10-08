@@ -1,29 +1,22 @@
 import {atom} from "recoil";
 
-export const SideNavCollapsed = atom({
-    key: 'SideNavCollapsed',
-    default: true
-})
+// Next.js reloads this module during development. Reuse the existing atom
+// instances so Recoil does not attempt to register the same keys again.
+const atomCache = globalThis.__northbikersRecoilAtoms__ || {};
+globalThis.__northbikersRecoilAtoms__ = atomCache;
 
-export const Routes = atom({
-    key: 'Routes',
-    default: []
-})
+const cachedAtom = (key, defaultValue) => {
+    if (!atomCache[key]) {
+        atomCache[key] = atom({key, default: defaultValue});
+    }
+    return atomCache[key];
+};
 
-export const CurrentRoute = atom({
-    key: 'CurrentRoute',
-    default: {}
-})
+export const SideNavCollapsed = cachedAtom('SideNavCollapsed', true);
 
-export const ParticipantsMarkers = atom({
-    key: 'ParticipantsMarkers',
-    default: [
-        // {latitude: 25.3008901, longitude: -100.1431214},
-        // {latitude: 25.3009902, longitude: -100.1431213},
-        // {latitude: 25.3003903, longitude: -100.1431212},
-        // {latitude: 25.3006904, longitude: -100.1431214},
-        // {latitude: 25.3001905, longitude: -100.1431215},
-    ]
-})
+export const Routes = cachedAtom('Routes', []);
 
+export const CurrentRoute = cachedAtom('CurrentRoute', {});
+
+export const ParticipantsMarkers = cachedAtom('ParticipantsMarkers', []);
 
