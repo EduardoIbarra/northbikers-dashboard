@@ -3,8 +3,10 @@ import Spinner from "../../components/spinner";
 import CheckInsModal from "../../components/modals/check-ins";
 import { CATEGORIES, GENDERS } from "../../utils";
 import Button from "../../components/button";
-import { AiFillEdit } from "react-icons/ai";
+import { AiFillEdit, AiOutlineMail } from "react-icons/ai";
 import { getSupabase } from "../../utils/supabase";
+import { sendConfirmationEmail } from "../../utils/sendConfirmationEmail";
+import { toast } from 'react-toastify';
 
 const getPaymentDisplayStatus = ({ payment_intent, stripe_checkout_id, participant_number }) => {
     const hasStripePayment = Boolean(payment_intent && stripe_checkout_id);
@@ -23,7 +25,23 @@ const getPaymentDisplayStatus = ({ payment_intent, stripe_checkout_id, participa
 const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit, isPrivateView = true }) => {
     const [selectedUser, setSelectedUser] = useState(null);
     const [data, setData] = useState([]);
+    const [sendingEmailId, setSendingEmailId] = useState(null);
     const supabase2 = getSupabase();
+
+    const handleResendConfirmationEmail = useCallback(async (participant) => {
+        if (sendingEmailId) return;
+
+        setSendingEmailId(participant.id);
+        try {
+            await sendConfirmationEmail(participant.id);
+            toast.success(`Correo de inscripción reenviado a ${participant.profile?.email}.`);
+        } catch (error) {
+            console.error('Error resending confirmation email:', error);
+            toast.error(error?.message || 'No se pudo reenviar el correo de inscripción.');
+        } finally {
+            setSendingEmailId(null);
+        }
+    }, [sendingEmailId]);
 
     useEffect(() => {
         const sorted = sortParticipants(initialData);
@@ -220,16 +238,37 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
             }} className='group cursor-pointer hover:bg-neutral-800 border-b border-white/5 transition-all duration-200'>
                 {isPrivateView ? (
                     <td className="py-4 px-4">
-                        <button
-                            className="p-3 transition-all hover:bg-yellow-500 hover:text-yellow-500 rounded-xl text-neutral-500"
-                            onClick={(e) => {
-                                onEdit(row);
-                                e.stopPropagation();
-                                e.preventDefault();
-                            }}
-                        >
-                            <AiFillEdit size={20} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                title="Editar participante"
+                                aria-label={`Editar a ${name}`}
+                                className="p-3 transition-all hover:bg-yellow-500 hover:text-black rounded-xl text-neutral-500"
+                                onClick={(e) => {
+                                    onEdit(row);
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                }}
+                            >
+                                <AiFillEdit size={20} />
+                            </button>
+                            <button
+                                type="button"
+                                title="Reenviar correo de inscripción"
+                                aria-label={`Reenviar correo de inscripción a ${name}`}
+                                disabled={Boolean(sendingEmailId)}
+                                className="p-3 transition-all hover:bg-yellow-500 hover:text-black rounded-xl text-neutral-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    handleResendConfirmationEmail(row);
+                                }}
+                            >
+                                {sendingEmailId === row.id
+                                    ? <span className="block h-5 w-5 animate-spin rounded-full border-2 border-neutral-500 border-t-yellow-500" />
+                                    : <AiOutlineMail size={20} />}
+                            </button>
+                        </div>
                     </td>
                 ) : null}
                 <td className="py-4 px-4 font-bold text-gray-400">#{position}</td>
@@ -322,12 +361,33 @@ const ParticipantsList = ({ isLoading, initialData, onReload, isFiltered, onEdit
                             </button>
                         )}
                         {isPrivateView && (
-                            <button
-                                className="p-2 transition-all hover:bg-yellow-500 hover:text-black rounded-xl text-neutral-500"
-                                onClick={(e) => { onEdit(row); e.stopPropagation(); e.preventDefault(); }}
-                            >
-                                <AiFillEdit size={16} />
-                            </button>
+                            <>
+                                <button
+                                    type="button"
+                                    title="Reenviar correo de inscripción"
+                                    aria-label={`Reenviar correo de inscripción a ${name}`}
+                                    disabled={Boolean(sendingEmailId)}
+                                    className="p-2 transition-all hover:bg-yellow-500 hover:text-black rounded-xl text-neutral-500 disabled:cursor-not-allowed disabled:opacity-40"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        handleResendConfirmationEmail(row);
+                                    }}
+                                >
+                                    {sendingEmailId === row.id
+                                        ? <span className="block h-4 w-4 animate-spin rounded-full border-2 border-neutral-500 border-t-yellow-500" />
+                                        : <AiOutlineMail size={16} />}
+                                </button>
+                                <button
+                                    type="button"
+                                    title="Editar participante"
+                                    aria-label={`Editar a ${name}`}
+                                    className="p-2 transition-all hover:bg-yellow-500 hover:text-black rounded-xl text-neutral-500"
+                                    onClick={(e) => { onEdit(row); e.stopPropagation(); e.preventDefault(); }}
+                                >
+                                    <AiFillEdit size={16} />
+                                </button>
+                            </>
                         )}
                     </div>
                 </div>

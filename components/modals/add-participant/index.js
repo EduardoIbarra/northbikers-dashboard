@@ -8,6 +8,7 @@ import { AiOutlineSearch } from "react-icons/ai";
 import SearchUserModal from "./user-search";
 import { CurrentRoute } from "../../../store/atoms/global";
 import { getSupabase } from "../../../utils/supabase";
+import { sendConfirmationEmail } from "../../../utils/sendConfirmationEmail";
 import { CATEGORIES, GENDERS } from "../../../utils";
 import Alert from "../../alerts";
 import { FiAlertCircle } from "react-icons/fi";
@@ -317,24 +318,8 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 try {
                     // Avoid CORS issues on localhost if possible, but still attempt the call
                     // We catch the error specifically to prevent the Next.js error overlay
-                    const response = await fetch('https://www.northbikers.com/api/send_confirmation_email', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            eventProfileId: upsertedProfileId,
-                        }),
-                    }).catch(err => {
-                        console.warn('Network error or CORS block when sending confirmation email:', err);
-                        return { ok: false };
-                    });
-
-                    if (response && response.ok) {
-                        console.log('Confirmation email sent successfully.');
-                    } else {
-                        console.warn('Confirmation email endpoint returned an error or was blocked.');
-                    }
+                    await sendConfirmationEmail(upsertedProfileId);
+                    console.log('Confirmation email sent successfully.');
                 } catch (emailError) {
                     // Double-wrap to ensure no unhandled rejections bubble up to the dev overlay
                     console.error('Error in confirmation email process:', emailError);

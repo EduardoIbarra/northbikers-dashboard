@@ -15,6 +15,8 @@ import Button from "../../components/button";
 import JSZip from "jszip";
 import { saveAs } from 'file-saver';
 import Spinner from "../../components/spinner";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ParticipantsPage = ({ isPrivateView = true }) => {
     const loggedUser = getLoggedUser();
@@ -266,6 +268,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
 
     return (
         <div>
+            <ToastContainer theme="dark" position="bottom-right" />
 
             {isPrivateView && loggedUser && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 pt-4">
