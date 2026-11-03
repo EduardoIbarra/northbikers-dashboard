@@ -34,8 +34,8 @@ const csvEscape = (val) => {
   return s;
 };
 const downloadCSV = (rows, filename) => {
-  const csv = rows.map((arr) => arr.map(csvEscape).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const csv = rows.map((arr) => arr.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -142,7 +142,7 @@ export default function RoutePurchasesPage() {
       const { data: eps, error } = await supabase
         .from('event_profile')
         .select(`
-          id, created_at, updated_at, profile_id, payment_status,
+          id, created_at, updated_at, profile_id, full_name, payment_status,
           participant_number, is_couple, referrer, coupon_code,
           stripe_webhook_email_notification
         `)
@@ -270,68 +270,49 @@ export default function RoutePurchasesPage() {
     fees: totalsProducts.fees + totalsParticipants.fees,
   }), [totalsProducts, totalsParticipants]);
 
-  // ---------- Export CSV (PARTICIPANTES, neto) ----------
-  const downloadCSVParticipants = () => {
-    const header = [
-      'Nombre', 'Referrer', 'Participante', 'Cupón', 'Descuento%',
-      'Ticket Base (MXN)', 'Descuento (MXN)', 'Base - Desc (MXN)',
-      'Fee (MXN)', 'Total Neto (MXN)', 'Es Pareja',
+  // ---------- Export CSV combinado, con el formato del control de la ruta ----------
+  const downloadCSVCombined = () => {
+    const participantHeader = [
+      'Nombre', 'Email', 'No.', 'Referrer', 'Pareja', 'Status', 'Cupón',
+      'Precio Base', 'Descuento', 'Subtotal', 'Comisión/IVA', 'Total Neto',
     ];
-    const body = participants.map((p) => [
-      p.profile?.name ?? '(sin nombre)',
-      p.ep?.referrer ?? '',
+    const participantRows = participants.map((p) => [
+      p.ep?.full_name || p.profile?.name || '(sin nombre)',
+      p.profile?.email ?? '',
       p.ep?.participant_number ?? '',
+      p.ep?.referrer ?? '',
+      p.ep?.is_couple ? 1 : 0,
+      p.ep?.payment_status ?? '',
       p.coupon?.code ?? '',
-      p.coupon?.discount_percentage ?? 0,
       (cents(p.baseCents) / 100).toFixed(2),
       (cents(p.couponDiscountCents) / 100).toFixed(2),
       ((cents(p.baseCents) - cents(p.couponDiscountCents)) / 100).toFixed(2),
       (cents(p.feeCents) / 100).toFixed(2),
       (cents(p.totalPayableCents) / 100).toFixed(2),
-      p.ep?.is_couple ? 'Sí' : 'No',
     ]);
-    downloadCSV([header, ...body], `participantes_route_${routeId}.csv`);
-  };
 
-  // ---------- Export CSV (PRODUCTOS, detalle por línea con neto) ----------
-  const downloadCSVProducts = () => {
-    const header = [
-      'Fecha', 'Producto', 'Cantidad', 'Unitario (MXN)', 'Subtotal (MXN)',
-      'Fee (MXN)', 'Total Neto (MXN)', 'Notas',
-      'Nombre', 'Email', 'Ciudad', 'Moto',
-      'product_id', 'event_profile_id', 'profile_id', 'purchase_id'
+    // Products are deliberately aggregated. Variant information stored in notes
+    // (for example jersey sizes) and buyer/internal IDs do not belong in this export.
+    const productHeader = [
+      'Producto', 'Unidades', 'Costo unitario', 'Subtotal', 'Comisiones', 'Total Neto',
     ];
-    const body = rows.map((r) => {
-      const qty = cents(r.quantity);
-      const unit = cents(r.unit_price_cents);
-      const lineSubtotal = qty * unit;
-      const fee = calcFeeCents(lineSubtotal);
-      const neto = lineSubtotal - fee;
-      return [
-        new Date(r.created_at).toLocaleString('es-MX'),
-        r.product_title,
-        qty,
-        (unit / 100).toFixed(2),
-        (lineSubtotal / 100).toFixed(2),
-        (fee / 100).toFixed(2),
-        (neto / 100).toFixed(2),
-        r.notes || '',
-        r.name || '',
-        r.email || '',
-        r.city || '',
-        r.bike || '',
-        r.product_id ?? '',
-        r.event_profile_id ?? '',
-        r.profile_id ?? '',
-        r.id ?? '',
-      ];
-    });
-    downloadCSV([header, ...body], `productos_route_${routeId}.csv`);
-  };
+    const productRows = summaryByProduct.map((product) => [
+      product.title,
+      product.qty,
+      product.qty ? (product.subtotal / product.qty / 100).toFixed(2) : '0.00',
+      (product.subtotal / 100).toFixed(2),
+      (product.fees / 100).toFixed(2),
+      (product.totalNeto / 100).toFixed(2),
+    ]);
 
-  const handleExportActiveTab = () => {
-    if (activeTab === 'PRODUCTS') downloadCSVProducts();
-    else downloadCSVParticipants();
+    downloadCSV([
+      participantHeader,
+      ...participantRows,
+      [],
+      ['PRODUCTOS'],
+      productHeader,
+      ...productRows,
+    ], `compras_route_${routeId}.csv`);
   };
 
   return (
@@ -349,22 +330,13 @@ export default function RoutePurchasesPage() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              {activeTab === 'PRODUCTS' && (
-                <button
-                  onClick={downloadCSVProducts}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm font-medium"
-                >
-                  Exportar CSV (Productos)
-                </button>
-              )}
-              {activeTab === 'PARTICIPANTS' && (
-                <button
-                  onClick={downloadCSVParticipants}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded text-sm font-medium"
-                >
-                  Exportar CSV (Participantes)
-                </button>
-              )}
+              <button
+                onClick={downloadCSVCombined}
+                disabled={loading}
+                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-4 py-2 rounded text-sm font-medium"
+              >
+                Exportar CSV
+              </button>
               <Link href="/routes" className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm font-medium">
                 Volver a Rutas
               </Link>
