@@ -5,7 +5,7 @@ import {getSupabase} from "../../../utils/supabase";
 import {useEffect, useState} from "react";
 import Button from "../../button";
 
-const SearchUserModal = ({isOpen, onClose, onSelect}) => {
+const SearchUserModal = ({isOpen, onClose, onSelect, routeId, editingEventProfileId}) => {
     const supabase = getSupabase();
     const [users, setUsers] = useState(null);
     const [query, setQuery] = useState(null);
@@ -13,13 +13,22 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
 
     const Item = (user) => {
         const {id, name, email, event_profile} = user;
-        const latestEventProfile = event_profile?.find(p => p.name_on_jersey) ?? event_profile?.[0];
-        user.latestEventProfile = latestEventProfile;
+        const activeRouteProfile = event_profile?.find(profile =>
+            profile.route_id === routeId &&
+            Number(profile.participant_number) > 0 &&
+            profile.id !== editingEventProfileId
+        );
+        const latestEventProfile = event_profile?.find(profile => profile.route_id === routeId)
+            ?? event_profile?.find(profile => profile.name_on_jersey)
+            ?? event_profile?.[0];
+        const selectableUser = { ...user, latestEventProfile };
 
         return (
-            <div className='mt-2 p-5 rounded-3xl bg-neutral-900 hover:bg-yellow-500 border border-white/5 hover:border-yellow-500 transition-all duration-300 cursor-pointer group flex items-center justify-between' key={id} onClick={() => {
-                onSelect(user)
-            }}>
+            <div
+                className={`mt-2 p-5 rounded-3xl border border-white/5 transition-all duration-300 group flex items-center justify-between ${activeRouteProfile ? 'bg-neutral-900/60 opacity-60 cursor-not-allowed' : 'bg-neutral-900 hover:bg-yellow-500 hover:border-yellow-500 cursor-pointer'}`}
+                key={id}
+                onClick={() => !activeRouteProfile && onSelect(selectableUser)}
+            >
                 <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 rounded-2xl bg-neutral-800 group-hover:bg-black/20 flex items-center justify-center text-lg font-black text-yellow-500 group-hover:text-black transition-colors">
                         {name?.charAt(0).toUpperCase() || '?'}
@@ -29,8 +38,10 @@ const SearchUserModal = ({isOpen, onClose, onSelect}) => {
                         <span className="text-[10px] text-neutral-500 group-hover:text-black/60 font-bold lowercase italic transition-colors">{email}</span>
                     </div>
                 </div>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 px-3 py-1 rounded-lg">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-black">Seleccionar</span>
+                <div className={`${activeRouteProfile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity bg-black/10 px-3 py-1 rounded-lg`}>
+                    <span className={`text-[9px] font-black uppercase tracking-widest ${activeRouteProfile ? 'text-neutral-400' : 'text-black'}`}>
+                        {activeRouteProfile ? `Ya tiene el #${activeRouteProfile.participant_number}` : 'Seleccionar'}
+                    </span>
                 </div>
             </div>
         )

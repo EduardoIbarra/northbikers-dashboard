@@ -12,6 +12,7 @@ import { sendConfirmationEmail } from "../../../utils/sendConfirmationEmail";
 import { CATEGORIES, GENDERS } from "../../../utils";
 import Alert from "../../alerts";
 import { FiAlertCircle } from "react-icons/fi";
+import { toast } from 'react-toastify';
 
 const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
     const supabase = getSupabase();
@@ -42,6 +43,9 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
     const [coupleCreationMode, setCoupleCreationMode] = useState('merge'); // 'merge' or 'manual'
     const [coupleSearchQuery, setCoupleSearchQuery] = useState('');
     const [alertMessage, setAlertMessage] = useState('');
+    const isReplacingParticipant = Boolean(
+        user?.profile_id && selectedUser?.id && user.profile_id !== selectedUser.id
+    );
 
     const saveFormData = (key, value) => {
         setShowAlert(false);
@@ -217,18 +221,19 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 filteredFormData.is_team = false;
             }
 
-            // Step 6: Perform the insert operation
-            const { data: upsertedData, error: insertError } = await supabase
-                .from('event_profile')
-                .upsert([{
-                    ...filteredFormData,
-                    route_id: currentRoute.id
-                }]);
+            // Keep the numbered row when replacing its owner. The participant-number
+            // transfer is therefore one database update, rather than delete + insert.
+            const payload = {
+                ...filteredFormData,
+                route_id: currentRoute.id
+            };
+            const saveQuery = formData.id
+                ? supabase.from('event_profile').update(payload).eq('id', formData.id)
+                : supabase.from('event_profile').insert([payload]);
+            const { data: upsertedData, error: insertError } = await saveQuery;
 
             if (insertError) {
-                console.error("Error inserting/upserting profile:", insertError);
-                setIsSaving(false);
-                return;
+                throw insertError;
             }
 
             const upsertedProfileId = upsertedData?.[0]?.id || formData.id;
@@ -329,8 +334,16 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
             // Step 8: Close the modal and reset form data
             onClose();
             clearData();
+            toast.success(isReplacingParticipant
+                ? `El participante #${nextParticipantNumber} fue reasignado correctamente.`
+                : 'Participante guardado correctamente.');
         } catch (e) {
-            console.log("ERROR SAVING", e);
+            console.error("ERROR SAVING", e);
+            setAlertMessage(e?.message || 'No se pudo guardar el participante. Intenta de nuevo.');
+            setShowAlert(true);
+            toast.error('No se pudo guardar el participante.');
+            setIsSaving(false);
+            return;
         }
 
         setIsSaving(false);
@@ -340,25 +353,28 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
 
 
     const handleSelectUser = (user) => {
-        console.log(user);
+        const sourceProfile = user.latestEventProfile || {};
+        const profileAvatar = user.avatar_url && user.avatar_url !== "https://cdn1.iconfinder.com/data/icons/avatars-550/avatar_profile_user_biker_tanktop_bald_shiny-512.png"
+            ? user.avatar_url
+            : sourceProfile.avatar_url;
         setSelectedUser(user);
         setFormData({
             ...formData,
             profile_id: user.id,  // Always set profile_id when a user is selected
             full_name: user.name,  // Map user.name to full_name
             stripe_webhook_email_notification: user.email,  // Map user.email
-            name_on_jersey: user.latestEventProfile?.name_on_jersey,
-            jersey_size: user.latestEventProfile?.jersey_size,
-            motorcycle: user.latestEventProfile?.motorcycle,
-            city: user.latestEventProfile?.city,
-            birthday: user.latestEventProfile?.birthday,
-            phone: user.latestEventProfile?.phone,
-            emergencyContactName: user.latestEventProfile?.emergencyContactName,
-            emergencyContactPhone: user.latestEventProfile?.emergencyContactPhone,
-            emergencyContactRelation: user.latestEventProfile?.emergencyContactRelation,
-            avatar_url: user.avatar_url !== "https://cdn1.iconfinder.com/data/icons/avatars-550/avatar_profile_user_biker_tanktop_bald_shiny-512.png"
-                ? user.avatar_url
-                : formData.avatar_url
+            name_on_jersey: sourceProfile.name_on_jersey,
+            jersey_size: sourceProfile.jersey_size,
+            motorcycle: sourceProfile.motorcycle,
+            city: sourceProfile.city,
+            birthday: sourceProfile.birthday,
+            phone: sourceProfile.phone,
+            emergencyContactName: sourceProfile.emergencyContactName,
+            emergencyContactPhone: sourceProfile.emergencyContactPhone,
+            emergencyContactRelation: sourceProfile.emergencyContactRelation,
+            gender: sourceProfile.gender || formData.gender,
+            category: sourceProfile.category || formData.category,
+            avatar_url: profileAvatar || formData.avatar_url
         });
         handleToggleModal();
     };
@@ -520,6 +536,14 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                 </div>
 
                 <div className="h-px bg-white/5 mx-2" />
+
+                {isReplacingParticipant && (
+                    <div className="rounded-2xl border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm text-yellow-100">
+                        <strong className="block text-xs uppercase tracking-widest text-yellow-500 mb-1">Reasignación de participante</strong>
+                        El dorsal #{formData.participant_number} pasará de {user?.profile?.name} a {selectedUser?.name}.
+                        El perfil anterior perderá este dorsal y los datos de inscripción del nuevo perfil se guardarán en este registro.
+                    </div>
+                )}
 
                 {/* Category, Mode & Gender Section */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -749,7 +773,13 @@ const AddParticipantModal = ({ isOpen, onClose, allList = [], user }) => {
                     </div>
                 </div>
             </div>
-            <SearchUserModal isOpen={isSearchModalOpen} onClose={handleToggleModal} onSelect={handleSelectUser} />
+            <SearchUserModal
+                isOpen={isSearchModalOpen}
+                onClose={handleToggleModal}
+                onSelect={handleSelectUser}
+                routeId={currentRoute.id}
+                editingEventProfileId={formData.id}
+            />
         </Modal>
     );
 };
