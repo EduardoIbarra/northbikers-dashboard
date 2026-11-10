@@ -99,6 +99,8 @@ export default function CreateRoutePage() {
         venue_iframe: '',
         whatsapp_group_url: '',
         instructions: '',
+        instructions_es: '',
+        instructions_en: '',
         banner: '',
         banner_h: '',
         cover: '',
@@ -322,6 +324,8 @@ export default function CreateRoutePage() {
                 venue_iframe: formData.venue_iframe || generateVenueIframe(formData.venue_link),
                 whatsapp_group_url: formData.whatsapp_group_url,
                 instructions: formData.instructions,
+                instructions_es: formData.instructions_es || formData.instructions,
+                instructions_en: formData.instructions_en,
                 banner: formData.banner,
                 banner_h: formData.banner_h,
                 cover: formData.cover,
@@ -685,14 +689,18 @@ export default function CreateRoutePage() {
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">PDF de Instrucciones (URL)</label>
+                            {[
+                                ['instructions_es', 'Mecánica en Español (PDF)'],
+                                ['instructions_en', 'Instructions in English (PDF)'],
+                            ].map(([fieldName, label]) => (
+                            <div key={fieldName}>
+                                <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">{label}</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
                                         placeholder="https://.../instructions.pdf"
-                                        value={formData.instructions}
-                                        onChange={(e) => handleInputChange('instructions', e.target.value)}
+                                        value={formData[fieldName]}
+                                        onChange={(e) => handleInputChange(fieldName, e.target.value)}
                                         className="flex-1 bg-gray-50 border border-gray-300 text-gray-900 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-yellow-500 focus:bg-white"
                                     />
                                     <label className="inline-flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 px-4 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest cursor-pointer shadow-sm">
@@ -702,11 +710,12 @@ export default function CreateRoutePage() {
                                             type="file"
                                             accept="application/pdf"
                                             className="hidden"
-                                            onChange={(e) => handleFileUpload(e.target.files[0], 'instructions', 'instructions')}
+                                            onChange={(e) => handleFileUpload(e.target.files[0], fieldName, `instructions-${fieldName}`)}
                                         />
                                     </label>
                                 </div>
                             </div>
+                            ))}
                         </div>
 
                         <div className="space-y-4">

@@ -84,6 +84,8 @@ const RouteBuilder = () => {
         end_timestamp: "",
         timezone: "America/Monterrey",
         instructions: "",
+        instructions_es: "",
+        instructions_en: "",
         challenge_instructions: DEFAULT_CHALLENGE_INSTRUCTIONS,
         challenge_hashtags_accounts: DEFAULT_CHALLENGE_SOCIAL,
         amount: 0,
@@ -261,7 +263,7 @@ const RouteBuilder = () => {
                 .select(
                     "title, venue, dates, description, long_description, en_long_description, " +
                     "venue_link, whatsapp_group_url, venue_iframe, start_timestamp, end_timestamp, timezone, " +
-                    "banner, banner_h, instructions, amount, slug, challenge_instructions, challenge_hashtags_accounts"
+                    "banner, banner_h, instructions, instructions_es, instructions_en, amount, slug, challenge_instructions, challenge_hashtags_accounts"
                 )
                 .eq("id", currentRoute.id)
                 .single();
@@ -290,6 +292,8 @@ const RouteBuilder = () => {
                 banner: data.banner || "",
                 banner_h: data.banner_h || "",
                 instructions: data.instructions || "",
+                instructions_es: data.instructions_es || data.instructions || "",
+                instructions_en: data.instructions_en || "",
                 challenge_instructions: data.challenge_instructions || DEFAULT_CHALLENGE_INSTRUCTIONS,
                 challenge_hashtags_accounts: data.challenge_hashtags_accounts || DEFAULT_CHALLENGE_SOCIAL,
                 amount: data.amount || 0,
@@ -477,11 +481,11 @@ const RouteBuilder = () => {
         await fetchEventPauses();
     };
 
-    const handleInstructionsUpload = async (file) => {
+    const handleInstructionsUpload = async (file, fieldName) => {
         if (!file || !currentRoute?.id) return;
 
         const fileExt = file.name.split('.').pop().toLowerCase();
-        const fileName = `instructions/${currentRoute.id}/${Date.now()}.${fileExt}`;
+        const fileName = `instructions/${currentRoute.id}/${fieldName}-${Date.now()}.${fileExt}`;
 
         try {
             const { error: uploadError } = await supabase.storage
@@ -501,7 +505,7 @@ const RouteBuilder = () => {
 
             const { error: updateError } = await supabase
                 .from('routes')
-                .update({ instructions: publicUrl })
+                .update({ [fieldName]: publicUrl, ...(fieldName === 'instructions_es' ? { instructions: publicUrl } : {}) })
                 .eq('id', currentRoute.id);
 
             if (updateError) {
@@ -510,8 +514,12 @@ const RouteBuilder = () => {
             }
 
             toast.success(`Archivo PDF subido y guardado exitosamente`);
-            await logRouteAction('UPDATE_ROUTE_INSTRUCTIONS', `Uploaded new instructions PDF`);
-            setRouteAttributes(prev => ({ ...prev, instructions: publicUrl }));
+            await logRouteAction('UPDATE_ROUTE_INSTRUCTIONS', `Uploaded ${fieldName} PDF`);
+            setRouteAttributes(prev => ({
+                ...prev,
+                [fieldName]: publicUrl,
+                ...(fieldName === 'instructions_es' ? { instructions: publicUrl } : {}),
+            }));
 
         } catch (err) {
             toast.error("Error inesperado al subir instrucciones");
@@ -1768,28 +1776,31 @@ const RouteBuilder = () => {
                                         )}
                                     </div>
 
-                                    {/* Instrucciones PDF */}
-                                    <div className="rounded-xl border border-gray-700 bg-gray-900/30 p-4 lg:col-span-2">
-                                        <label className="block font-bold text-gray-100 mb-1">Instrucciones (PDF)</label>
+                                    {[
+                                        ['instructions_es', 'Mecánica en Español (PDF)'],
+                                        ['instructions_en', 'Instructions in English (PDF)'],
+                                    ].map(([fieldName, label]) => (
+                                    <div key={fieldName} className="rounded-xl border border-gray-700 bg-gray-900/30 p-4">
+                                        <label className="block font-bold text-gray-100 mb-1">{label}</label>
                                         <input
                                             type="file"
                                             accept="application/pdf"
                                             onChange={(e) => {
                                                 const file = e.target.files?.[0];
                                                 if (file) {
-                                                    handleInstructionsUpload(file);
+                                                    handleInstructionsUpload(file, fieldName);
                                                 }
                                             }}
                                             className="bg-gray-700 text-gray-300 border border-gray-600 p-2 rounded w-full"
                                         />
-                                        {routeAttributes.instructions && (
+                                        {routeAttributes[fieldName] && (
                                             <div className="mt-3 bg-gray-900/50 p-3 rounded border border-gray-700 flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" className="w-8 h-8" alt="PDF icon" />
                                                     <div>
-                                                        <p className="text-sm font-medium text-gray-200">Rider's Guide / PDF de Instrucciones</p>
+                                                        <p className="text-sm font-medium text-gray-200">{label}</p>
                                                         <a 
-                                                            href={routeAttributes.instructions} 
+                                                            href={routeAttributes[fieldName]}
                                                             target="_blank" 
                                                             rel="noopener noreferrer" 
                                                             className="text-xs text-blue-400 hover:underline"
@@ -1801,6 +1812,7 @@ const RouteBuilder = () => {
                                             </div>
                                         )}
                                     </div>
+                                    ))}
                                     </div>
                                     )}
                                 </div>
