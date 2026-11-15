@@ -109,7 +109,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
 
                 // Count challenge and regular check-ins
                 const challengeCheckinsCount = relatedCheckIns.filter(
-                    checkIn => checkIn.checkpoints.icon === challengeIconUrl
+                    checkIn => checkIn.checkpoints?.icon === challengeIconUrl
                 ).length;
 
                 const regularCheckinsCount = relatedCheckIns.length - challengeCheckinsCount;
@@ -153,7 +153,10 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                             ? item.is_team === true
                             : item.category?.toLocaleLowerCase() === category.toLocaleLowerCase();
 
-            const searchMatch = searchQuery ? item.profile.name.toLowerCase().includes(searchQuery.toLowerCase()) : true;
+            const participantName = item.profile?.name ?? '';
+            const searchMatch = searchQuery
+                ? participantName.toLocaleLowerCase().includes(searchQuery.toLocaleLowerCase())
+                : true;
 
             return categoryMatch && searchMatch;
         });
@@ -223,7 +226,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                 orderedData = sort(orderedData).desc(u => u.points);
                 break;
             case 'name':
-                orderedData = sort(orderedData).asc(u => u.profile.name);
+                orderedData = sort(orderedData).asc(u => u.profile?.name ?? '');
                 break;
             case 'participant_number':
                 orderedData = sort(orderedData).asc(u => parseInt(u.participant_number));
