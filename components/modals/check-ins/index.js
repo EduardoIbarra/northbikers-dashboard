@@ -92,26 +92,28 @@ const CheckInsModal = ({isOpen, onClose, profile}) => {
 
         if (checkins?.length) {
             return (
-                checkins?.map((c, idx) => {
-                    const imgSource = `https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/${c?.checkpoint.picture}`
+                checkins?.map((c) => {
+                    const checkpoint = c?.checkpoint;
+                    const imgSource = `https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/${checkpoint?.picture}`;
+                    const distance = Number(c?.distance);
 
                     return (
                         <div key={c.id} className={`relative p-4 rounded-2xl border border-transparent hover:border-neutral-700 transition-all cursor-pointer flex items-center mb-2 ${selectedCheckIn?.id === c.id ? 'bg-neutral-800 border-neutral-700' : 'hover:bg-neutral-800'}`} onClick={() => handleItemClick(c)}>
                             <div className="w-14 h-14 shrink-0 rounded-full overflow-hidden mr-3 border border-neutral-700">
                                 <img
-                                    src={c?.checkpoint?.picture?.includes('http') ? c?.checkpoint.picture : (c?.checkpoint?.picture ? imgSource : '/icon.jpg')}
+                                    src={checkpoint?.picture?.includes('http') ? checkpoint.picture : (checkpoint?.picture ? imgSource : '/icon.jpg')}
                                     alt=""
                                     className='w-full h-full object-cover'
                                 />
                             </div>
                             <div className='pr-8 min-w-0'>
-                                {c.checkpoint.icon.includes('challenge') && (
+                                {checkpoint?.icon?.includes('challenge') && (
                                     <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest block mb-1">[RETO]</span>
                                 )}
-                                <span className="font-bold text-white uppercase tracking-tight block truncate">{c.checkpoint.name}</span>
-                                <p className="text-xs text-neutral-500 line-clamp-1">{c.checkpoint.description}</p>
+                                <span className="font-bold text-white uppercase tracking-tight block truncate">{checkpoint?.name || 'Checkpoint no disponible'}</span>
+                                <p className="text-xs text-neutral-500 line-clamp-1">{checkpoint?.description || ''}</p>
                                 <p className="text-[10px] font-bold text-neutral-400 mt-1 uppercase tracking-widest">
-                                    <span className="text-yellow-500">{c.points ?? 0}</span> pts | <span className="text-yellow-500">{c.distance.toFixed(2)}km</span> Distancia
+                                    <span className="text-yellow-500">{c?.points ?? 0}</span> pts | <span className="text-yellow-500">{Number.isFinite(distance) ? distance.toFixed(2) : '0.00'}km</span> Distancia
                                 </p>
                             </div>
 
