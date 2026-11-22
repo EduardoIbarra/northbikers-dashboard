@@ -393,6 +393,22 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                 </div>
             </div>
             <AddParticipantModal isOpen={isOpen || !!selectedUser} onClose={handleClose} allList={fullList} user={selectedUser} />
+
+            <style jsx global>{`
+                .search-input-premium input {
+                    background: #171717 !important;
+                    border: 1px solid #262626 !important;
+                    border-radius: 1rem !important;
+                    color: #ffffff !important;
+                }
+                .search-input-premium input::placeholder {
+                    color: #737373 !important;
+                }
+                .search-input-premium input:focus {
+                    border-color: #eab308 !important;
+                    box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2) !important;
+                }
+            `}</style>
         </div>
     );
 };
