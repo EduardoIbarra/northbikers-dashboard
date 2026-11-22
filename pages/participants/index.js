@@ -18,6 +18,28 @@ import Spinner from "../../components/spinner";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+const getLastCheckInMs = (participant) => {
+    const checkIns = participant?.check_ins ?? [];
+    if (!checkIns.length) return Number.POSITIVE_INFINITY;
+
+    const latestTimestamp = Math.max(...checkIns.map(({ created_at }) => Date.parse(created_at) || 0));
+    return latestTimestamp || Number.POSITIVE_INFINITY;
+};
+
+const compareByPoints = (a, b) => {
+    const pointsDifference = Number(b?.points ?? 0) - Number(a?.points ?? 0);
+    if (pointsDifference) return pointsDifference;
+
+    const checkInDifference = getLastCheckInMs(a) - getLastCheckInMs(b);
+    if (checkInDifference) return checkInDifference;
+
+    const numberDifference = Number(a?.participant_number ?? Number.POSITIVE_INFINITY)
+        - Number(b?.participant_number ?? Number.POSITIVE_INFINITY);
+    if (numberDifference) return numberDifference;
+
+    return (a?.profile?.name ?? '').localeCompare(b?.profile?.name ?? '');
+};
+
 const ParticipantsPage = ({ isPrivateView = true }) => {
     const loggedUser = getLoggedUser();
     const router = useRouter();
@@ -25,6 +47,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [participantNumberQuery, setParticipantNumberQuery] = useState('');
     const [fullList, setFullList] = useState([]);
     const [filteredData, setFilteredData] = useState([]);
     const [data, setData] = useState([]);
@@ -158,11 +181,15 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                 ? participantName.toLocaleLowerCase().includes(searchQuery.toLocaleLowerCase())
                 : true;
 
-            return categoryMatch && searchMatch;
+            const participantNumberMatch = participantNumberQuery.trim()
+                ? String(item.participant_number ?? '').includes(participantNumberQuery.trim())
+                : true;
+
+            return categoryMatch && searchMatch && participantNumberMatch;
         });
 
         setFilteredData(filtered);
-    }, [category, searchQuery, fullList]);
+    }, [category, searchQuery, participantNumberQuery, fullList]);
 
     const handleClose = () => {
         setIsOpen(false);
@@ -223,7 +250,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
 
         switch (order) {
             case 'points':
-                orderedData = sort(orderedData).desc(u => u.points);
+                orderedData.sort(compareByPoints);
                 break;
             case 'name':
                 orderedData = sort(orderedData).asc(u => u.profile?.name ?? '');
@@ -297,14 +324,24 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
 
             <div className="premium-card p-4 sm:p-6 mb-8">
                 <div className="flex flex-col gap-4">
-                    <TextInput
-                        label={'Búsqueda Rápida'}
-                        type='text'
-                        placeholder='Nombre del participante...'
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                        className="search-input-premium w-full"
-                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <TextInput
+                            label={'Búsqueda por nombre'}
+                            type='text'
+                            placeholder='Nombre del participante...'
+                            value={searchQuery}
+                            onChange={setSearchQuery}
+                            className="search-input-premium w-full"
+                        />
+                        <TextInput
+                            label={'Búsqueda por número'}
+                            type='text'
+                            placeholder='Número del participante...'
+                            value={participantNumberQuery}
+                            onChange={setParticipantNumberQuery}
+                            className="search-input-premium w-full"
+                        />
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <Select
                             label="Categoría"
@@ -323,6 +360,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                                 { id: 'name', title: 'Nombre' },
                                 { id: 'participant_number', title: 'Número' }
                             ]}
+                            selected={order}
                             onChange={(e) => setOrder(e?.id)}
                         />
                     </div>
@@ -348,7 +386,7 @@ const ParticipantsPage = ({ isPrivateView = true }) => {
                         isLoading={isLoading}
                         initialData={data}
                         onReload={getData}
-                        isFiltered={!!searchQuery || !!category}
+                        isFiltered={!!searchQuery || !!participantNumberQuery || !!category}
                         onEdit={handleEdit}
                         isPrivateView={isPrivateView}
                     />
