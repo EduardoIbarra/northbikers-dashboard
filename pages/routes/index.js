@@ -63,6 +63,7 @@ const RouteBuilder = () => {
         lat: '',
         lng: '',
         description: '',
+        description_en: '',
         points: 0,
         is_challenge: false,
         terrain: 'pavement',
@@ -606,7 +607,7 @@ const RouteBuilder = () => {
             try {
                 const { data, error } = await supabase
                     .from('event_checkpoints')
-                    .select('id, checkpoint_id, order, checkpoints(name, lat, lng, description, points, icon, terrain, weakSignal, picture, category_id, is_challenge)')
+                    .select('id, checkpoint_id, order, checkpoints(name, lat, lng, description, description_en, points, icon, terrain, weakSignal, picture, category_id, is_challenge)')
                     .eq('event_id', currentRoute.id)
                     .order('order', { ascending: true });
 
@@ -726,6 +727,7 @@ const RouteBuilder = () => {
                     lat: updatedCheckpoint.lat,
                     lng: updatedCheckpoint.lng,
                     description: updatedCheckpoint.description,
+                    description_en: updatedCheckpoint.description_en,
                     points: updatedCheckpoint.points,
                     icon: updatedCheckpoint.is_challenge
                         ? "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/challenges.png"
@@ -847,6 +849,7 @@ const RouteBuilder = () => {
                     lat: newCheckpoint.lat,
                     lng: newCheckpoint.lng,
                     description: newCheckpoint.description,
+                    description_en: newCheckpoint.description_en,
                     points: newCheckpoint.points,
                     icon: newCheckpoint.is_challenge
                         ? "https://aezxnubglexywadbjpgo.supabase.in/storage/v1/object/public/pictures/icons/challenges.png"
@@ -898,6 +901,7 @@ const RouteBuilder = () => {
                 lat: '',
                 lng: '',
                 description: '',
+                description_en: '',
                 points: 0,
                 challenge: false,
                 terrain: 'pavement',
@@ -1117,7 +1121,7 @@ const RouteBuilder = () => {
 
     const downloadCheckpointsCSV = () => {
         const headers = [
-            "ID", "Nombre", "Latitud", "Longitud", "Descripción", "Puntos",
+            "ID", "Nombre", "Latitud", "Longitud", "Descripción", "Description (English)", "Puntos",
             "Es Reto", "Terreno", "Señal Débil", "Categoría", "Imagen"
         ];
 
@@ -1129,6 +1133,7 @@ const RouteBuilder = () => {
                 c.lat,
                 c.lng,
                 c.description,
+                c.description_en,
                 c.points,
                 c.icon.includes("challenges.png") ? "Sí" : "No",
                 c.terrain,
@@ -1933,7 +1938,7 @@ const RouteBuilder = () => {
                                         </button>
                                     </div>
                                     <div className="route-checkpoints-scroll overflow-x-auto rounded-lg border border-gray-700">
-                                        <table className="route-checkpoints-table table-auto min-w-[1500px] w-full text-left">
+                                        <table className="route-checkpoints-table table-auto min-w-[1760px] w-full text-left">
                                             <thead>
                                                 <tr>
                                                     <th>ID</th>
@@ -1941,6 +1946,7 @@ const RouteBuilder = () => {
                                                     <th>Latitud</th>
                                                     <th>Longitud</th>
                                                     <th>Descripción</th>
+                                                    <th>Description (English)</th>
                                                     <th>Puntos</th>
                                                     <th>Reto</th>
                                                     <th>Terreno</th>
@@ -1992,6 +1998,16 @@ const RouteBuilder = () => {
                                                             className='bg-gray-700'
                                                             onChange={(e) =>
                                                                 setNewCheckpoint({ ...newCheckpoint, description: e.target.value })
+                                                            }
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="text"
+                                                            value={newCheckpoint.description_en}
+                                                            className='bg-gray-700'
+                                                            onChange={(e) =>
+                                                                setNewCheckpoint({ ...newCheckpoint, description_en: e.target.value })
                                                             }
                                                         />
                                                     </td>
@@ -2126,12 +2142,26 @@ const RouteBuilder = () => {
                                                         <td>
                                                             <input
                                                                 type="text"
-                                                                value={cp.checkpoints.description}
+                                                                value={cp.checkpoints.description || ''}
                                                                 className='bg-gray-700'
                                                                 onChange={(e) =>
                                                                     setCheckpoints((prev) =>
                                                                         prev.map((item, i) =>
                                                                             i === index ? { ...item, checkpoints: { ...item.checkpoints, description: e.target.value } } : item
+                                                                        )
+                                                                    )
+                                                                }
+                                                            />
+                                                        </td>
+                                                        <td>
+                                                            <input
+                                                                type="text"
+                                                                value={cp.checkpoints.description_en || ''}
+                                                                className='bg-gray-700'
+                                                                onChange={(e) =>
+                                                                    setCheckpoints((prev) =>
+                                                                        prev.map((item, i) =>
+                                                                            i === index ? { ...item, checkpoints: { ...item.checkpoints, description_en: e.target.value } } : item
                                                                         )
                                                                     )
                                                                 }
